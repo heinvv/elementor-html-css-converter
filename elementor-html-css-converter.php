@@ -3,9 +3,9 @@
  * Plugin Name: Elementor HTML CSS Converter
  * Plugin URI: https://github.com/your-username/elementor-html-css-converter
  * Description: Converts CSS properties to Elementor atomic widget format via REST API.
- * Version: 1.0.0
- * Author: Your Name
- * Author URI: https://example.com
+ * Version: 0.0.1
+ * Author: Hein van Vlastuin
+ * Author URI: https://github.com/heinvv
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Requires PHP: 7.4
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin version.
-define( 'EHCC_VERSION', '1.0.0' );
+define( 'EHCC_VERSION', '0.0.1' );
 
 // Plugin file.
 define( 'EHCC_FILE', __FILE__ );
@@ -34,7 +34,7 @@ define( 'EHCC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EHCC_PLUGIN_BASE', plugin_basename( __FILE__ ) );
 
 // Minimum Elementor version.
-define( 'EHCC_MINIMUM_ELEMENTOR_VERSION', '3.20.0' );
+define( 'EHCC_MINIMUM_ELEMENTOR_VERSION', '3.34.0' );
 
 // Minimum PHP version.
 define( 'EHCC_MINIMUM_PHP_VERSION', '7.4' );
@@ -88,12 +88,26 @@ add_action( 'plugins_loaded', 'ehcc_load', 11 );
  * @return void
  */
 function ehcc_load_files() {
+	// Interfaces.
 	require_once EHCC_PATH . 'includes/interfaces/interface-property-converter.php';
+	require_once EHCC_PATH . 'includes/interfaces/interface-widget-style-applicator.php';
+
+	// Abstracts.
 	require_once EHCC_PATH . 'includes/abstracts/class-property-converter-base.php';
-	require_once EHCC_PATH . 'includes/prop-types/class-color-prop-type.php';
+
+	// Core classes.
 	require_once EHCC_PATH . 'includes/class-converter-registry.php';
+	require_once EHCC_PATH . 'includes/class-style-definition-builder.php';
+	require_once EHCC_PATH . 'includes/class-elementor-document-service.php';
+
+	// Converters.
 	require_once EHCC_PATH . 'includes/converters/class-color-converter.php';
+
+	// Conversion services.
 	require_once EHCC_PATH . 'includes/class-css-converter.php';
+	require_once EHCC_PATH . 'includes/class-widget-style-applicator.php';
+
+	// API and plugin.
 	require_once EHCC_PATH . 'includes/class-rest-api.php';
 	require_once EHCC_PATH . 'includes/class-plugin.php';
 }

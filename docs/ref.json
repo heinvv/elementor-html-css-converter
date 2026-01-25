@@ -1,0 +1,93 @@
+[
+        {
+                "id": "ea1c0b1",
+                "elType": "e-div-block",
+                "settings": [],
+                "elements": [
+                        {
+                                "id": "d91b1ac",
+                                "elType": "widget",
+                                "settings": {
+                                        "classes": {
+                                                "$$type": "classes",
+                                                "value": [
+                                                        "e-d91b1ac-2e48908"
+                                                ]
+                                        }
+                                },
+                                "elements": [],
+                                "widgetType": "e-heading",
+                                "styles": {
+                                        "e-d91b1ac-2e48908": {
+                                                "id": "e-d91b1ac-2e48908",
+                                                "label": "local",
+                                                "type": "class",
+                                                "variants": [
+                                                        {
+                                                                "meta": {
+                                                                        "breakpoint": "desktop",
+                                                                        "state": null
+                                                                },
+                                                                "props": {
+                                                                        "color": {
+                                                                                "$$type": "color",
+                                                                                "value": "#21eb94"
+                                                                        }
+                                                                },
+                                                                "custom_css": null
+                                                        }
+                                                ]
+                                        }
+                                },
+                                "interactions": [],
+                                "editor_settings": [],
+                                "version": "0.0"
+                        },
+                        {
+                                "id": "80e441b",
+                                "elType": "widget",
+                                "settings": {
+                                        "classes": {
+                                                "$$type": "classes",
+                                                "value": [
+                                                        "e-80e441b-4085177"
+                                                ]
+                                        }
+                                },
+                                "elements": [],
+                                "widgetType": "e-heading",
+                                "styles": {
+                                        "e-80e441b-4085177": {
+                                                "id": "e-80e441b-4085177",
+                                                "type": "class",
+                                                "label": "local",
+                                                "variants": [
+                                                        {
+                                                                "meta": {
+                                                                        "breakpoint": "desktop",
+                                                                        "state": null
+                                                                },
+                                                                "props": {
+                                                                        "color": {
+                                                                                "$$type": "color",
+                                                                                "value": "#ff0000",
+                                                                                "_convertedBy": "convert-css-to-atomic"
+                                                                        }
+                                                                },
+                                                                "custom_css": null
+                                                        }
+                                                ]
+                                        }
+                                },
+                                "interactions": [],
+                                "editor_settings": [],
+                                "version": "0.0"
+                        }
+                ],
+                "styles": [],
+                "interactions": [],
+                "editor_settings": [],
+                "version": "0.0",
+                "isInner": false
+        }
+]

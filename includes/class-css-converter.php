@@ -25,16 +25,6 @@ class Css_Converter {
 	private const PATTERN_CSS_DECLARATION = '/([a-zA-Z0-9-]+)\s*:\s*([^;]+);?/';
 
 	/**
-	 * Key added to converted properties to mark them as converted.
-	 */
-	private const CONVERSION_MARKER = '_convertedBy';
-
-	/**
-	 * Value for the conversion marker.
-	 */
-	private const CONVERSION_MARKER_VALUE = 'convert-css-to-atomic';
-
-	/**
 	 * The converter registry.
 	 *
 	 * @var Converter_Registry
@@ -101,9 +91,6 @@ class Css_Converter {
 			if ( null !== $converter ) {
 				$converted = $converter->convert( $property, $value );
 				if ( null !== $converted ) {
-					if ( isset( $converted['$$type'] ) ) {
-						$converted[ self::CONVERSION_MARKER ] = self::CONVERSION_MARKER_VALUE;
-					}
 					$props[ $property ] = $converted;
 				} else {
 					$unsupported[ $property ] = $value;

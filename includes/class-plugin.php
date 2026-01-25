@@ -41,6 +41,13 @@ final class Plugin {
 	private Rest_Api $rest_api;
 
 	/**
+	 * The widget style applicator.
+	 *
+	 * @var Widget_Style_Applicator
+	 */
+	private Widget_Style_Applicator $widget_style_applicator;
+
+	/**
 	 * Get plugin instance.
 	 *
 	 * @return Plugin The plugin instance.
@@ -59,8 +66,23 @@ final class Plugin {
 		$this->registry = new Converter_Registry();
 		$this->register_converters();
 
-		$this->rest_api = new Rest_Api( $this->registry );
+		$this->widget_style_applicator = $this->create_widget_style_applicator();
+
+		$this->rest_api = new Rest_Api( $this->registry, $this->widget_style_applicator );
 		$this->rest_api->register_hooks();
+	}
+
+	/**
+	 * Create the widget style applicator with its dependencies.
+	 *
+	 * @return Widget_Style_Applicator The widget style applicator.
+	 */
+	private function create_widget_style_applicator(): Widget_Style_Applicator {
+		$css_converter    = new Css_Converter( $this->registry );
+		$style_builder    = new Style_Definition_Builder();
+		$document_service = new Elementor_Document_Service();
+
+		return new Widget_Style_Applicator( $css_converter, $style_builder, $document_service );
 	}
 
 	/**
@@ -79,6 +101,15 @@ final class Plugin {
 	 */
 	public function get_registry(): Converter_Registry {
 		return $this->registry;
+	}
+
+	/**
+	 * Get the widget style applicator.
+	 *
+	 * @return Widget_Style_Applicator The widget style applicator.
+	 */
+	public function get_widget_style_applicator(): Widget_Style_Applicator {
+		return $this->widget_style_applicator;
 	}
 
 	/**

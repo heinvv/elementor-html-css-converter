@@ -1,0 +1,430 @@
+<?php
+/**
+ * Elementor Document Service Class
+ *
+ * @package ElementorHtmlCssConverter
+ */
+
+namespace ElementorHtmlCssConverter;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+/**
+ * Class Elementor_Document_Service
+ *
+ * Wraps Elementor document operations for reading and writing widget data.
+ */
+class Elementor_Document_Service {
+	/**
+	 * Get an Elementor document by post ID.
+	 *
+	 * @param int $post_id The post ID.
+	 * @return \Elementor\Core\Base\Document|null The document or null.
+	 */
+	public function get_document( int $post_id ) {
+		if ( ! $this->is_elementor_available() ) {
+			return null;
+		}
+
+		return \Elementor\Plugin::$instance->documents->get( $post_id );
+	}
+
+	/**
+	 * Find a widget in a post by widget ID.
+	 *
+	 * @param int    $post_id   The post ID.
+	 * @param string $widget_id The widget ID.
+	 * @return array|false The widget data or false if not found.
+	 */
+	public function find_widget( int $post_id, string $widget_id ) {
+		$document = $this->get_document( $post_id );
+
+		if ( ! $document ) {
+			return false;
+		}
+
+		$elements = $document->get_elements_data();
+
+		if ( empty( $elements ) ) {
+			return false;
+		}
+
+		return \Elementor\Utils::find_element_recursive( $elements, $widget_id );
+	}
+
+	/**
+	 * Update a widget in a post and save.
+	 *
+	 * @param int      $post_id        The post ID.
+	 * @param string   $widget_id      The widget ID.
+	 * @param callable $update_callback Callback that receives widget data and returns modified data.
+	 * @return bool True on success, false on failure.
+	 */
+	public function update_widget( int $post_id, string $widget_id, callable $update_callback ): bool {
+		$document = $this->get_document( $post_id );
+
+		if ( ! $document ) {
+			return false;
+		}
+
+		$elements = $document->get_elements_data();
+
+		if ( empty( $elements ) ) {
+			return false;
+		}
+
+		$updated_elements = $this->iterate_and_update( $elements, $widget_id, $update_callback );
+
+		return $this->save_elements( $document, $updated_elements );
+	}
+
+	/**
+	 * Create a new Elementor post.
+	 *
+	 * @param string $title       The post title.
+	 * @param string $post_status The post status (draft, publish, etc.).
+	 * @param string $post_type   The post type (page, post).
+	 * @return array|false Array with post_id and document, or false on failure.
+	 */
+	public function create_post( string $title, string $post_status = 'draft', string $post_type = 'page' ) {
+		if ( ! $this->is_elementor_available() ) {
+			return false;
+		}
+
+		$document_type = 'wp-' . $post_type;
+
+		$document = \Elementor\Plugin::$instance->documents->create(
+			$document_type,
+			[
+				'post_title'  => $title,
+				'post_status' => $post_status,
+				'post_type'   => $post_type,
+			]
+		);
+
+		if ( is_wp_error( $document ) ) {
+			return false;
+		}
+
+		return [
+			'post_id'  => $document->get_main_id(),
+			'document' => $document,
+		];
+	}
+
+	/**
+	 * Add a widget to a post.
+	 *
+	 * @param int   $post_id     The post ID.
+	 * @param array $widget_data The widget data to add.
+	 * @return string|false The new widget ID or false on failure.
+	 */
+	public function add_widget( int $post_id, array $widget_data ) {
+		$document = $this->get_document( $post_id );
+
+		if ( ! $document ) {
+			return false;
+		}
+
+		$elements = $document->get_elements_data();
+
+		$widget_id = $this->generate_element_id();
+		$widget_data['id'] = $widget_id;
+
+		if ( ! isset( $widget_data['elType'] ) ) {
+			$widget_data['elType'] = 'widget';
+		}
+
+		$elements = $this->add_widget_to_elements( $elements, $widget_data );
+
+		if ( ! $this->save_elements( $document, $elements ) ) {
+			return false;
+		}
+
+		return $widget_id;
+	}
+
+	/**
+	 * Save a post with initial widget structure.
+	 *
+	 * @param int   $post_id     The post ID.
+	 * @param array $widget_data The widget data.
+	 * @return bool True on success.
+	 */
+	public function save_with_widget( int $post_id, array $widget_data ): bool {
+		$document = $this->get_document( $post_id );
+
+		if ( ! $document ) {
+			return false;
+		}
+
+		$elements = $this->create_container_with_widget( $widget_data );
+
+		return $this->save_elements( $document, $elements );
+	}
+
+	/**
+	 * Get the edit URL for a post.
+	 *
+	 * @param int $post_id The post ID.
+	 * @return string The edit URL.
+	 */
+	public function get_edit_url( int $post_id ): string {
+		$document = $this->get_document( $post_id );
+
+		if ( $document ) {
+			return $document->get_edit_url();
+		}
+
+		return admin_url( 'post.php?post=' . $post_id . '&action=elementor' );
+	}
+
+	/**
+	 * Generate a unique element ID.
+	 *
+	 * @return string The generated ID.
+	 */
+	public function generate_element_id(): string {
+		if ( $this->is_elementor_available() && method_exists( '\Elementor\Utils', 'generate_random_string' ) ) {
+			return \Elementor\Utils::generate_random_string();
+		}
+
+		return substr( md5( uniqid( '', true ) ), 0, 7 );
+	}
+
+	/**
+	 * Check if Elementor is available.
+	 *
+	 * @return bool True if Elementor is loaded.
+	 */
+	private function is_elementor_available(): bool {
+		return did_action( 'elementor/loaded' ) && class_exists( '\Elementor\Plugin' );
+	}
+
+	/**
+	 * Iterate through elements and update matching widget.
+	 *
+	 * @param array    $elements        The elements array.
+	 * @param string   $widget_id       The widget ID to find.
+	 * @param callable $update_callback The update callback.
+	 * @return array The updated elements.
+	 */
+	private function iterate_and_update( array $elements, string $widget_id, callable $update_callback ): array {
+		foreach ( $elements as $index => $element ) {
+			if ( isset( $element['id'] ) && $element['id'] === $widget_id ) {
+				$elements[ $index ] = $update_callback( $element );
+			}
+
+			if ( ! empty( $element['elements'] ) ) {
+				$elements[ $index ]['elements'] = $this->iterate_and_update(
+					$element['elements'],
+					$widget_id,
+					$update_callback
+				);
+			}
+		}
+
+		return $elements;
+	}
+
+	/**
+	 * Save elements to document.
+	 *
+	 * Uses direct post meta update to bypass Elementor's permission checks
+	 * which would fail for REST API requests without proper authentication.
+	 * Matches the approach from css-converter PR.
+	 *
+	 * @param \Elementor\Core\Base\Document $document The document.
+	 * @param array                         $elements The elements to save.
+	 * @return bool True on success.
+	 */
+	private function save_elements( $document, array $elements ): bool {
+		$post_id = $document->get_main_id();
+
+		// Convert elements to the format Elementor expects.
+		$editor_data = $this->get_elements_raw_data( $elements );
+
+		// Save using update_metadata (matches PR approach).
+		$json_value = wp_slash( wp_json_encode( $editor_data ) );
+
+		if ( false === $json_value ) {
+			return false;
+		}
+
+		// Update the Elementor data using update_metadata (as in the PR).
+		update_metadata( 'post', $post_id, '_elementor_data', $json_value );
+
+		// Ensure document is marked as built with Elementor.
+		$document->set_is_built_with_elementor( true );
+
+		// Delete the CSS cache so it regenerates on next load.
+		delete_post_meta( $post_id, '_elementor_css' );
+
+		// Clear atomic styles cache for both frontend and preview contexts.
+		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id ] );
+		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id, 'frontend' ] );
+		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id, 'preview' ] );
+
+		return true;
+	}
+
+	/**
+	 * Get raw data from elements for saving.
+	 *
+	 * This processes the elements through Elementor's data handling.
+	 *
+	 * @param array $elements The elements.
+	 * @return array The processed elements.
+	 */
+	private function get_elements_raw_data( array $elements ): array {
+		$editor_data = [];
+
+		foreach ( $elements as $element_data ) {
+			$editor_data[] = $this->get_element_raw_data( $element_data );
+		}
+
+		return $editor_data;
+	}
+
+	/**
+	 * Get raw data for a single element.
+	 *
+	 * @param array $element_data The element data.
+	 * @return array The processed element data.
+	 */
+	private function get_element_raw_data( array $element_data ): array {
+		$data = [
+			'id'       => $element_data['id'] ?? '',
+			'elType'   => $element_data['elType'] ?? 'widget',
+			'settings' => $element_data['settings'] ?? [],
+			'elements' => [],
+		];
+
+		// Add widgetType for widgets.
+		if ( isset( $element_data['widgetType'] ) ) {
+			$data['widgetType'] = $element_data['widgetType'];
+		}
+
+		// Add styles for atomic widgets.
+		if ( isset( $element_data['styles'] ) ) {
+			$data['styles'] = $element_data['styles'];
+		}
+
+		// Add other atomic widget properties.
+		if ( isset( $element_data['interactions'] ) ) {
+			$data['interactions'] = $element_data['interactions'];
+		}
+
+		if ( isset( $element_data['editor_settings'] ) ) {
+			$data['editor_settings'] = $element_data['editor_settings'];
+		}
+
+		if ( isset( $element_data['version'] ) ) {
+			$data['version'] = $element_data['version'];
+		}
+
+		if ( isset( $element_data['isInner'] ) ) {
+			$data['isInner'] = $element_data['isInner'];
+		}
+
+		// Process child elements recursively.
+		if ( ! empty( $element_data['elements'] ) ) {
+			foreach ( $element_data['elements'] as $child ) {
+				$data['elements'][] = $this->get_element_raw_data( $child );
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Add widget to elements structure.
+	 *
+	 * @param array $elements    The existing elements.
+	 * @param array $widget_data The widget to add.
+	 * @return array The updated elements.
+	 */
+	private function add_widget_to_elements( array $elements, array $widget_data ): array {
+		if ( empty( $elements ) ) {
+			return $this->create_container_with_widget( $widget_data );
+		}
+
+		$container_found = $this->find_first_container( $elements );
+
+		if ( $container_found ) {
+			return $this->add_to_container( $elements, $widget_data );
+		}
+
+		return $this->create_container_with_widget( $widget_data );
+	}
+
+	/**
+	 * Find first div-block or flexbox container in elements (v4 atomic pattern).
+	 *
+	 * @param array $elements The elements.
+	 * @return bool True if container found.
+	 */
+	private function find_first_container( array $elements ): bool {
+		foreach ( $elements as $element ) {
+			$widget_type = $element['widgetType'] ?? '';
+
+			// v4 atomic containers: e-div-block or e-flexbox
+			if ( in_array( $widget_type, [ 'e-div-block', 'e-flexbox' ], true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Add widget to first available div-block or flexbox (v4 atomic pattern).
+	 *
+	 * @param array $elements    The elements.
+	 * @param array $widget_data The widget data.
+	 * @return array The updated elements.
+	 */
+	private function add_to_container( array $elements, array $widget_data ): array {
+		foreach ( $elements as $index => $element ) {
+			$widget_type = $element['widgetType'] ?? '';
+
+			// v4 atomic containers: e-div-block or e-flexbox
+			if ( in_array( $widget_type, [ 'e-div-block', 'e-flexbox' ], true ) ) {
+				if ( ! isset( $elements[ $index ]['elements'] ) ) {
+					$elements[ $index ]['elements'] = [];
+				}
+				$elements[ $index ]['elements'][] = $widget_data;
+				return $elements;
+			}
+
+			// Recursively check nested elements
+			if ( ! empty( $element['elements'] ) ) {
+				$elements[ $index ]['elements'] = $this->add_to_container( $element['elements'], $widget_data );
+				return $elements;
+			}
+		}
+
+		return $elements;
+	}
+
+	/**
+	 * Create a div-block wrapper with widget (v4 atomic pattern).
+	 *
+	 * @param array $widget_data The widget data.
+	 * @return array The div-block structure with widget.
+	 */
+	private function create_container_with_widget( array $widget_data ): array {
+		return [
+			[
+				'id'         => $this->generate_element_id(),
+				'elType'     => 'widget',
+				'widgetType' => 'e-div-block',
+				'settings'   => [],
+				'styles'     => [],
+				'elements'   => [ $widget_data ],
+			],
+		];
+	}
+}
