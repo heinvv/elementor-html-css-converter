@@ -253,14 +253,21 @@ class Elementor_Document_Service {
 			return false;
 		}
 
-		// Update the Elementor data using update_metadata (as in the PR).
+		// Update the Elementor data using update_metadata (as in css-converter PR).
 		update_metadata( 'post', $post_id, '_elementor_data', $json_value );
+
+		// Set required Elementor post meta fields (as in css-converter PR).
+		update_post_meta( $post_id, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $post_id, '_elementor_template_type', 'wp-post' );
+		update_post_meta( $post_id, '_elementor_version', ELEMENTOR_VERSION );
 
 		// Ensure document is marked as built with Elementor.
 		$document->set_is_built_with_elementor( true );
 
-		// Delete the CSS cache so it regenerates on next load.
+		// Clear all caches (as in css-converter PR widget-cache-manager.php).
+		delete_post_meta( $post_id, '_elementor_element_cache' );
 		delete_post_meta( $post_id, '_elementor_css' );
+		delete_post_meta( $post_id, '_elementor_atomic_cache_validity' );
 
 		// Clear atomic styles cache for both frontend and preview contexts.
 		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id ] );

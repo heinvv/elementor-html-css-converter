@@ -114,16 +114,18 @@ class Style_Definition_Builder {
 	/**
 	 * Generate a unique style ID based on widget ID.
 	 *
-	 * Format matches Elementor editor: e-{widgetId}-{randomNumber}
+	 * Format matches Elementor atomic widgets: e-{widgetId}-{7-char-hex}
+	 * Based on css-converter module's generate_atomic_unique_id().
 	 *
 	 * @param string $widget_id The widget ID.
 	 * @return string The generated style ID.
 	 */
 	public function generate_style_id( string $widget_id ): string {
-		// Generate a random 7-digit number to match Elementor's pattern.
-		$random_suffix = (string) wp_rand( 1000000, 9999999 );
+		// Generate 7-character hex ID like atomic widgets do.
+		// Based on css-converter's atomic-widget-data-formatter.php.
+		$unique_id = substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
 
-		return self::STYLE_ID_PREFIX . $widget_id . '-' . $random_suffix;
+		return self::STYLE_ID_PREFIX . $widget_id . '-' . $unique_id;
 	}
 
 	/**
