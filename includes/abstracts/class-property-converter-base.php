@@ -54,4 +54,17 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 	 * @return array|null The atomic format array or null if conversion fails.
 	 */
 	abstract public function convert( string $property, $value ): ?array;
+
+	/**
+	 * Get the output property name for a given input property.
+	 *
+	 * Default implementation returns the same property name.
+	 * Override in subclasses for property name mapping.
+	 *
+	 * @param string $property The input CSS property name.
+	 * @return string The output Elementor property name.
+	 */
+	public function get_output_property( string $property ): string {
+		return $property;
+	}
 }

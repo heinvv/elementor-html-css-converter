@@ -42,4 +42,12 @@ interface Property_Converter_Interface {
 	 * @return array List of supported property names.
 	 */
 	public function get_supported_properties(): array;
+
+	/**
+	 * Get the output property name for a given input property.
+	 *
+	 * @param string $property The input CSS property name.
+	 * @return string The output Elementor property name.
+	 */
+	public function get_output_property( string $property ): string;
 }

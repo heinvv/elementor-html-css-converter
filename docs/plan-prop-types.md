@@ -222,41 +222,32 @@ Color_Atomic_Property_Mapper_Base extends Atomic_Property_Mapper_Base
 
 ## Recommended Architecture for Our Plugin
 
-### Phase 1: Refactor Base Architecture
+### Phase 1: Refactor Base Architecture ✅ COMPLETED
 
-1. **Create Registry Pattern**
+**Architectural Decision**: Following the Implementation Guidelines ("Max 2 levels", "Extend `Property_Converter_Base` (not deeper hierarchies)"), we use **helper classes** instead of specialized inheritance bases. This keeps the architecture simple while providing shared functionality.
+
+1. **Registry Pattern** ✅
+   - `Converter_Registry` exists and works correctly
+
+2. **Helper Classes (instead of specialized base classes)** ✅
+   - Converters extend `Property_Converter_Base` directly (2 levels max)
+   - Shared parsing logic lives in **parser classes** (like `Size_Value_Parser`)
+   - Each converter uses Elementor prop types directly
+
    ```
-   Converter_Registry (update existing)
-   ├── register(property, mapper)
-   ├── resolve(property) → mapper
-   └── get_supported_properties()
-   ```
+   Property_Converter_Base (abstract)           ← Single base class
+   ├── Color_Converter                          ← 2 levels
+   ├── Font_Size_Converter  → Size_Value_Parser ← Uses helper
+   ├── Display_Converter                        ← 2 levels
+   └── ...
 
-2. **Create Specialized Base Classes**
-   ```
-   Property_Mapper_Base (abstract)
-   ├── supports(property)
-   ├── map_to_atomic(property, value)
-   └── get_supported_properties()
-
-   Color_Property_Mapper_Base extends Property_Mapper_Base
-   ├── parse_color_value(value)
-   └── create_color_atomic(value)
-
-   Size_Property_Mapper_Base extends Property_Mapper_Base
-   ├── parse_size_value(value) → {size, unit}
-   └── create_size_atomic(size, unit)
-
-   String_Property_Mapper_Base extends Property_Mapper_Base
-   ├── get_allowed_values()
-   └── create_string_atomic(value)
-
-   Dimensions_Property_Mapper_Base extends Property_Mapper_Base
-   ├── parse_shorthand(value) → {block-start, inline-end, ...}
-   └── create_dimensions_atomic(dimensions)
+   Helper Classes (composition, not inheritance):
+   ├── Size_Value_Parser    ← parse(), is_valid_unit()
+   ├── Color_Value_Parser   ← (to be created if needed)
+   └── Shorthand_Expander   ← (Phase 4)
    ```
 
-3. **Create Size Value Parser**
+3. **Size Value Parser** ✅
    ```
    Size_Value_Parser
    ├── parse(value) → {size: number, unit: string}
@@ -264,19 +255,25 @@ Color_Atomic_Property_Mapper_Base extends Atomic_Property_Mapper_Base
    └── SUPPORTED_UNITS = [px, em, rem, %, vw, vh, ...]
    ```
 
-### Phase 2: Implement Property Mappers (Priority Order)
+**Why helpers over inheritance?**
+- Simpler mental model (2 levels vs 3+)
+- More flexible - converters can use multiple helpers
+- Easier to test - parser classes are standalone
+- Matches our Color_Converter refinement pattern
+
+### Phase 2: Implement Property Mappers (Priority Order) 🔄 IN PROGRESS
 
 **High Priority (Most Common)**
-1. `Font_Size_Mapper` - size-based
-2. `Background_Color_Mapper` - color-based
-3. `Padding_Mapper` - dimensions-based
-4. `Margin_Mapper` - dimensions-based
-5. `Width_Mapper` - size-based
-6. `Height_Mapper` - size-based
+1. ✅ `Font_Size_Converter` - size-based
+2. ✅ `Background_Color_Converter` - color-based
+3. ✅ `Padding_Converter` - size-based (single values; shorthand → Phase 4)
+4. ✅ `Margin_Converter` - size-based (single values; shorthand → Phase 4)
+5. ✅ `Width_Converter` - size-based (width, min-width, max-width)
+6. ✅ `Height_Converter` - size-based (height, min-height, max-height)
 
 **Medium Priority (Layout)**
-7. `Display_Mapper` - string enum
-8. `Position_Mapper` - string enum
+7. ✅ `Display_Converter` - string enum
+8. `Position_Converter` - string enum
 9. `Flex_Direction_Mapper` - string enum
 10. `Justify_Content_Mapper` - string enum
 11. `Align_Items_Mapper` - string enum

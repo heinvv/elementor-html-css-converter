@@ -8,6 +8,13 @@
 namespace ElementorHtmlCssConverter;
 
 use ElementorHtmlCssConverter\Converters\Color_Converter;
+use ElementorHtmlCssConverter\Converters\Background_Color_Converter;
+use ElementorHtmlCssConverter\Converters\Font_Size_Converter;
+use ElementorHtmlCssConverter\Converters\Width_Converter;
+use ElementorHtmlCssConverter\Converters\Height_Converter;
+use ElementorHtmlCssConverter\Converters\Padding_Converter;
+use ElementorHtmlCssConverter\Converters\Margin_Converter;
+use ElementorHtmlCssConverter\Converters\Display_Converter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -92,6 +99,13 @@ final class Plugin {
 	 */
 	private function register_converters(): void {
 		$this->registry->register( new Color_Converter() );
+		$this->registry->register( new Background_Color_Converter() );
+		$this->registry->register( new Font_Size_Converter() );
+		$this->registry->register( new Width_Converter() );
+		$this->registry->register( new Height_Converter() );
+		$this->registry->register( new Padding_Converter() );
+		$this->registry->register( new Margin_Converter() );
+		$this->registry->register( new Display_Converter() );
 	}
 
 	/**

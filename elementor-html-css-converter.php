@@ -100,8 +100,19 @@ function ehcc_load_files() {
 	require_once EHCC_PATH . 'includes/class-style-definition-builder.php';
 	require_once EHCC_PATH . 'includes/class-elementor-document-service.php';
 
+	// Parsers.
+	require_once EHCC_PATH . 'includes/parsers/class-size-value-parser.php';
+	require_once EHCC_PATH . 'includes/parsers/class-color-value-parser.php';
+
 	// Converters.
 	require_once EHCC_PATH . 'includes/converters/class-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-background-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-font-size-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-width-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-height-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-padding-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-margin-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-display-converter.php';
 
 	// Conversion services.
 	require_once EHCC_PATH . 'includes/class-css-converter.php';

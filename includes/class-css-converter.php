@@ -91,7 +91,8 @@ class Css_Converter {
 			if ( null !== $converter ) {
 				$converted = $converter->convert( $property, $value );
 				if ( null !== $converted ) {
-					$props[ $property ] = $converted;
+					$output_property = $converter->get_output_property( $property );
+					$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
 				} else {
 					$unsupported[ $property ] = $value;
 				}
@@ -109,6 +110,60 @@ class Css_Converter {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Merge two props, handling dimensions merging.
+	 *
+	 * @param array|null $existing Existing prop value or null.
+	 * @param array      $new      New prop value to merge.
+	 * @return array The merged prop value.
+	 */
+	private function merge_props( ?array $existing, array $new ): array {
+		if ( null === $existing ) {
+			return $new;
+		}
+
+		// Check if both are dimensions type (have $$type = 'dimensions')
+		if ( $this->is_dimensions_prop( $existing ) && $this->is_dimensions_prop( $new ) ) {
+			return $this->merge_dimensions( $existing, $new );
+		}
+
+		// For non-dimensions props, new value overwrites
+		return $new;
+	}
+
+	/**
+	 * Check if a prop is a dimensions type.
+	 *
+	 * @param array $prop The prop to check.
+	 * @return bool True if it's a dimensions prop.
+	 */
+	private function is_dimensions_prop( array $prop ): bool {
+		return isset( $prop['$$type'] ) && 'dimensions' === $prop['$$type'];
+	}
+
+	/**
+	 * Merge two dimensions props, combining their dimension values.
+	 *
+	 * @param array $existing Existing dimensions prop.
+	 * @param array $new      New dimensions prop to merge.
+	 * @return array The merged dimensions prop.
+	 */
+	private function merge_dimensions( array $existing, array $new ): array {
+		$merged_value = $existing['value'] ?? [];
+
+		// Merge new dimension values into existing
+		if ( isset( $new['value'] ) && is_array( $new['value'] ) ) {
+			foreach ( $new['value'] as $dimension => $size_prop ) {
+				$merged_value[ $dimension ] = $size_prop;
+			}
+		}
+
+		return [
+			'$$type' => 'dimensions',
+			'value'  => $merged_value,
+		];
 	}
 
 	/**
