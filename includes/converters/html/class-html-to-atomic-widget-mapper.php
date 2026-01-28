@@ -55,15 +55,15 @@ class HTML_To_Atomic_Widget_Mapper {
 		'button'     => [ 'type' => 'e-button' ],
 		'a'          => [ 'type' => 'e-button' ],
 		'img'        => [ 'type' => 'e-image' ],
-		'div'        => [ 'type' => 'e-flexbox' ],
-		'section'    => [ 'type' => 'e-flexbox' ],
-		'article'    => [ 'type' => 'e-flexbox' ],
-		'header'     => [ 'type' => 'e-flexbox' ],
-		'footer'     => [ 'type' => 'e-flexbox' ],
-		'main'       => [ 'type' => 'e-flexbox' ],
-		'aside'      => [ 'type' => 'e-flexbox' ],
-		'span'       => [ 'type' => 'e-flexbox' ],
-		'nav'        => [ 'type' => 'e-flexbox' ],
+		'div'        => [ 'type' => 'e-div-block' ],
+		'section'    => [ 'type' => 'e-div-block' ],
+		'article'    => [ 'type' => 'e-div-block' ],
+		'header'     => [ 'type' => 'e-div-block' ],
+		'footer'     => [ 'type' => 'e-div-block' ],
+		'main'       => [ 'type' => 'e-div-block' ],
+		'aside'      => [ 'type' => 'e-div-block' ],
+		'span'       => [ 'type' => 'e-div-block' ],
+		'nav'        => [ 'type' => 'e-div-block' ],
 	];
 
 	/**
@@ -83,7 +83,7 @@ class HTML_To_Atomic_Widget_Mapper {
 	 * @return bool True if container widget.
 	 */
 	public function is_container_widget( string $widget_type ): bool {
-		return 'e-flexbox' === $widget_type;
+		return 'e-div-block' === $widget_type || 'e-flexbox' === $widget_type;
 	}
 
 	/**

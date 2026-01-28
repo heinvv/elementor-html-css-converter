@@ -215,8 +215,7 @@ class Elementor_Document_Service {
 	/**
 	 * Add multiple widgets to the root level of a post.
 	 *
-	 * If there are multiple widgets, they are wrapped in an e-div-block container.
-	 * If there's only one widget and it's already a container, it's added directly.
+	 * All widgets are added directly to the root without wrapping.
 	 *
 	 * @param int   $post_id The post ID.
 	 * @param array $widgets Array of widget data to add.
@@ -244,33 +243,15 @@ class Elementor_Document_Service {
 		}
 		unset( $widget );
 
-		// Check if we need a wrapper container.
-		$needs_wrapper = $this->widgets_need_wrapper( $widgets );
-
-		if ( $needs_wrapper ) {
-			// Create a wrapper e-div-block container.
-			$container_id = $this->generate_element_id();
-			$wrapper      = [
-				'id'       => $container_id,
-				'elType'   => 'e-div-block',
-				'settings' => [],
-				'elements' => $widgets,
-				'styles'   => [],
-			];
-
-			$elements[] = $wrapper;
-		} else {
-			// Add widgets directly to root.
-			$container_id = $widget_ids[0] ?? null;
-			$elements     = array_merge( $elements, $widgets );
-		}
+		// Add all widgets directly to root (no wrapper).
+		$elements = array_merge( $elements, $widgets );
 
 		if ( ! $this->save_elements( $document, $elements ) ) {
 			return false;
 		}
 
 		return [
-			'container_id' => $container_id,
+			'container_id' => null,
 			'widget_ids'   => $widget_ids,
 		];
 	}
@@ -278,33 +259,50 @@ class Elementor_Document_Service {
 	/**
 	 * Check if widgets need a wrapper container.
 	 *
-	 * Widgets need a wrapper if:
-	 * - There are multiple widgets, OR
-	 * - The single widget is not a container type (e-div-block, e-flexbox)
+	 * Widgets need a wrapper only if ANY widget is a non-container type.
+	 * If all widgets are containers, they are added directly to root.
 	 *
 	 * @param array $widgets Array of widgets.
 	 * @return bool True if wrapper is needed.
 	 */
 	private function widgets_need_wrapper( array $widgets ): bool {
-		// Multiple widgets always need a wrapper.
-		if ( count( $widgets ) > 1 ) {
-			return true;
-		}
-
-		// Single widget - check if it's already a container.
-		if ( count( $widgets ) === 1 ) {
-			$widget  = $widgets[0];
-			$el_type = $widget['elType'] ?? '';
-
-			// Container types don't need a wrapper.
-			$container_types = [ 'e-div-block', 'e-flexbox', 'container' ];
-			if ( in_array( $el_type, $container_types, true ) ) {
-				return false;
+		foreach ( $widgets as $widget ) {
+			if ( ! $this->is_container_element( $widget ) ) {
+				return true;
 			}
 		}
 
-		// Content widgets need a wrapper.
-		return true;
+		// All widgets are containers - no wrapper needed.
+		return false;
+	}
+
+	/**
+	 * Check if a widget is a container element.
+	 *
+	 * @param array $widget Widget data.
+	 * @return bool True if container.
+	 */
+	private function is_container_element( array $widget ): bool {
+		$container_types = [ 'e-div-block', 'e-flexbox', 'container' ];
+
+		// Check elType field.
+		$el_type = $widget['elType'] ?? '';
+		if ( in_array( $el_type, $container_types, true ) ) {
+			return true;
+		}
+
+		// Check widgetType field (for atomic widgets).
+		$widget_type = $widget['widgetType'] ?? '';
+		if ( in_array( $widget_type, $container_types, true ) ) {
+			return true;
+		}
+
+		// Check if it has child elements (containers have children).
+		if ( ! empty( $widget['elements'] ) && is_array( $widget['elements'] ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

@@ -48,9 +48,9 @@ class Atomic_Widget_Settings_Preparer {
 
 		$settings = $this->add_content_settings( $settings, $widget_type, $content, $attributes );
 
-		foreach ( $atomic_props as $prop_name => $atomic_prop ) {
-			$settings[ $prop_name ] = $atomic_prop;
-		}
+		// Note: atomic_props are NOT added to settings here.
+		// They are processed separately by Widget_Styles_Integrator which creates
+		// the proper styles structure and adds class references to settings.classes.
 
 		$settings = $this->add_default_settings( $settings, $widget_type );
 
@@ -81,17 +81,20 @@ class Atomic_Widget_Settings_Preparer {
 	private function add_content_settings( array $settings, string $widget_type, string $content, array $attributes ): array {
 		switch ( $widget_type ) {
 			case 'e-heading':
-				$settings['title'] = $content;
+				// title uses Html_Prop_Type in Elementor.
+				$settings['title'] = $this->create_atomic_prop( 'html', $content );
 				$settings['tag']   = $this->create_atomic_prop( 'string', $this->extract_heading_tag( $attributes ) );
 				$settings['level'] = $this->extract_heading_level( $attributes );
 				break;
 
 			case 'e-paragraph':
-				$settings['text'] = $content;
+				// e-paragraph uses 'paragraph' (not 'text') with Html_Prop_Type.
+				$settings['paragraph'] = $this->create_atomic_prop( 'html', $content );
 				break;
 
 			case 'e-button':
-				$settings['text'] = $content;
+				// e-button uses String_Prop_Type for text.
+				$settings['text'] = $this->create_atomic_prop( 'string', $content );
 				if ( isset( $attributes['href'] ) ) {
 					$settings['link'] = $this->create_link_prop( $attributes['href'], $attributes );
 				}
@@ -99,7 +102,7 @@ class Atomic_Widget_Settings_Preparer {
 
 			case 'e-image':
 				$settings['src'] = $this->create_image_src_prop( $attributes['src'] ?? '' );
-				$settings['alt'] = $attributes['alt'] ?? '';
+				$settings['alt'] = $this->create_atomic_prop( 'string', $attributes['alt'] ?? '' );
 				if ( isset( $attributes['width'] ) ) {
 					$settings['width'] = $this->create_atomic_prop( 'string', $attributes['width'] );
 				}

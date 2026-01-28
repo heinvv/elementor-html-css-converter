@@ -87,7 +87,10 @@ class Html_Converter {
 
 		$widgets_with_styles = $this->integrate_styles( $widgets, $widget_data_array );
 
-		return $this->build_success_result( $widgets_with_styles );
+		// Wrap non-container top-level widgets in div containers.
+		$wrapped_widgets = $this->wrap_non_container_widgets( $widgets_with_styles );
+
+		return $this->build_success_result( $wrapped_widgets );
 	}
 
 	/**
@@ -120,17 +123,117 @@ class Html_Converter {
 		$widgets_with_styles = [];
 
 		foreach ( $widgets as $index => $widget ) {
-			$widget_data  = $widget_data_array[ $index ] ?? [];
-			$atomic_props = $widget_data['atomic_props'] ?? [];
-
-			if ( ! empty( $atomic_props ) ) {
-				$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $atomic_props );
-			}
+			$widget_data = $widget_data_array[ $index ] ?? [];
+			$widget      = $this->integrate_styles_recursive( $widget, $widget_data );
 
 			$widgets_with_styles[] = $widget;
 		}
 
 		return $widgets_with_styles;
+	}
+
+	/**
+	 * Recursively integrate styles into a widget and its children.
+	 *
+	 * @param array $widget      Widget JSON structure.
+	 * @param array $widget_data Original widget data with atomic props and children.
+	 * @return array Widget with integrated styles.
+	 */
+	private function integrate_styles_recursive( array $widget, array $widget_data ): array {
+		$atomic_props = $widget_data['atomic_props'] ?? [];
+
+		// Integrate styles for this widget.
+		if ( ! empty( $atomic_props ) ) {
+			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $atomic_props );
+		}
+
+		// Recursively process children.
+		if ( ! empty( $widget['elements'] ) && ! empty( $widget_data['children'] ) ) {
+			$processed_children = [];
+
+			foreach ( $widget['elements'] as $child_index => $child_widget ) {
+				$child_data           = $widget_data['children'][ $child_index ] ?? [];
+				$processed_children[] = $this->integrate_styles_recursive( $child_widget, $child_data );
+			}
+
+			$widget['elements'] = $processed_children;
+		}
+
+		return $widget;
+	}
+
+	/**
+	 * Wrap non-container top-level widgets in div containers.
+	 *
+	 * Elementor requires top-level elements to be containers.
+	 * Non-container widgets (heading, paragraph, button, image) must be wrapped.
+	 *
+	 * @param array $widgets Array of widgets.
+	 * @return array Widgets with non-containers wrapped.
+	 */
+	private function wrap_non_container_widgets( array $widgets ): array {
+		$wrapped_widgets = [];
+
+		foreach ( $widgets as $widget ) {
+			if ( $this->is_container_widget( $widget ) ) {
+				// Already a container, keep as-is.
+				$wrapped_widgets[] = $widget;
+			} else {
+				// Wrap non-container in a div-block.
+				$wrapped_widgets[] = $this->create_wrapper_container( $widget );
+			}
+		}
+
+		return $wrapped_widgets;
+	}
+
+	/**
+	 * Check if a widget is a container type.
+	 *
+	 * @param array $widget Widget data.
+	 * @return bool True if container.
+	 */
+	private function is_container_widget( array $widget ): bool {
+		$container_types = [ 'e-div-block', 'e-flexbox', 'container' ];
+
+		// Check elType (for containers built with Element_Builder).
+		$el_type = $widget['elType'] ?? '';
+		if ( in_array( $el_type, $container_types, true ) ) {
+			return true;
+		}
+
+		// Check widgetType.
+		$widget_type = $widget['widgetType'] ?? '';
+		if ( in_array( $widget_type, $container_types, true ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Create a wrapper div-block container for a widget.
+	 *
+	 * @param array $widget Widget to wrap.
+	 * @return array Wrapper container with widget as child.
+	 */
+	private function create_wrapper_container( array $widget ): array {
+		// Create a minimal e-div-block container.
+		$wrapper = [
+			'elType'          => 'e-div-block',
+			'settings'        => [
+				'classes' => [
+					'$$type' => 'classes',
+					'value'  => [],
+				],
+			],
+			'isLocked'        => false,
+			'editor_settings' => [],
+			'elements'        => [ $widget ],
+			'styles'          => [],
+		];
+
+		return $wrapper;
 	}
 
 	/**

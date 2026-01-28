@@ -385,23 +385,35 @@ class Rest_Api {
 				'callback'            => [ $this, 'handle_convert_html_request' ],
 				'permission_callback' => [ $this, 'check_permissions' ],
 				'args'                => [
-					'html'     => [
+					'html'       => [
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => [ $this, 'sanitize_html_with_styles' ],
 					],
-					'options'  => [
+					'options'    => [
 						'type'    => 'object',
 						'default' => [],
 					],
-					'postId'   => [
+					'postId'     => [
 						'type'              => 'integer',
 						'required'          => false,
 						'sanitize_callback' => 'absint',
 					],
-					'widgetId' => [
+					'widgetId'   => [
 						'type'              => 'string',
 						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'postTitle'  => [
+						'type'              => 'string',
+						'required'          => false,
+						'default'           => 'Converted HTML',
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'postStatus' => [
+						'type'              => 'string',
+						'required'          => false,
+						'default'           => 'draft',
 						'sanitize_callback' => 'sanitize_text_field',
 					],
 				],
@@ -412,8 +424,9 @@ class Rest_Api {
 	/**
 	 * Handle the HTML to widgets conversion request.
 	 *
-	 * When postId and widgetId are provided, the converted widgets are inserted
-	 * into the specified container widget.
+	 * When postId is provided, widgets are inserted into that post.
+	 * When widgetId is also provided, widgets are inserted into that specific container.
+	 * When postId is NOT provided, a new Elementor page is auto-created.
 	 *
 	 * @param \WP_REST_Request $request The REST request.
 	 * @return \WP_REST_Response The REST response.
@@ -421,10 +434,12 @@ class Rest_Api {
 	public function handle_convert_html_request( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
 
-		$html       = $params['html'] ?? '';
-		$options    = $params['options'] ?? [];
-		$post_id    = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
-		$widget_id  = $params['widgetId'] ?? '';
+		$html        = $params['html'] ?? '';
+		$options     = $params['options'] ?? [];
+		$post_id     = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
+		$widget_id   = $params['widgetId'] ?? '';
+		$post_title  = $params['postTitle'] ?? 'Converted HTML';
+		$post_status = $params['postStatus'] ?? 'draft';
 
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
 
@@ -433,49 +448,63 @@ class Rest_Api {
 			return rest_ensure_response( $result );
 		}
 
-		// If postId is provided, insert widgets into the post.
-		if ( $post_id > 0 ) {
-			if ( ! empty( $widget_id ) ) {
-				// Insert into specific container.
-				$inserted_ids = $this->document_service->add_widgets_to_container(
-					$post_id,
-					$widget_id,
-					$result['widgets']
-				);
+		// If no postId provided, auto-create a new Elementor page.
+		if ( 0 === $post_id ) {
+			$post_result = $this->document_service->create_post( $post_title, $post_status );
 
-				if ( false === $inserted_ids ) {
-					return rest_ensure_response( [
-						'success' => false,
-						'error'   => 'Failed to insert widgets into the container. Check that postId and widgetId are valid.',
-						'widgets' => $result['widgets'],
-					] );
-				}
-
-				$result['inserted']   = true;
-				$result['widget_ids'] = $inserted_ids;
-			} else {
-				// Insert to root level (wrapped in container if needed).
-				$insert_result = $this->document_service->add_widgets_to_root(
-					$post_id,
-					$result['widgets']
-				);
-
-				if ( false === $insert_result ) {
-					return rest_ensure_response( [
-						'success' => false,
-						'error'   => 'Failed to insert widgets into the post. Check that postId is valid.',
-						'widgets' => $result['widgets'],
-					] );
-				}
-
-				$result['inserted']     = true;
-				$result['container_id'] = $insert_result['container_id'];
-				$result['widget_ids']   = $insert_result['widget_ids'];
+			if ( ! $post_result ) {
+				return rest_ensure_response( [
+					'success' => false,
+					'error'   => 'Failed to create new Elementor page.',
+					'widgets' => $result['widgets'],
+				] );
 			}
 
-			$result['post_id']  = $post_id;
-			$result['edit_url'] = $this->document_service->get_edit_url( $post_id );
+			$post_id               = $post_result['post_id'];
+			$result['page_created'] = true;
 		}
+
+		// Insert widgets into the post.
+		if ( ! empty( $widget_id ) ) {
+			// Insert into specific container.
+			$inserted_ids = $this->document_service->add_widgets_to_container(
+				$post_id,
+				$widget_id,
+				$result['widgets']
+			);
+
+			if ( false === $inserted_ids ) {
+				return rest_ensure_response( [
+					'success' => false,
+					'error'   => 'Failed to insert widgets into the container. Check that postId and widgetId are valid.',
+					'widgets' => $result['widgets'],
+				] );
+			}
+
+			$result['inserted']   = true;
+			$result['widget_ids'] = $inserted_ids;
+		} else {
+			// Insert to root level.
+			$insert_result = $this->document_service->add_widgets_to_root(
+				$post_id,
+				$result['widgets']
+			);
+
+			if ( false === $insert_result ) {
+				return rest_ensure_response( [
+					'success' => false,
+					'error'   => 'Failed to insert widgets into the post. Check that postId is valid.',
+					'widgets' => $result['widgets'],
+				] );
+			}
+
+			$result['inserted']     = true;
+			$result['container_id'] = $insert_result['container_id'];
+			$result['widget_ids']   = $insert_result['widget_ids'];
+		}
+
+		$result['post_id']  = $post_id;
+		$result['edit_url'] = $this->document_service->get_edit_url( $post_id );
 
 		return rest_ensure_response( $result );
 	}
