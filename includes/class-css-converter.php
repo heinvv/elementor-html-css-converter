@@ -56,6 +56,20 @@ class Css_Converter {
 	}
 
 	/**
+	 * Convert an array of CSS properties to atomic format.
+	 *
+	 * This is the public entry point for converting pre-parsed CSS properties.
+	 * Used by Atomic_Data_Parser to avoid duplicating conversion logic.
+	 *
+	 * @param array $properties Associative array of property => value.
+	 * @return array Atomic props (without 'props' wrapper).
+	 */
+	public function convert_properties( array $properties ): array {
+		$result = $this->convert_properties_to_atomic( $properties );
+		return $result['props'] ?? [];
+	}
+
+	/**
 	 * Parse a CSS string into property-value pairs.
 	 *
 	 * @param string $css_string The CSS string to parse.
@@ -149,7 +163,7 @@ class Css_Converter {
 	}
 
 	/**
-	 * Merge two props, handling dimensions merging.
+	 * Merge two props, handling dimensions and flex merging.
 	 *
 	 * @param array|null $existing Existing prop value or null.
 	 * @param array      $new      New prop value to merge.
@@ -165,7 +179,12 @@ class Css_Converter {
 			return $this->merge_dimensions( $existing, $new );
 		}
 
-		// For non-dimensions props, new value overwrites
+		// Check if both are flex type (have $$type = 'flex')
+		if ( $this->is_flex_prop( $existing ) && $this->is_flex_prop( $new ) ) {
+			return $this->merge_flex( $existing, $new );
+		}
+
+		// For other props, new value overwrites
 		return $new;
 	}
 
@@ -198,6 +217,41 @@ class Css_Converter {
 
 		return [
 			'$$type' => 'dimensions',
+			'value'  => $merged_value,
+		];
+	}
+
+	/**
+	 * Check if a prop is a flex type.
+	 *
+	 * @param array $prop The prop to check.
+	 * @return bool True if it's a flex prop.
+	 */
+	private function is_flex_prop( array $prop ): bool {
+		return isset( $prop['$$type'] ) && 'flex' === $prop['$$type'];
+	}
+
+	/**
+	 * Merge two flex props, combining their component values.
+	 *
+	 * New values override existing values for the same component.
+	 *
+	 * @param array $existing Existing flex prop.
+	 * @param array $new      New flex prop to merge.
+	 * @return array The merged flex prop.
+	 */
+	private function merge_flex( array $existing, array $new ): array {
+		$merged_value = $existing['value'] ?? [];
+
+		// Merge new flex component values into existing
+		if ( isset( $new['value'] ) && is_array( $new['value'] ) ) {
+			foreach ( $new['value'] as $component => $component_value ) {
+				$merged_value[ $component ] = $component_value;
+			}
+		}
+
+		return [
+			'$$type' => 'flex',
 			'value'  => $merged_value,
 		];
 	}

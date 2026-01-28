@@ -3,6 +3,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Parsers\Size_Value_Parser;
+use Elementor\Modules\AtomicWidgets\PropTypes\Flex_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Number_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
@@ -13,15 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Flex Shorthand Converter
  *
- * Expands flex shorthand property into separate flex-grow, flex-shrink, and flex-basis properties.
- * This matches how Elementor's atomic widgets handle flex - as separate properties rather than a combined type.
+ * Converts flex shorthand property to Elementor's Flex_Prop_Type.
+ * The Flex_Transformer in Elementor will render this as a CSS flex shorthand.
  *
  * Input: "flex: 1 0 auto"
- * Output: [
- *   'flex-grow' => Number_Prop_Type,
- *   'flex-shrink' => Number_Prop_Type,
- *   'flex-basis' => Size_Prop_Type
- * ]
+ * Output: Flex_Prop_Type with flexGrow, flexShrink, flexBasis
  */
 class Flex_Converter extends Property_Converter_Base {
 
@@ -45,17 +42,17 @@ class Flex_Converter extends Property_Converter_Base {
 		// Handle keyword values
 		if ( 'none' === $value ) {
 			// flex: none = flex: 0 0 auto
-			return $this->build_expanded_properties( 0, 0, [ 'size' => 'auto', 'unit' => 'custom' ] );
+			return $this->generate_flex( 0, 0, [ 'size' => 'auto', 'unit' => 'custom' ] );
 		}
 
 		if ( 'auto' === $value ) {
 			// flex: auto = flex: 1 1 auto
-			return $this->build_expanded_properties( 1, 1, [ 'size' => 'auto', 'unit' => 'custom' ] );
+			return $this->generate_flex( 1, 1, [ 'size' => 'auto', 'unit' => 'custom' ] );
 		}
 
 		if ( 'initial' === $value ) {
 			// flex: initial = flex: 0 1 auto
-			return $this->build_expanded_properties( 0, 1, [ 'size' => 'auto', 'unit' => 'custom' ] );
+			return $this->generate_flex( 0, 1, [ 'size' => 'auto', 'unit' => 'custom' ] );
 		}
 
 		// Parse shorthand values
@@ -133,7 +130,7 @@ class Flex_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		return $this->build_expanded_properties( $grow, $shrink, $basis );
+		return $this->generate_flex( $grow, $shrink, $basis );
 	}
 
 	private function parse_basis( string $value ): ?array {
@@ -157,18 +154,18 @@ class Flex_Converter extends Property_Converter_Base {
 	}
 
 	/**
-	 * Build expanded properties from parsed flex values.
+	 * Generate a Flex_Prop_Type from parsed values.
 	 *
-	 * @param float $grow  The flex-grow value.
+	 * @param float $grow   The flex-grow value.
 	 * @param float $shrink The flex-shrink value.
 	 * @param array $basis  The flex-basis value.
-	 * @return array Associative array of expanded properties.
+	 * @return array The Flex_Prop_Type array.
 	 */
-	private function build_expanded_properties( float $grow, float $shrink, array $basis ): array {
-		return [
-			'flex-grow'   => Number_Prop_Type::generate( $grow ),
-			'flex-shrink' => Number_Prop_Type::generate( $shrink ),
-			'flex-basis'  => Size_Prop_Type::generate( $basis ),
-		];
+	private function generate_flex( float $grow, float $shrink, array $basis ): array {
+		return Flex_Prop_Type::generate( [
+			'flexGrow'   => Number_Prop_Type::generate( $grow ),
+			'flexShrink' => Number_Prop_Type::generate( $shrink ),
+			'flexBasis'  => Size_Prop_Type::generate( $basis ),
+		] );
 	}
 }

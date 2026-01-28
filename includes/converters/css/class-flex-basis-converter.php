@@ -3,12 +3,19 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Parsers\Size_Value_Parser;
+use Elementor\Modules\AtomicWidgets\PropTypes\Flex_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Flex Basis Converter
+ *
+ * Converts flex-basis to a Flex_Prop_Type with only flexBasis set.
+ * This allows merging with other flex properties.
+ */
 class Flex_Basis_Converter extends Property_Converter_Base {
 
 	private const SUPPORTED_PROPERTIES = [ 'flex-basis' ];
@@ -25,6 +32,13 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	/**
+	 * Output property is 'flex' to allow merging with flex shorthand.
+	 */
+	public function get_output_property( string $property ): string {
+		return 'flex';
+	}
+
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
@@ -38,7 +52,9 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 
 		// Check for keyword values
 		if ( isset( self::KEYWORD_VALUES[ $value ] ) ) {
-			return Size_Prop_Type::generate( self::KEYWORD_VALUES[ $value ] );
+			return Flex_Prop_Type::generate( [
+				'flexBasis' => Size_Prop_Type::generate( self::KEYWORD_VALUES[ $value ] ),
+			] );
 		}
 
 		// Try to parse as size value
@@ -48,7 +64,10 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		return Size_Prop_Type::generate( $parsed );
+		// Return a Flex_Prop_Type with only flexBasis set
+		return Flex_Prop_Type::generate( [
+			'flexBasis' => Size_Prop_Type::generate( $parsed ),
+		] );
 	}
 
 	private function is_valid_string_value( $value ): bool {

@@ -11,6 +11,7 @@
 namespace ElementorHtmlCssConverter\Converters\Html;
 
 use ElementorHtmlCssConverter\Converter_Registry;
+use ElementorHtmlCssConverter\Css_Converter;
 use ElementorHtmlCssConverter\Parsers\Id_Style_Extractor;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -33,11 +34,11 @@ class Atomic_Data_Parser {
 	private HTML_To_Atomic_Widget_Mapper $widget_mapper;
 
 	/**
-	 * Converter registry for CSS to atomic props conversion.
+	 * CSS converter for CSS to atomic props conversion.
 	 *
-	 * @var Converter_Registry
+	 * @var Css_Converter
 	 */
-	private Converter_Registry $converter_registry;
+	private Css_Converter $css_converter;
 
 	/**
 	 * ID style extractor for parsing #id CSS rules.
@@ -77,7 +78,7 @@ class Atomic_Data_Parser {
 	 */
 	public function __construct( Converter_Registry $converter_registry ) {
 		$this->widget_mapper      = new HTML_To_Atomic_Widget_Mapper();
-		$this->converter_registry = $converter_registry;
+		$this->css_converter      = new Css_Converter( $converter_registry );
 		$this->id_style_extractor = new Id_Style_Extractor();
 	}
 
@@ -211,118 +212,16 @@ class Atomic_Data_Parser {
 	}
 
 	/**
-	 * Convert CSS styles to atomic props using the converter registry.
+	 * Convert CSS styles to atomic props using the CSS converter.
+	 *
+	 * Delegates to Css_Converter to ensure consistent conversion logic
+	 * across all entry points (CSS string conversion and HTML parsing).
 	 *
 	 * @param array $styles CSS property-value pairs.
 	 * @return array Atomic props.
 	 */
 	private function convert_styles_to_atomic_props( array $styles ): array {
-		$atomic_props = [];
-
-		foreach ( $styles as $property => $value ) {
-			$converter = $this->converter_registry->resolve( $property );
-			if ( ! $converter ) {
-				continue;
-			}
-
-			$converted = $converter->convert( $property, $value );
-			if ( null === $converted ) {
-				continue;
-			}
-
-			$output_property = $converter->get_output_property( $property );
-
-			if ( $this->is_multi_property_result( $converted ) ) {
-				foreach ( $converted as $expanded_property => $expanded_value ) {
-					$atomic_props[ $expanded_property ] = $this->merge_props(
-						$atomic_props[ $expanded_property ] ?? null,
-						$expanded_value
-					);
-				}
-			} else {
-				$atomic_props[ $output_property ] = $this->merge_props(
-					$atomic_props[ $output_property ] ?? null,
-					$converted
-				);
-			}
-		}
-
-		return $atomic_props;
-	}
-
-	/**
-	 * Check if conversion result contains multiple properties.
-	 *
-	 * @param array $result Conversion result.
-	 * @return bool True if multi-property result.
-	 */
-	private function is_multi_property_result( array $result ): bool {
-		if ( isset( $result['$$type'] ) ) {
-			return false;
-		}
-
-		foreach ( $result as $value ) {
-			if ( is_array( $value ) && isset( $value['$$type'] ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Merge atomic props, handling dimensions specially.
-	 *
-	 * @param array|null $existing Existing prop.
-	 * @param array      $new      New prop.
-	 * @return array Merged prop.
-	 */
-	private function merge_props( ?array $existing, array $new ): array {
-		if ( null === $existing ) {
-			return $new;
-		}
-
-		if ( $this->is_dimensions_prop( $existing ) && $this->is_dimensions_prop( $new ) ) {
-			return $this->merge_dimensions_props( $existing, $new );
-		}
-
-		return $new;
-	}
-
-	/**
-	 * Check if prop is a dimensions type.
-	 *
-	 * @param array $prop Atomic prop.
-	 * @return bool True if dimensions.
-	 */
-	private function is_dimensions_prop( array $prop ): bool {
-		return isset( $prop['$$type'] ) && 'dimensions' === $prop['$$type'];
-	}
-
-	/**
-	 * Merge two dimensions props.
-	 *
-	 * @param array $existing Existing dimensions prop.
-	 * @param array $new      New dimensions prop.
-	 * @return array Merged dimensions prop.
-	 */
-	private function merge_dimensions_props( array $existing, array $new ): array {
-		$merged_value = $existing['value'] ?? [];
-		$new_value    = $new['value'] ?? [];
-
-		foreach ( [ 'block-start', 'block-end', 'inline-start', 'inline-end' ] as $direction ) {
-			if ( isset( $new_value[ $direction ] ) && null !== $new_value[ $direction ] ) {
-				$merged_value[ $direction ] = $new_value[ $direction ];
-			}
-			if ( ! isset( $merged_value[ $direction ] ) ) {
-				$merged_value[ $direction ] = null;
-			}
-		}
-
-		return [
-			'$$type' => 'dimensions',
-			'value'  => $merged_value,
-		];
+		return $this->css_converter->convert_properties( $styles );
 	}
 
 	/**
