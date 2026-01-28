@@ -1,8 +1,25 @@
 # Task: Flex Property Merging
 
-## Status: Outstanding
+## Status: Completed ✓
 
-## Problem
+## Solution Implemented
+
+Updated `Flex_Converter` to expand the `flex` shorthand into separate properties (`flex-grow`, `flex-shrink`, `flex-basis`), following the same pattern as `Border_Converter`. This ensures:
+
+1. `flex: 1 0 auto; flex-grow: 2;` → outputs `flex-grow: 2` (individual property overrides)
+2. `flex-grow: 2; flex: 1 0 auto;` → outputs `flex-grow: 1` (shorthand wins when it comes later)
+3. Individual flex properties without shorthand work as before
+4. Flex shorthand without individual properties works as before
+
+### Changes Made
+- Modified `includes/converters/css/class-flex-converter.php`:
+  - Removed `Flex_Prop_Type` dependency (not supported by Elementor)
+  - Now returns associative array with `flex-grow`, `flex-shrink`, `flex-basis` keys
+  - Uses `Number_Prop_Type` for grow/shrink and `Size_Prop_Type` for basis
+
+---
+
+## Original Problem
 
 When CSS contains both the `flex` shorthand and individual flex properties, the individual properties should override the values from the shorthand. Currently, this doesn't work correctly.
 
