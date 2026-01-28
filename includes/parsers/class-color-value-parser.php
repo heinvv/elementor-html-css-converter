@@ -37,7 +37,7 @@ class Color_Value_Parser {
 	}
 
 	private static function is_transparent( string $value ): bool {
-		return 'transparent' === $value;
+		return 'transparent' === strtolower( $value );
 	}
 
 	private static function is_supported_color_format( string $value ): bool {

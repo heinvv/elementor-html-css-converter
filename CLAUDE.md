@@ -1,5 +1,43 @@
 # Claude Rules for elementor-html-css-converter
 
+## CRITICAL: Reference PR for Implementation Parity
+
+This plugin must maintain **exact parity** with Elementor's official `css-converter` module.
+
+### Reference Documentation
+
+**ALWAYS read `docs/CSS-CONVERTER-PR-REFERENCE.md` before making changes!**
+
+This file contains complete implementation details from the official PR.
+
+### PR Information
+
+- **PR #32856**: https://github.com/elementor/elementor/pull/32856
+- **Branch**: `hein/convert-css-to-widgets`
+- **Repository**: `elementor/elementor`
+
+### Fetching Code from PR
+
+```bash
+# Fetch a specific mapper file from the PR branch
+curl -s "https://raw.githubusercontent.com/elementor/elementor/hein/convert-css-to-widgets/modules/css-converter/convertors/css-properties/properties/FILENAME.php"
+
+# Example: fetch background-property-mapper.php
+curl -s "https://raw.githubusercontent.com/elementor/elementor/hein/convert-css-to-widgets/modules/css-converter/convertors/css-properties/properties/background-property-mapper.php"
+
+# List all PR files (page 2 has the css-converter module)
+curl -s "https://api.github.com/repos/elementor/elementor/pulls/32856/files?per_page=100&page=2" | jq -r '.[].filename'
+```
+
+### Key Implementation Rules
+
+1. **One "local" style per widget** - Merge props into existing style, don't create duplicates
+2. **Radial gradients MUST include `positions`** - Always add this field
+3. **Use Elementor PropType classes** - Never create raw `$$type` arrays manually
+4. **Dimensions use logical properties** - `top`→`block-start`, `right`→`inline-end`, etc.
+
+---
+
 ## Code Style
 
 ### Self-Documenting Code Over Comments

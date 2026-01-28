@@ -89,21 +89,38 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 		}
 
 		$styles_applied = $conversion_result['props'];
-		$style_definition = $this->style_builder->build( $styles_applied, $widget_id );
-		$style_id = $style_definition['id'];
 
-		// Capture $this for use in closure.
-		$applicator = $this;
+		// Check for existing "local" style and reuse it instead of creating a new one.
+		$existing_local_style = $this->find_existing_local_style( $widget );
+		$style_builder        = $this->style_builder;
+		$applicator           = $this;
 
-		$update_callback = function( $widget_data ) use ( $style_definition, $style_id, $applicator ) {
-			// Add style definition to styles property.
+		$update_callback = function( $widget_data ) use ( $styles_applied, $existing_local_style, $style_builder, $applicator, $widget_id ) {
 			if ( ! isset( $widget_data['styles'] ) ) {
 				$widget_data['styles'] = [];
 			}
-			$widget_data['styles'][ $style_id ] = $style_definition;
 
-			// Add class reference to settings for the style to be applied to HTML.
-			$widget_data = $applicator->add_class_reference_to_widget( $widget_data, $style_id );
+			if ( null !== $existing_local_style ) {
+				// Update existing local style - merge props into first variant.
+				$style_id = $existing_local_style['id'];
+
+				if ( isset( $widget_data['styles'][ $style_id ]['variants'][0]['props'] ) ) {
+					// Merge new props with existing props (new props take precedence).
+					$existing_props = $widget_data['styles'][ $style_id ]['variants'][0]['props'];
+					$merged_props   = array_merge( $existing_props, $styles_applied );
+					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
+				} else {
+					// No existing props, just set them.
+					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $styles_applied;
+				}
+			} else {
+				// Create new local style.
+				$style_definition = $style_builder->build( $styles_applied, $widget_id );
+				$style_id         = $style_definition['id'];
+
+				$widget_data['styles'][ $style_id ] = $style_definition;
+				$widget_data = $applicator->add_class_reference_to_widget( $widget_data, $style_id );
+			}
 
 			return $widget_data;
 		};
@@ -120,6 +137,26 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			$styles_applied,
 			$conversion_result['customCss'] ?? ''
 		);
+	}
+
+	/**
+	 * Find an existing "local" style in the widget.
+	 *
+	 * @param array $widget The widget data.
+	 * @return array|null The existing local style or null if not found.
+	 */
+	private function find_existing_local_style( array $widget ): ?array {
+		if ( empty( $widget['styles'] ) || ! is_array( $widget['styles'] ) ) {
+			return null;
+		}
+
+		foreach ( $widget['styles'] as $style ) {
+			if ( isset( $style['label'] ) && 'local' === $style['label'] ) {
+				return $style;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -335,20 +372,42 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 	/**
 	 * Add styles to widget.
 	 *
+	 * Reuses existing "local" style if present, otherwise creates a new one.
+	 *
 	 * @param array $widget       The widget data.
 	 * @param array $atomic_props The converted atomic properties.
 	 * @return array The widget with added styles.
 	 */
 	private function add_styles_to_widget( array $widget, array $atomic_props ): array {
-		$widget_id        = $this->get_widget_id( $widget );
-		$style_definition = $this->style_builder->build( $atomic_props, $widget_id );
-		$style_id         = $style_definition['id'];
-
 		$widget = $this->ensure_styles_property( $widget );
-		$widget['styles'][ $style_id ] = $style_definition;
 
-		// Add class reference to settings for the style to be applied to HTML.
-		$widget = $this->add_class_reference_to_widget( $widget, $style_id );
+		// Check for existing "local" style.
+		$existing_local_style = $this->find_existing_local_style( $widget );
+
+		if ( null !== $existing_local_style ) {
+			// Update existing local style - merge props into first variant.
+			$style_id = $existing_local_style['id'];
+
+			if ( isset( $widget['styles'][ $style_id ]['variants'][0]['props'] ) ) {
+				// Merge new props with existing props (new props take precedence).
+				$existing_props = $widget['styles'][ $style_id ]['variants'][0]['props'];
+				$merged_props   = array_merge( $existing_props, $atomic_props );
+				$widget['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
+			} else {
+				// No existing props, just set them.
+				$widget['styles'][ $style_id ]['variants'][0]['props'] = $atomic_props;
+			}
+		} else {
+			// Create new local style.
+			$widget_id        = $this->get_widget_id( $widget );
+			$style_definition = $this->style_builder->build( $atomic_props, $widget_id );
+			$style_id         = $style_definition['id'];
+
+			$widget['styles'][ $style_id ] = $style_definition;
+
+			// Add class reference to settings for the style to be applied to HTML.
+			$widget = $this->add_class_reference_to_widget( $widget, $style_id );
+		}
 
 		return $widget;
 	}

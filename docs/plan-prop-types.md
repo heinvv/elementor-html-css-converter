@@ -1,316 +1,453 @@
-# Plan: Add All Atomic Prop Types
+# Plan: Complete css-converter Module Implementation
 
-## Detailed Comparison: Color Converter
+## Reference: Elementor css-converter Module
 
-### CSS-Converter (Original)
+**IMPORTANT**: This is the authoritative reference for all implementations.
 
+| Item | Value |
+|------|-------|
+| **GitHub PR** | #32856 |
+| **Branch** | `hein/convert-css-to-widgets` |
+| **API Command** | `gh api "repos/elementor/elementor/contents/modules/atomic-widgets/styles/transformers?ref=hein/convert-css-to-widgets"` |
+
+To fetch any file from the reference implementation:
+```bash
+gh api "repos/elementor/elementor/contents/modules/atomic-widgets/styles/transformers/<filename>?ref=hein/convert-css-to-widgets" --jq '.content' | base64 -d
+```
+
+---
+
+## Overview
+
+This plan provides a complete mapping of all property mappers from the css-converter module in PR #32856. The goal is to implement **exact parity** with css-converter - no simplifications.
+
+---
+
+## COMPLETE PROPERTY MAPPER INVENTORY FROM PR #32856
+
+### All CSS Property Mappers in css-converter:
+
+| # | Mapper File | CSS Properties | Prop Type Output | Status |
+|---|-------------|----------------|------------------|--------|
+| 1 | `background-property-mapper.php` | `background`, `background-image` | `Background_Prop_Type` | ✅ IMPLEMENTED (gradients, images) |
+| 2 | `background-color-property-mapper.php` | `background-color` | `Background_Prop_Type` (nested Color) | ✅ IMPLEMENTED |
+| 3 | `color-property-mapper.php` | `color` | `Color_Prop_Type` | ✅ IMPLEMENTED |
+| 4 | `padding-property-mapper.php` | `padding` (shorthand) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
+| 5 | `atomic-padding-property-mapper.php` | `padding-*` (all variants) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
+| 6 | `margin-property-mapper.php` | `margin`, `margin-*` (all variants) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
+| 7 | `width-property-mapper.php` | `width`, `min-width`, `max-width` | `Size_Prop_Type` | ✅ IMPLEMENTED (keywords, calc) |
+| 8 | `height-property-mapper.php` | `height`, `min-height`, `max-height` | `Size_Prop_Type` | ✅ IMPLEMENTED (keywords, calc) |
+| 9 | `font-size-property-mapper.php` | `font-size` | `Size_Prop_Type` | ✅ IMPLEMENTED |
+| 10 | `display-property-mapper.php` | `display` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
+| 11 | `position-property-mapper.php` | `position` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
+| 12 | `flex-direction-property-mapper.php` | `flex-direction` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
+| 13 | `flex-properties-mapper.php` | `justify-content`, `align-items`, `align-content`, `align-self`, `flex-wrap`, `gap`, `row-gap`, `column-gap`, `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order` | Various | ✅ IMPLEMENTED (all properties) |
+| 14 | `border-property-mapper.php` | `border`, `border-top/right/bottom/left` | Multiple props | ❌ NOT IMPLEMENTED |
+| 15 | `border-radius-property-mapper.php` | `border-radius`, `border-*-*-radius` (all corners) | `Border_Radius_Prop_Type` | ✅ IMPLEMENTED |
+| 16 | `border-width-property-mapper.php` | (via border shorthand) | `Size_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 17 | `border-color-property-mapper.php` | (via border shorthand) | `Color_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 18 | `border-style-property-mapper.php` | (via border shorthand) | `String_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 19 | `box-shadow-property-mapper.php` | `box-shadow` | `Box_Shadow_Prop_Type` | ✅ IMPLEMENTED |
+| 20 | `text-shadow-property-mapper.php` | `text-shadow` | Similar to box-shadow | ❌ NOT IMPLEMENTED |
+| 21 | `opacity-property-mapper.php` | `opacity` | `Size_Prop_Type` (%) | ✅ IMPLEMENTED |
+| 22 | `font-weight-property-mapper.php` | `font-weight` | `String_Prop_Type` | ✅ IMPLEMENTED |
+| 23 | `font-style-property-mapper.php` | `font-style` | `String_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 24 | `text-align-property-mapper.php` | `text-align` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
+| 25 | `line-height-property-mapper.php` | `line-height` | `Size_Prop_Type` | ✅ IMPLEMENTED |
+| 26 | `letter-spacing-property-mapper.php` | `letter-spacing` | `Size_Prop_Type` | ✅ IMPLEMENTED |
+| 27 | `word-spacing-property-mapper.php` | `word-spacing` | `Size_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 28 | `text-transform-property-mapper.php` | `text-transform` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
+| 29 | `text-decoration-property-mapper.php` | `text-decoration` | `String_Prop_Type` | ✅ IMPLEMENTED |
+| 30 | `transform-property-mapper.php` | `transform`, `transform-origin`, `perspective` | `Transform_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 31 | `positioning-property-mapper.php` | `top`, `right`, `bottom`, `left`, `z-index`, `inset-*` | `Size_Prop_Type`, `Number_Prop_Type` | ❌ NOT IMPLEMENTED |
+
+**Summary:**
+- ✅ Fully Implemented: 22 converters
+- ❌ Not Implemented: 9 converters
+
+---
+
+## PHASE 1: FIX EXISTING CONVERTERS ✅ COMPLETED
+
+All Phase 1 fixes have been implemented:
+
+### 1.1 Background Property Converter - NEEDS GRADIENT SUPPORT
+
+**Current Implementation:** Only handles simple colors, rejects gradients/images.
+
+**css-converter (`background-property-mapper.php`) supports:**
+- Plain colors → `Background_Prop_Type` with `color` key
+- Linear gradients → `Background_Overlay_Prop_Type` with `Background_Gradient_Overlay_Prop_Type`
+- Radial gradients → Same overlay structure
+- Background images → `background-image-overlay` with URL
+- Composite shorthand → Color + image overlay combined
+
+**Required code from css-converter:**
 ```php
-class Color_Property_Mapper extends Color_Atomic_Property_Mapper_Base {
-    private const SUPPORTED_PROPERTIES = ['color'];
-
-    protected function generate_atomic_prop_type( string $property, string $color_value ): ?array {
-        return $this->create_color_prop_type( $color_value );
-    }
-}
-
-// Base class method:
-protected function create_color_prop_type( string $color_value ): array {
-    return Css_Variable_Aware_Color_Prop_Type::make()->generate( $color_value );
-}
-
-// Validation in base:
-private function is_valid_color_format( string $value ): bool {
-    if ( str_starts_with( $value, 'var(' ) ) {
-        return true;  // CSS variables SUPPORTED
-    }
-    // ... hex, rgb, hsl, named colors
-}
-
-// Named colors: hardcoded array of ~27 colors
-private function get_named_colors(): array {
-    return ['transparent', 'inherit', 'initial', 'unset', 'black', 'white', ...];
-}
+// Gradient structure
+$gradient_value = [
+    'type' => String_Prop_Type::make()->generate('linear'),
+    'angle' => Number_Prop_Type::make()->generate(90),
+    'stops' => Gradient_Color_Stop_Prop_Type::make()->generate([
+        Color_Stop_Prop_Type::make()->generate([
+            'color' => Color_Prop_Type::make()->generate('#ff0000'),
+            'offset' => Number_Prop_Type::make()->generate(0),
+        ]),
+        // ...more stops
+    ]),
+];
+return Background_Gradient_Overlay_Prop_Type::make()->generate($gradient_value);
 ```
 
-### Our Plugin (Refined)
+**File to modify:** `class-background-color-converter.php`
 
+---
+
+### 1.2 Gap Converter - NEEDS TWO-VALUE SUPPORT
+
+**Current Implementation:** Rejects multi-value gap, only accepts single value.
+
+**css-converter (`flex-properties-mapper.php`) supports:**
 ```php
-class Color_Converter extends Property_Converter_Base {
-    private const SUPPORTED_PROPERTIES = ['color'];
-    private const PATTERN_NAMED_COLOR = '/^[a-zA-Z0-9-]+$/';
-    private const TRANSPARENT_RGBA = 'rgba(0,0,0,0)';
+private function map_gap_shorthand(string $value): ?array {
+    $parts = preg_split('/\s+/', trim($value));
+    $row_gap = $this->parse_size_value($parts[0]);
+    $column_gap = isset($parts[1]) ? $this->parse_size_value($parts[1]) : $row_gap;
 
-    public function convert( string $property, $value ): ?array {
-        // ... validation
-        return Color_Prop_Type::generate( $normalized );
-    }
-}
-
-// CSS variables explicitly rejected (for now):
-private function is_css_variable( string $value ): bool {
-    return str_starts_with( $value, 'var(' );
-}
-
-private function is_supported_color_format( string $value ): bool {
-    if ( $this->is_css_variable( $value ) ) {
-        return false;  // CSS variables NOT supported yet
-    }
-    // ...
-}
-
-// Named colors: regex pattern (accepts ANY valid CSS color name)
-private function is_named_color( string $value ): bool {
-    return preg_match( self::PATTERN_NAMED_COLOR, $value ) === 1;
+    return Layout_Direction_Prop_Type::make()->generate([
+        'row' => Size_Prop_Type::make()->generate($row_gap),
+        'column' => Size_Prop_Type::make()->generate($column_gap),
+    ]);
 }
 ```
 
-### Key Differences
-
-| Aspect | CSS-Converter | Our Plugin |
-|--------|---------------|------------|
-| **Prop Type** | `Css_Variable_Aware_Color_Prop_Type` | `Color_Prop_Type` (direct) |
-| **CSS Variables** | Supported | Explicitly rejected |
-| **Named Colors** | Hardcoded array (~27 colors) | Regex pattern (any alphanumeric) |
-| **Transparent** | Handled in `parse_color_value()` | Constant `TRANSPARENT_RGBA` |
-| **Method Naming** | `map_to_v4_atomic()` | `convert()` |
-| **Base Class** | `Color_Atomic_Property_Mapper_Base` | `Property_Converter_Base` |
-| **Inheritance** | 3 levels deep | 2 levels deep |
-
-### Our Improvements
-
-1. **Simpler inheritance** - 2 levels vs 3 levels
-2. **Named color validation** - Regex accepts all valid CSS color names, not just 27 hardcoded
-3. **Explicit constants** - `TRANSPARENT_RGBA`, `PATTERN_NAMED_COLOR`
-4. **Self-documenting methods** - `is_empty_or_none()`, `is_transparent()`, `is_hex_color()`
-5. **Direct prop type usage** - Uses Elementor's `Color_Prop_Type` directly
-
-### CSS Variables (Future Work)
-
-Our plugin explicitly rejects CSS variables for now. This is intentional - CSS variable support requires:
-1. `Css_Variable_Aware_Color_Prop_Type` wrapper
-2. Variable resolution logic
-3. Fallback value handling
-
-This is planned for Phase 3.
+**File to modify:** `class-gap-converter.php`
 
 ---
 
-## Critical Analysis: Our Implementation vs CSS-Converter
+### 1.3 Width Converter - NEEDS KEYWORD SUPPORT
 
-### Our Current Approach (Color Converter)
+**Current Implementation:** Explicitly rejects all keywords, returns null.
 
-```
-Color_Converter
-├── extends Property_Converter_Base
-├── SUPPORTED_PROPERTIES = ['color']
-├── convert(property, value) → Color_Prop_Type::generate(value)
-└── validation/normalization methods
-```
-
-**Characteristics:**
-- Single class per property
-- Direct call to Elementor's prop type
-- Simple validation logic
-- No registry/factory pattern
-- No CSS variable support
-- No shorthand expansion
-
-### CSS-Converter Approach
-
-```
-Class_Property_Mapper_Factory
-└── Class_Property_Mapper_Registry
-    └── Property Mappers (30+)
-        ├── Color_Property_Mapper extends Color_Atomic_Property_Mapper_Base
-        ├── Font_Size_Property_Mapper extends Atomic_Property_Mapper_Base
-        ├── Margin_Property_Mapper extends Atomic_Property_Mapper_Base
-        └── ...
-
-Atomic_Property_Mapper_Base
-├── create_atomic_size_value()
-├── create_atomic_dimensions_value()
-├── create_atomic_color_value()
-├── create_atomic_string_value()
-├── parse_size_value() → Size_Value_Parser
-└── parse_shorthand_to_logical_properties()
-
-Color_Atomic_Property_Mapper_Base extends Atomic_Property_Mapper_Base
-├── map_to_v4_atomic()
-├── parse_color_value()
-├── create_color_prop_type() → Css_Variable_Aware_Color_Prop_Type
-└── is_valid_color_format()
+**css-converter (`width-property-mapper.php`) supports:**
+```php
+$special_values = [
+    'auto' => ['size' => 'auto', 'unit' => 'custom'],
+    'fit-content' => ['size' => 'fit-content', 'unit' => 'custom'],
+    'min-content' => ['size' => 'min-content', 'unit' => 'custom'],
+    'max-content' => ['size' => 'max-content', 'unit' => 'custom'],
+];
+// calc() is also supported with unit='custom'
 ```
 
-**Characteristics:**
-- Registry pattern for mapper lookup
-- Factory pattern for creation
-- Base classes per value type (color, size, dimensions)
-- Helper methods for creating atomic values
-- CSS Variable support built-in
-- Size value parser for unit handling
-- Shorthand property expansion
+**File to modify:** `class-width-converter.php`
 
 ---
 
-## Key Differences
+### 1.4 Height Converter - NEEDS KEYWORD SUPPORT
 
-| Aspect | Our Code | CSS-Converter |
-|--------|----------|---------------|
-| Architecture | Single converter class | Registry + Factory + Base classes |
-| Lookup | Loop through converters | Registry hash lookup |
-| Value types | One base class | Specialized bases (Color, Size, Dimensions) |
-| CSS Variables | Not supported | Built-in via `Css_Variable_Aware_Color_Prop_Type` |
-| Size parsing | Not implemented | `Size_Value_Parser` with unit handling |
-| Shorthand expansion | Not implemented | `CSS_Shorthand_Expander` |
-| Dimensions | Not implemented | Logical properties (block-start, inline-end) |
+Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-content` support.
+
+**File to modify:** `class-height-converter.php`
 
 ---
 
-## All Property Mappers in CSS-Converter
+### 1.5 Flex Properties - INCOMPLETE IMPLEMENTATION
 
-### Color-Based Properties
-| Mapper | CSS Properties |
-|--------|----------------|
-| `Color_Property_Mapper` | color |
-| `Background_Color_Property_Mapper` | background-color |
-| `Border_Color_Property_Mapper` | border-color, border-*-color |
+**Current Implementation:** Only has basic justify-content, align-items, gap converters.
 
-### Size-Based Properties
-| Mapper | CSS Properties |
-|--------|----------------|
-| `Font_Size_Property_Mapper` | font-size |
-| `Width_Property_Mapper` | width, min-width, max-width |
-| `Height_Property_Mapper` | height, min-height, max-height |
-| `Letter_Spacing_Property_Mapper` | letter-spacing |
-| `Word_Spacing_Property_Mapper` | word-spacing |
-| `Line_Height_Property_Mapper` | line-height |
-| `Opacity_Property_Mapper` | opacity |
+**css-converter (`flex-properties-mapper.php`) supports ALL of:**
+- `justify-content` (enum: center, start, end, flex-start, flex-end, space-between, space-around, space-evenly, stretch)
+- `align-items` (enum: normal, stretch, center, start, end, flex-start, flex-end, etc.)
+- `align-content` (enum: center, start, end, space-between, space-around, space-evenly)
+- `align-self` (enum: auto, normal, center, start, end, etc.)
+- `flex-wrap` (enum: wrap, nowrap, wrap-reverse)
+- `flex` shorthand (parses grow/shrink/basis)
+- `flex-grow`, `flex-shrink` (Number_Prop_Type)
+- `flex-basis` (Size_Prop_Type)
+- `order` (Number_Prop_Type)
 
-### Dimensions-Based Properties (Shorthand → Logical)
-| Mapper | CSS Properties |
-|--------|----------------|
-| `Margin_Property_Mapper` | margin, margin-top/right/bottom/left |
-| `Atomic_Padding_Property_Mapper` | padding, padding-top/right/bottom/left |
-| `Border_Radius_Property_Mapper` | border-radius, border-*-radius |
-| `Border_Width_Property_Mapper` | border-width, border-*-width |
-
-### String-Based Properties (Enum values)
-| Mapper | CSS Properties |
-|--------|----------------|
-| `Display_Property_Mapper` | display |
-| `Position_Property_Mapper` | position |
-| `Flex_Direction_Property_Mapper` | flex-direction |
-| `Text_Align_Property_Mapper` | text-align |
-| `Font_Weight_Property_Mapper` | font-weight |
-| `Text_Transform_Property_Mapper` | text-transform |
-| `Font_Style_Property_Mapper` | font-style |
-| `Text_Decoration_Property_Mapper` | text-decoration |
-| `Border_Style_Property_Mapper` | border-style |
-
-### Complex Properties
-| Mapper | CSS Properties |
-|--------|----------------|
-| `Box_Shadow_Property_Mapper` | box-shadow |
-| `Text_Shadow_Property_Mapper` | text-shadow |
-| `Background_Property_Mapper` | background (image, gradient) |
-| `Border_Property_Mapper` | border (shorthand) |
-| `Transform_Property_Mapper` | transform |
-| `Flex_Properties_Mapper` | flex, flex-grow, flex-shrink, flex-basis, gap, justify-content, align-items |
-| `Positioning_Property_Mapper` | top, right, bottom, left, inset-* |
+**Files to modify/create:**
+- `class-justify-content-converter.php` - verify all enum values
+- `class-align-items-converter.php` - verify all enum values
+- Create `class-align-content-converter.php`
+- Create `class-align-self-converter.php`
+- Create `class-flex-wrap-converter.php`
+- Create `class-flex-converter.php` (shorthand)
+- Create `class-flex-grow-converter.php`
+- Create `class-flex-shrink-converter.php`
+- Create `class-flex-basis-converter.php`
+- Create `class-order-converter.php`
 
 ---
 
-## Recommended Architecture for Our Plugin
+## PHASE 2: HIGH PRIORITY NEW CONVERTERS ✅ PARTIALLY COMPLETED
 
-### Phase 1: Refactor Base Architecture ✅ COMPLETED
+### 2.1 Border Radius Converter ✅ COMPLETED
 
-**Architectural Decision**: Following the Implementation Guidelines ("Max 2 levels", "Extend `Property_Converter_Base` (not deeper hierarchies)"), we use **helper classes** instead of specialized inheritance bases. This keeps the architecture simple while providing shared functionality.
+**File created:** `class-border-radius-converter.php`
 
-1. **Registry Pattern** ✅
-   - `Converter_Registry` exists and works correctly
+**Implementation:**
+- Supports all individual corners: `border-top-left-radius`, etc.
+- Supports logical corners: `border-start-start-radius`, etc.
+- Uses `Border_Radius_Prop_Type` with logical properties: `start-start`, `start-end`, `end-start`, `end-end`
+- Parses 1-4 value shorthand
+- Rejects elliptical syntax (contains '/')
 
-2. **Helper Classes (instead of specialized base classes)** ✅
-   - Converters extend `Property_Converter_Base` directly (2 levels max)
-   - Shared parsing logic lives in **parser classes** (like `Size_Value_Parser`)
-   - Each converter uses Elementor prop types directly
+---
 
-   ```
-   Property_Converter_Base (abstract)           ← Single base class
-   ├── Color_Converter                          ← 2 levels
-   ├── Font_Size_Converter  → Size_Value_Parser ← Uses helper
-   ├── Display_Converter                        ← 2 levels
-   └── ...
+### 2.2 Border Converter ❌ NOT IMPLEMENTED
 
-   Helper Classes (composition, not inheritance):
-   ├── Size_Value_Parser    ← parse(), is_valid_unit()
-   ├── Color_Value_Parser   ← (to be created if needed)
-   └── Shorthand_Expander   ← (Phase 4)
-   ```
+**css-converter (`border-property-mapper.php`):**
+- Parses border shorthand into width, style, color
+- Supports all sides: `border`, `border-top`, `border-right`, `border-bottom`, `border-left`
+- Outputs multiple props: `border-width`, `border-style`, `border-color`
 
-3. **Size Value Parser** ✅
-   ```
-   Size_Value_Parser
-   ├── parse(value) → {size: number, unit: string}
-   ├── is_valid_unit(unit)
-   └── SUPPORTED_UNITS = [px, em, rem, %, vw, vh, ...]
-   ```
+**Files to create:**
+- `class-border-converter.php` (main shorthand parser)
+- `class-border-width-converter.php`
+- `class-border-style-converter.php`
+- `class-border-color-converter.php`
 
-**Why helpers over inheritance?**
-- Simpler mental model (2 levels vs 3+)
-- More flexible - converters can use multiple helpers
-- Easier to test - parser classes are standalone
-- Matches our Color_Converter refinement pattern
+---
 
-### Phase 2: Implement Property Mappers (Priority Order) 🔄 IN PROGRESS
+### 2.3 Box Shadow Converter ✅ COMPLETED
 
-**High Priority (Most Common)**
-1. ✅ `Font_Size_Converter` - size-based
-2. ✅ `Background_Color_Converter` - color-based
-3. ✅ `Padding_Converter` - size-based (single values; shorthand → Phase 4)
-4. ✅ `Margin_Converter` - size-based (single values; shorthand → Phase 4)
-5. ✅ `Width_Converter` - size-based (width, min-width, max-width)
-6. ✅ `Height_Converter` - size-based (height, min-height, max-height)
+**File created:** `class-box-shadow-converter.php`
 
-**Medium Priority (Layout)**
-7. ✅ `Display_Converter` - string enum
-8. `Position_Converter` - string enum
-9. `Flex_Direction_Mapper` - string enum
-10. `Justify_Content_Mapper` - string enum
-11. `Align_Items_Mapper` - string enum
-12. `Gap_Mapper` - size-based
+**Implementation:**
+- Parses: h-offset, v-offset, blur, spread, color, inset
+- Supports multiple comma-separated shadows
+- Uses `Box_Shadow_Prop_Type` with `Shadow_Prop_Type` items
+- Handles inset keyword at start or end of shadow value
 
-**Medium Priority (Typography)**
-13. `Font_Weight_Mapper` - string enum
-14. `Text_Align_Mapper` - string enum
-15. `Line_Height_Mapper` - size-based
-16. `Letter_Spacing_Mapper` - size-based
-17. `Text_Transform_Mapper` - string enum
-18. `Font_Style_Mapper` - string enum
-19. `Text_Decoration_Mapper` - string
+---
 
-**Lower Priority (Borders)**
-20. `Border_Width_Mapper` - dimensions-based
-21. `Border_Color_Mapper` - color-based
-22. `Border_Style_Mapper` - string enum
-23. `Border_Radius_Mapper` - dimensions-based
+### 2.4 Opacity Converter ✅ COMPLETED
 
-**Lower Priority (Effects)**
-24. `Opacity_Mapper` - size-based (percentage)
-25. `Box_Shadow_Mapper` - complex
-26. `Transform_Mapper` - complex
+**File created:** `class-opacity-converter.php`
 
-### Phase 3: Add CSS Variable Support
+**Implementation:**
+- Converts 0-1 to percentage (0.5 → 50%)
+- Also handles percentage input (50% → 50%)
+- Uses `Size_Prop_Type` with unit `%`
+
+---
+
+## PHASE 3: TYPOGRAPHY CONVERTERS ✅ MOSTLY COMPLETED
+
+### 3.1 Font Weight Converter ✅ COMPLETED
+
+**File created:** `class-font-weight-converter.php`
+
+**Implementation:**
+- Values: 100-900, normal, bold, bolder, lighter
+- Maps keywords: thin→100, light→300, medium→500, semi-bold→600, etc.
+- Normalizes numeric values outside 100-900 range
+- Uses `String_Prop_Type`
+
+---
+
+### 3.2 Text Align Converter ✅ COMPLETED
+
+**File created:** `class-text-align-converter.php`
+
+**Implementation:**
+- Values: start, center, end, justify
+- Maps: left→start, right→end
+- Uses `String_Prop_Type` (enum)
+
+---
+
+### 3.3 Line Height Converter ✅ COMPLETED
+
+**File created:** `class-line-height-converter.php`
+
+**Implementation:**
+- Supports: numbers (unitless → converted to em), em, px, %, etc.
+- 'normal' keyword → 1.2em
+- Uses `Size_Prop_Type`
+
+---
+
+### 3.4 Letter Spacing Converter ✅ COMPLETED
+
+**File created:** `class-letter-spacing-converter.php`
+
+**Implementation:**
+- Supports: px, em, etc.
+- 'normal' keyword returns null
+- Uses `Size_Prop_Type`
+
+---
+
+### 3.5 Word Spacing Converter ❌ NOT IMPLEMENTED
+
+**css-converter (`word-spacing-property-mapper.php`):**
+- Supports: px, em, etc.
+- Uses `Size_Prop_Type`
+
+**File to create:** `class-word-spacing-converter.php`
+
+---
+
+### 3.6 Text Transform Converter ✅ COMPLETED
+
+**File created:** `class-text-transform-converter.php`
+
+**Implementation:**
+- Values: none, capitalize, uppercase, lowercase
+- Case-insensitive matching
+- Uses `String_Prop_Type` (enum)
+
+---
+
+### 3.7 Text Decoration Converter ✅ COMPLETED
+
+**File created:** `class-text-decoration-converter.php`
+
+**Implementation:**
+- Values: none, underline, overline, line-through
+- Extracts decoration line from shorthand (e.g., "underline solid red" → "underline")
+- Uses `String_Prop_Type`
+
+---
+
+### 3.8 Font Style Converter ❌ NOT IMPLEMENTED
+
+**css-converter (`font-style-property-mapper.php`):**
+- Values: normal, italic, oblique
+- Uses `String_Prop_Type`
+
+**File to create:** `class-font-style-converter.php`
+
+---
+
+## PHASE 4: POSITIONING AND EFFECTS CONVERTERS
+
+### 4.1 Positioning Converter
+
+**css-converter (`positioning-property-mapper.php`):**
+- Supports: `top`, `right`, `bottom`, `left`
+- Maps physical to logical: top→inset-block-start, right→inset-inline-end, etc.
+- `z-index` uses `Number_Prop_Type`
+
+**File to create:** `class-positioning-converter.php`
+
+---
+
+### 4.2 Text Shadow Converter
+
+**css-converter (`text-shadow-property-mapper.php`):**
+- Similar structure to box-shadow
+- Uses shadow prop type
+
+**File to create:** `class-text-shadow-converter.php`
+
+---
+
+### 4.3 Transform Converter
+
+**css-converter (`transform-property-mapper.php`):**
+- Full parser for translate, scale, rotate, skew functions
+- Uses `Transform_Prop_Type` with nested function types:
+  - `Transform_Move_Prop_Type` (x, y, z)
+  - `Transform_Scale_Prop_Type` (x, y, z)
+  - `Transform_Rotate_Prop_Type` (x, y, z)
+  - `Transform_Skew_Prop_Type` (x, y)
+
+**File to create:** `class-transform-converter.php`
+
+---
+
+## PHASE 5: CSS VARIABLE SUPPORT
+
+Add CSS variable support (`var(--custom-property)`) to all converters:
 
 1. Create `Css_Variable_Aware_Prop_Type` wrapper
 2. Detect `var(--...)` syntax
 3. Pass through to atomic format with variable reference
 
-### Phase 4: Add Shorthand Expansion
+---
 
-1. Create `Shorthand_Expander` service
-2. Expand `margin: 10px 20px` → individual properties
-3. Expand `padding: 10px` → all directions
-4. Expand `border: 1px solid red` → width, style, color
+## FILES SUMMARY
+
+### Files to Modify (Phase 1 Fixes):
+
+| File | Changes |
+|------|---------|
+| `class-background-color-converter.php` | Add gradient parsing (linear, radial), image URL parsing |
+| `class-gap-converter.php` | Add `Layout_Direction_Prop_Type` for 2-value support |
+| `class-width-converter.php` | Add keyword handling (auto, fit-content, min-content, max-content) |
+| `class-height-converter.php` | Add keyword handling |
+| `class-justify-content-converter.php` | Verify all enum values match css-converter |
+| `class-align-items-converter.php` | Verify all enum values match css-converter |
+| `class-plugin.php` | Register all new converters |
+| `elementor-html-css-converter.php` | Add require statements for new files |
+
+### New Files to Create:
+
+| Phase | File | Based On |
+|-------|------|----------|
+| 1 | `class-align-content-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-align-self-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-flex-wrap-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-flex-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-flex-grow-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-flex-shrink-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-flex-basis-converter.php` | `flex-properties-mapper.php` |
+| 1 | `class-order-converter.php` | `flex-properties-mapper.php` |
+| 2 | `class-border-radius-converter.php` | `border-radius-property-mapper.php` |
+| 2 | `class-border-converter.php` | `border-property-mapper.php` |
+| 2 | `class-border-width-converter.php` | `border-width-property-mapper.php` |
+| 2 | `class-border-style-converter.php` | `border-style-property-mapper.php` |
+| 2 | `class-border-color-converter.php` | `border-color-property-mapper.php` |
+| 2 | `class-box-shadow-converter.php` | `box-shadow-property-mapper.php` |
+| 2 | `class-opacity-converter.php` | `opacity-property-mapper.php` |
+| 3 | `class-font-weight-converter.php` | `font-weight-property-mapper.php` |
+| 3 | `class-text-align-converter.php` | `text-align-property-mapper.php` |
+| 3 | `class-line-height-converter.php` | `line-height-property-mapper.php` |
+| 3 | `class-letter-spacing-converter.php` | `letter-spacing-property-mapper.php` |
+| 3 | `class-word-spacing-converter.php` | `word-spacing-property-mapper.php` |
+| 3 | `class-text-transform-converter.php` | `text-transform-property-mapper.php` |
+| 3 | `class-text-decoration-converter.php` | `text-decoration-property-mapper.php` |
+| 3 | `class-font-style-converter.php` | `font-style-property-mapper.php` |
+| 4 | `class-positioning-converter.php` | `positioning-property-mapper.php` |
+| 4 | `class-text-shadow-converter.php` | `text-shadow-property-mapper.php` |
+| 4 | `class-transform-converter.php` | `transform-property-mapper.php` |
+
+---
+
+## VERIFICATION
+
+Test each converter with CSS inputs that match css-converter test cases:
+
+```php
+// Phase 1 Fixes
+'background: linear-gradient(90deg, red 0%, blue 100%)'  // Gradient support
+'gap: 10px 20px'                                          // Two-value gap
+'width: auto'                                             // Keyword support
+'width: fit-content'                                      // Keyword support
+
+// Phase 2
+'border-radius: 10px 20px 30px 40px'
+'border: 1px solid red'
+'box-shadow: 2px 4px 8px rgba(0,0,0,0.5), inset 0 0 10px white'
+'opacity: 0.5'
+
+// Phase 3 - Typography
+'font-weight: 600'
+'text-align: center'
+'line-height: 1.5'
+'letter-spacing: 2px'
+'text-transform: uppercase'
+'text-decoration: underline'
+
+// Phase 4 - Positioning/Effects
+'top: 10px'
+'z-index: 100'
+'transform: translateX(10px) rotate(45deg) scale(1.5)'
+```
 
 ---
 
@@ -318,14 +455,12 @@ Color_Atomic_Property_Mapper_Base extends Atomic_Property_Mapper_Base
 
 ### Follow Our Refined Approach (From Color_Converter)
 
-All new converters MUST follow the same patterns established in `Color_Converter`:
+All converters MUST follow the same patterns:
 
 ```php
 class Example_Converter extends Property_Converter_Base {
     // 1. Constants for configuration
     private const SUPPORTED_PROPERTIES = ['property-name'];
-    private const PATTERN_VALIDATION = '/^...$/';
-    private const DEFAULT_VALUE = '...';
 
     // 2. Required method from base
     protected function get_supported_properties_list(): array {
@@ -349,31 +484,20 @@ class Example_Converter extends Property_Converter_Base {
 
     // 4. Self-documenting private methods
     private function is_valid_value( $value ): bool { ... }
-    private function normalize_value( string $value ): ?string { ... }
-    private function is_specific_format( string $value ): bool { ... }
 }
 ```
 
 ### Design Principles
 
 1. **Simple inheritance** - Max 2 levels (Converter → Base)
-2. **Self-documenting methods** - Names describe what they check (`is_hex_color`, `is_empty_or_none`)
+2. **Self-documenting methods** - Names describe what they check
 3. **Explicit constants** - No magic strings/numbers in code
 4. **Early returns** - Fail fast with null for invalid input
 5. **Single responsibility** - Each private method does one thing
 6. **Direct prop type usage** - Use Elementor's prop types directly
-7. **No CSS variables yet** - Explicitly reject, planned for Phase 3
+7. **Exact parity with css-converter** - NO simplifications
 
-### Each Converter Must:
-
-1. **Extend `Property_Converter_Base`** (not deeper hierarchies)
-2. **Define `SUPPORTED_PROPERTIES`** as private constant
-3. **Use Elementor's prop types** via `PropType::generate()`
-4. **Return null** for unsupported values (goes to custom CSS)
-5. **Be stateless** - no instance state between conversions
-6. **Have descriptive method names** - no `process()` or `handle()`
-
-### Elementor Prop Types to Use:
+### Elementor Prop Types Reference
 
 | Value Type | Elementor Prop Type |
 |------------|---------------------|
@@ -383,51 +507,28 @@ class Example_Converter extends Property_Converter_Base {
 | Number | `Number_Prop_Type::generate($value)` |
 | Dimensions | `Dimensions_Prop_Type::generate($dimensions)` |
 | Border Radius | `Border_Radius_Prop_Type::generate($corners)` |
-| Border Width | `Border_Width_Prop_Type::generate($widths)` |
 | Box Shadow | `Box_Shadow_Prop_Type::generate($shadow)` |
+| Background | `Background_Prop_Type::generate($background)` |
+| Layout Direction | `Layout_Direction_Prop_Type::generate(['row' => ..., 'column' => ...])` |
+| Transform | `Transform_Prop_Type::generate($transform)` |
 
 ---
 
-## File Structure
+## Frontend Rendering Issue (Reference)
 
-```
-includes/
-├── converters/
-│   ├── base/
-│   │   ├── class-property-mapper-base.php
-│   │   ├── class-color-property-mapper-base.php
-│   │   ├── class-size-property-mapper-base.php
-│   │   ├── class-string-property-mapper-base.php
-│   │   └── class-dimensions-property-mapper-base.php
-│   ├── properties/
-│   │   ├── class-color-mapper.php
-│   │   ├── class-background-color-mapper.php
-│   │   ├── class-font-size-mapper.php
-│   │   ├── class-padding-mapper.php
-│   │   ├── class-margin-mapper.php
-│   │   ├── class-width-mapper.php
-│   │   ├── class-display-mapper.php
-│   │   └── ... (30+ files)
-│   └── parsers/
-│       ├── class-size-value-parser.php
-│       └── class-shorthand-expander.php
-├── class-converter-registry.php (update)
-└── class-css-converter.php (update)
-```
+### Problem
+Styles are being saved to the database correctly, but they don't render on the frontend.
 
----
+### Root Cause
+The HTML output shows `<h2 class="e-heading-base">` instead of `<h2 class="e-abc1234-1234567 e-heading-base">`.
 
-## Testing Strategy
+### Fix Applied
+- Ensure `settings.classes` has correct format: `{'$$type': 'classes', 'value': ['e-xxx-yyy']}`
+- Ensure `styles` has the style definition with matching ID
+- Ensure `editor_settings` is present in widget data
 
-Each mapper needs unit tests for:
-1. Valid value conversion
-2. Invalid value handling (returns null)
-3. Edge cases (empty, whitespace, special chars)
-4. All supported properties
-
-Example test cases for `Font_Size_Mapper`:
-- `16px` → `{$$type: 'size', value: {size: 16, unit: 'px'}}`
-- `1.5em` → `{$$type: 'size', value: {size: 1.5, unit: 'em'}}`
-- `100%` → `{$$type: 'size', value: {size: 100, unit: '%'}}`
-- `invalid` → `null`
-- `var(--font-size)` → CSS variable format (Phase 3)
+### Verification
+1. Apply styles via API endpoint
+2. Check `_elementor_data` in database for correct structure
+3. Load frontend page and inspect HTML for class attribute
+4. Check browser DevTools for CSS rules matching the style class

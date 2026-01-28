@@ -14,3 +14,7 @@
 - [ ] 6. Support css classes.
 - [ ] 7. Support compositions.
 - [ ] 8. Support v3 > v4 conversions.
+
+## Bug Fixes / Improvements
+
+- [ ] Fix flex property merging (shorthand + individual properties). → See [task-flex-property-merging.md](task-flex-property-merging.md)

@@ -15,6 +15,28 @@ use ElementorHtmlCssConverter\Converters\Height_Converter;
 use ElementorHtmlCssConverter\Converters\Padding_Converter;
 use ElementorHtmlCssConverter\Converters\Margin_Converter;
 use ElementorHtmlCssConverter\Converters\Display_Converter;
+use ElementorHtmlCssConverter\Converters\Position_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Direction_Converter;
+use ElementorHtmlCssConverter\Converters\Justify_Content_Converter;
+use ElementorHtmlCssConverter\Converters\Align_Items_Converter;
+use ElementorHtmlCssConverter\Converters\Gap_Converter;
+use ElementorHtmlCssConverter\Converters\Align_Content_Converter;
+use ElementorHtmlCssConverter\Converters\Align_Self_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Wrap_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Grow_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Shrink_Converter;
+use ElementorHtmlCssConverter\Converters\Flex_Basis_Converter;
+use ElementorHtmlCssConverter\Converters\Order_Converter;
+use ElementorHtmlCssConverter\Converters\Border_Radius_Converter;
+use ElementorHtmlCssConverter\Converters\Box_Shadow_Converter;
+use ElementorHtmlCssConverter\Converters\Opacity_Converter;
+use ElementorHtmlCssConverter\Converters\Font_Weight_Converter;
+use ElementorHtmlCssConverter\Converters\Text_Align_Converter;
+use ElementorHtmlCssConverter\Converters\Line_Height_Converter;
+use ElementorHtmlCssConverter\Converters\Letter_Spacing_Converter;
+use ElementorHtmlCssConverter\Converters\Text_Decoration_Converter;
+use ElementorHtmlCssConverter\Converters\Text_Transform_Converter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -106,6 +128,28 @@ final class Plugin {
 		$this->registry->register( new Padding_Converter() );
 		$this->registry->register( new Margin_Converter() );
 		$this->registry->register( new Display_Converter() );
+		$this->registry->register( new Position_Converter() );
+		$this->registry->register( new Flex_Direction_Converter() );
+		$this->registry->register( new Justify_Content_Converter() );
+		$this->registry->register( new Align_Items_Converter() );
+		$this->registry->register( new Gap_Converter() );
+		$this->registry->register( new Align_Content_Converter() );
+		$this->registry->register( new Align_Self_Converter() );
+		$this->registry->register( new Flex_Wrap_Converter() );
+		$this->registry->register( new Flex_Converter() );
+		$this->registry->register( new Flex_Grow_Converter() );
+		$this->registry->register( new Flex_Shrink_Converter() );
+		$this->registry->register( new Flex_Basis_Converter() );
+		$this->registry->register( new Order_Converter() );
+		$this->registry->register( new Border_Radius_Converter() );
+		$this->registry->register( new Box_Shadow_Converter() );
+		$this->registry->register( new Opacity_Converter() );
+		$this->registry->register( new Font_Weight_Converter() );
+		$this->registry->register( new Text_Align_Converter() );
+		$this->registry->register( new Line_Height_Converter() );
+		$this->registry->register( new Letter_Spacing_Converter() );
+		$this->registry->register( new Text_Decoration_Converter() );
+		$this->registry->register( new Text_Transform_Converter() );
 	}
 
 	/**

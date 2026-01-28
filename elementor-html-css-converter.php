@@ -56,6 +56,22 @@ if ( ! function_exists( 'str_starts_with' ) ) {
 }
 
 /**
+ * PHP 7.4 polyfill for str_contains function.
+ */
+if ( ! function_exists( 'str_contains' ) ) {
+	/**
+	 * Check if a string contains a given substring.
+	 *
+	 * @param string $haystack The string to search in.
+	 * @param string $needle   The substring to search for.
+	 * @return bool True if haystack contains needle.
+	 */
+	function str_contains( string $haystack, string $needle ): bool {
+		return '' === $needle || false !== strpos( $haystack, $needle );
+	}
+}
+
+/**
  * Load the plugin after plugins are loaded.
  *
  * @return void
@@ -113,6 +129,28 @@ function ehcc_load_files() {
 	require_once EHCC_PATH . 'includes/converters/class-padding-converter.php';
 	require_once EHCC_PATH . 'includes/converters/class-margin-converter.php';
 	require_once EHCC_PATH . 'includes/converters/class-display-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-position-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-direction-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-justify-content-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-align-items-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-gap-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-align-content-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-align-self-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-wrap-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-grow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-shrink-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-flex-basis-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-order-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-border-radius-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-box-shadow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-opacity-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-font-weight-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-text-align-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-line-height-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-letter-spacing-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-text-decoration-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-text-transform-converter.php';
 
 	// Conversion services.
 	require_once EHCC_PATH . 'includes/class-css-converter.php';
