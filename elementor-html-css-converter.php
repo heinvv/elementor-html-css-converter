@@ -151,6 +151,15 @@ function ehcc_load_files() {
 	require_once EHCC_PATH . 'includes/converters/class-letter-spacing-converter.php';
 	require_once EHCC_PATH . 'includes/converters/class-text-decoration-converter.php';
 	require_once EHCC_PATH . 'includes/converters/class-text-transform-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-font-style-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-word-spacing-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-text-shadow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-positioning-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-border-width-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-border-style-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-border-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-border-converter.php';
+	require_once EHCC_PATH . 'includes/converters/class-transform-converter.php';
 
 	// Conversion services.
 	require_once EHCC_PATH . 'includes/class-css-converter.php';

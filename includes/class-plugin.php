@@ -37,6 +37,15 @@ use ElementorHtmlCssConverter\Converters\Line_Height_Converter;
 use ElementorHtmlCssConverter\Converters\Letter_Spacing_Converter;
 use ElementorHtmlCssConverter\Converters\Text_Decoration_Converter;
 use ElementorHtmlCssConverter\Converters\Text_Transform_Converter;
+use ElementorHtmlCssConverter\Converters\Font_Style_Converter;
+use ElementorHtmlCssConverter\Converters\Word_Spacing_Converter;
+use ElementorHtmlCssConverter\Converters\Text_Shadow_Converter;
+use ElementorHtmlCssConverter\Converters\Positioning_Converter;
+use ElementorHtmlCssConverter\Converters\Border_Width_Converter;
+use ElementorHtmlCssConverter\Converters\Border_Style_Converter;
+use ElementorHtmlCssConverter\Converters\Border_Color_Converter;
+use ElementorHtmlCssConverter\Converters\Border_Converter;
+use ElementorHtmlCssConverter\Converters\Transform_Converter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -150,6 +159,15 @@ final class Plugin {
 		$this->registry->register( new Letter_Spacing_Converter() );
 		$this->registry->register( new Text_Decoration_Converter() );
 		$this->registry->register( new Text_Transform_Converter() );
+		$this->registry->register( new Font_Style_Converter() );
+		$this->registry->register( new Word_Spacing_Converter() );
+		$this->registry->register( new Text_Shadow_Converter() );
+		$this->registry->register( new Positioning_Converter() );
+		$this->registry->register( new Border_Width_Converter() );
+		$this->registry->register( new Border_Style_Converter() );
+		$this->registry->register( new Border_Color_Converter() );
+		$this->registry->register( new Border_Converter() );
+		$this->registry->register( new Transform_Converter() );
 	}
 
 	/**

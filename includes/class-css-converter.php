@@ -91,8 +91,18 @@ class Css_Converter {
 			if ( null !== $converter ) {
 				$converted = $converter->convert( $property, $value );
 				if ( null !== $converted ) {
-					$output_property = $converter->get_output_property( $property );
-					$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
+					// Check if this is a multi-property return (shorthand expansion)
+					// Multi-property returns don't have $$type at the root level
+					if ( $this->is_multi_property_result( $converted ) ) {
+						// Merge each expanded property
+						foreach ( $converted as $expanded_property => $expanded_value ) {
+							$props[ $expanded_property ] = $this->merge_props( $props[ $expanded_property ] ?? null, $expanded_value );
+						}
+					} else {
+						// Single property return
+						$output_property = $converter->get_output_property( $property );
+						$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
+					}
 				} else {
 					$unsupported[ $property ] = $value;
 				}
@@ -110,6 +120,32 @@ class Css_Converter {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Check if a converted result is a multi-property return (shorthand expansion).
+	 *
+	 * Multi-property returns are associative arrays where keys are property names
+	 * and values are prop type arrays (with $$type key).
+	 * Single property returns have $$type at the root level.
+	 *
+	 * @param array $converted The converted result.
+	 * @return bool True if this is a multi-property result.
+	 */
+	private function is_multi_property_result( array $converted ): bool {
+		// If it has $$type at root, it's a single property
+		if ( isset( $converted['$$type'] ) ) {
+			return false;
+		}
+
+		// Check if all values are prop type arrays (have $$type)
+		foreach ( $converted as $key => $value ) {
+			if ( ! is_array( $value ) || ! isset( $value['$$type'] ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

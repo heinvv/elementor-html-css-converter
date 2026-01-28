@@ -42,28 +42,29 @@ This plan provides a complete mapping of all property mappers from the css-conve
 | 11 | `position-property-mapper.php` | `position` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
 | 12 | `flex-direction-property-mapper.php` | `flex-direction` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
 | 13 | `flex-properties-mapper.php` | `justify-content`, `align-items`, `align-content`, `align-self`, `flex-wrap`, `gap`, `row-gap`, `column-gap`, `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order` | Various | ✅ IMPLEMENTED (all properties) |
-| 14 | `border-property-mapper.php` | `border`, `border-top/right/bottom/left` | Multiple props | ❌ NOT IMPLEMENTED |
+| 14 | `border-property-mapper.php` | `border`, `border-top/right/bottom/left` | Multiple props | ✅ IMPLEMENTED (expands to border-width/style/color) |
 | 15 | `border-radius-property-mapper.php` | `border-radius`, `border-*-*-radius` (all corners) | `Border_Radius_Prop_Type` | ✅ IMPLEMENTED |
-| 16 | `border-width-property-mapper.php` | (via border shorthand) | `Size_Prop_Type` | ❌ NOT IMPLEMENTED |
-| 17 | `border-color-property-mapper.php` | (via border shorthand) | `Color_Prop_Type` | ❌ NOT IMPLEMENTED |
-| 18 | `border-style-property-mapper.php` | (via border shorthand) | `String_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 16 | `border-width-property-mapper.php` | (via border shorthand) | `Size_Prop_Type` | ✅ IMPLEMENTED |
+| 17 | `border-color-property-mapper.php` | (via border shorthand) | `Color_Prop_Type` | ✅ IMPLEMENTED |
+| 18 | `border-style-property-mapper.php` | (via border shorthand) | `String_Prop_Type` | ✅ IMPLEMENTED |
 | 19 | `box-shadow-property-mapper.php` | `box-shadow` | `Box_Shadow_Prop_Type` | ✅ IMPLEMENTED |
-| 20 | `text-shadow-property-mapper.php` | `text-shadow` | Similar to box-shadow | ❌ NOT IMPLEMENTED |
+| 20 | `text-shadow-property-mapper.php` | `text-shadow` | Similar to box-shadow | ⚠️ NOT SUPPORTED (no Elementor prop type) |
 | 21 | `opacity-property-mapper.php` | `opacity` | `Size_Prop_Type` (%) | ✅ IMPLEMENTED |
 | 22 | `font-weight-property-mapper.php` | `font-weight` | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 23 | `font-style-property-mapper.php` | `font-style` | `String_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 23 | `font-style-property-mapper.php` | `font-style` | `String_Prop_Type` | ✅ IMPLEMENTED |
 | 24 | `text-align-property-mapper.php` | `text-align` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
 | 25 | `line-height-property-mapper.php` | `line-height` | `Size_Prop_Type` | ✅ IMPLEMENTED |
 | 26 | `letter-spacing-property-mapper.php` | `letter-spacing` | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 27 | `word-spacing-property-mapper.php` | `word-spacing` | `Size_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 27 | `word-spacing-property-mapper.php` | `word-spacing` | `Size_Prop_Type` | ✅ IMPLEMENTED |
 | 28 | `text-transform-property-mapper.php` | `text-transform` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
 | 29 | `text-decoration-property-mapper.php` | `text-decoration` | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 30 | `transform-property-mapper.php` | `transform`, `transform-origin`, `perspective` | `Transform_Prop_Type` | ❌ NOT IMPLEMENTED |
-| 31 | `positioning-property-mapper.php` | `top`, `right`, `bottom`, `left`, `z-index`, `inset-*` | `Size_Prop_Type`, `Number_Prop_Type` | ❌ NOT IMPLEMENTED |
+| 30 | `transform-property-mapper.php` | `transform`, `transform-origin`, `perspective` | `Transform_Prop_Type` | ✅ IMPLEMENTED |
+| 31 | `positioning-property-mapper.php` | `top`, `right`, `bottom`, `left`, `z-index`, `inset-*` | `Size_Prop_Type`, `Number_Prop_Type` | ✅ IMPLEMENTED |
 
 **Summary:**
-- ✅ Fully Implemented: 22 converters
-- ❌ Not Implemented: 9 converters
+- ✅ Fully Implemented: 30 converters
+- ⚠️ Not Supported: 1 property:
+  - `text-shadow` - Elementor has no prop type
 
 ---
 
@@ -181,7 +182,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-## PHASE 2: HIGH PRIORITY NEW CONVERTERS ✅ PARTIALLY COMPLETED
+## PHASE 2: HIGH PRIORITY NEW CONVERTERS ✅ COMPLETED
 
 ### 2.1 Border Radius Converter ✅ COMPLETED
 
@@ -196,18 +197,27 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 2.2 Border Converter ❌ NOT IMPLEMENTED
+### 2.2 Border Converter ✅ COMPLETED
 
-**css-converter (`border-property-mapper.php`):**
-- Parses border shorthand into width, style, color
-- Supports all sides: `border`, `border-top`, `border-right`, `border-bottom`, `border-left`
-- Outputs multiple props: `border-width`, `border-style`, `border-color`
+**Files created:**
+- `class-border-converter.php` (shorthand expander)
+- `class-border-width-converter.php` ✅
+- `class-border-style-converter.php` ✅
+- `class-border-color-converter.php` ✅
 
-**Files to create:**
-- `class-border-converter.php` (main shorthand parser)
-- `class-border-width-converter.php`
-- `class-border-style-converter.php`
-- `class-border-color-converter.php`
+**Implementation:**
+- Border shorthand is automatically expanded to multiple properties
+- Input: `border: 1px solid red`
+- Output: `border-width`, `border-style`, `border-color` as separate props
+
+**How it works:**
+- Border_Converter parses the shorthand and returns multiple properties
+- Css_Converter detects multi-property returns and handles them appropriately
+- Each expanded property uses the correct Elementor prop type
+
+**Supported shorthands:**
+- `border`, `border-top`, `border-right`, `border-bottom`, `border-left`
+- `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end`
 
 ---
 
@@ -234,7 +244,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-## PHASE 3: TYPOGRAPHY CONVERTERS ✅ MOSTLY COMPLETED
+## PHASE 3: TYPOGRAPHY CONVERTERS ✅ COMPLETED
 
 ### 3.1 Font Weight Converter ✅ COMPLETED
 
@@ -281,13 +291,14 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.5 Word Spacing Converter ❌ NOT IMPLEMENTED
+### 3.5 Word Spacing Converter ✅ COMPLETED
 
-**css-converter (`word-spacing-property-mapper.php`):**
+**File created:** `class-word-spacing-converter.php`
+
+**Implementation:**
 - Supports: px, em, etc.
+- 'normal' keyword returns null
 - Uses `Size_Prop_Type`
-
-**File to create:** `class-word-spacing-converter.php`
 
 ---
 
@@ -313,50 +324,57 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.8 Font Style Converter ❌ NOT IMPLEMENTED
+### 3.8 Font Style Converter ✅ COMPLETED
 
-**css-converter (`font-style-property-mapper.php`):**
+**File created:** `class-font-style-converter.php`
+
+**Implementation:**
 - Values: normal, italic, oblique
+- Handles oblique with angle (extracts just "oblique")
 - Uses `String_Prop_Type`
 
-**File to create:** `class-font-style-converter.php`
-
 ---
 
-## PHASE 4: POSITIONING AND EFFECTS CONVERTERS
+## PHASE 4: POSITIONING AND EFFECTS CONVERTERS ✅ MOSTLY COMPLETED
 
-### 4.1 Positioning Converter
+### 4.1 Positioning Converter ✅ COMPLETED
 
-**css-converter (`positioning-property-mapper.php`):**
-- Supports: `top`, `right`, `bottom`, `left`
+**File created:** `class-positioning-converter.php`
+
+**Implementation:**
+- Supports: `top`, `right`, `bottom`, `left`, `z-index`
+- Supports logical: `inset-block-start`, `inset-block-end`, `inset-inline-start`, `inset-inline-end`
 - Maps physical to logical: top→inset-block-start, right→inset-inline-end, etc.
+- Handles 'auto' keyword
 - `z-index` uses `Number_Prop_Type`
 
-**File to create:** `class-positioning-converter.php`
+---
+
+### 4.2 Text Shadow Converter ⚠️ NOT SUPPORTED
+
+**File created:** `class-text-shadow-converter.php`
+
+**Status:** Elementor's atomic widgets do NOT support `text-shadow`. There is no `Text_Shadow_Prop_Type` in Elementor's Style_Schema.
+
+**Implementation:**
+- Converter exists but always returns `null`
+- Text-shadow will fall back to custom CSS
 
 ---
 
-### 4.2 Text Shadow Converter
+### 4.3 Transform Converter ✅ COMPLETED
 
-**css-converter (`text-shadow-property-mapper.php`):**
-- Similar structure to box-shadow
-- Uses shadow prop type
+**File created:** `class-transform-converter.php`
 
-**File to create:** `class-text-shadow-converter.php`
-
----
-
-### 4.3 Transform Converter
-
-**css-converter (`transform-property-mapper.php`):**
+**Implementation:**
 - Full parser for translate, scale, rotate, skew functions
 - Uses `Transform_Prop_Type` with nested function types:
-  - `Transform_Move_Prop_Type` (x, y, z)
-  - `Transform_Scale_Prop_Type` (x, y, z)
-  - `Transform_Rotate_Prop_Type` (x, y, z)
-  - `Transform_Skew_Prop_Type` (x, y)
-
-**File to create:** `class-transform-converter.php`
+  - `Transform_Move_Prop_Type` (x, y, z) - translate, translateX/Y/Z, translate3d
+  - `Transform_Scale_Prop_Type` (x, y, z) - scale, scaleX/Y/Z, scale3d
+  - `Transform_Rotate_Prop_Type` (x, y, z) - rotate, rotateX/Y/Z, rotate3d
+  - `Transform_Skew_Prop_Type` (x, y) - skew, skewX, skewY
+- Supports `perspective` property
+- `transform-origin` and `perspective-origin` return null (not fully supported)
 
 ---
 
