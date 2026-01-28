@@ -43,11 +43,23 @@ class Rest_Api {
 	private const ROUTE_ADD_WIDGET = '/add-widget-to-post';
 
 	/**
+	 * REST API route for HTML to widgets conversion.
+	 */
+	private const ROUTE_CONVERT_HTML = '/convert-html';
+
+	/**
 	 * The converter registry.
 	 *
 	 * @var Converter_Registry
 	 */
 	private Converter_Registry $registry;
+
+	/**
+	 * The HTML converter.
+	 *
+	 * @var Html_Converter
+	 */
+	private Html_Converter $html_converter;
 
 	/**
 	 * The widget style applicator.
@@ -57,17 +69,30 @@ class Rest_Api {
 	private Widget_Style_Applicator $widget_style_applicator;
 
 	/**
+	 * The Elementor document service.
+	 *
+	 * @var Elementor_Document_Service
+	 */
+	private Elementor_Document_Service $document_service;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Converter_Registry      $registry                The converter registry.
-	 * @param Widget_Style_Applicator $widget_style_applicator The widget style applicator.
+	 * @param Converter_Registry         $registry                The converter registry.
+	 * @param Widget_Style_Applicator    $widget_style_applicator The widget style applicator.
+	 * @param Html_Converter             $html_converter          The HTML converter.
+	 * @param Elementor_Document_Service $document_service        The document service.
 	 */
 	public function __construct(
 		Converter_Registry $registry,
-		Widget_Style_Applicator $widget_style_applicator
+		Widget_Style_Applicator $widget_style_applicator,
+		Html_Converter $html_converter,
+		Elementor_Document_Service $document_service
 	) {
 		$this->registry                = $registry;
 		$this->widget_style_applicator = $widget_style_applicator;
+		$this->html_converter          = $html_converter;
+		$this->document_service        = $document_service;
 	}
 
 	/**
@@ -89,6 +114,7 @@ class Rest_Api {
 		$this->register_apply_styles_route();
 		$this->register_create_post_route();
 		$this->register_add_widget_route();
+		$this->register_convert_html_route();
 	}
 
 	/**
@@ -247,6 +273,22 @@ class Rest_Api {
 	}
 
 	/**
+	 * Sanitize HTML content while preserving style tags.
+	 *
+	 * wp_kses_post strips <style> tags, but we need them for ID-based CSS extraction.
+	 *
+	 * @param string $html HTML content.
+	 * @return string Sanitized HTML.
+	 */
+	public function sanitize_html_with_styles( string $html ): string {
+		// Allow style tags in addition to post content tags.
+		$allowed_html = wp_kses_allowed_html( 'post' );
+		$allowed_html['style'] = [];
+
+		return wp_kses( $html, $allowed_html );
+	}
+
+	/**
 	 * Handle the CSS to atomic conversion request.
 	 *
 	 * @param \WP_REST_Request $request The REST request.
@@ -325,6 +367,115 @@ class Rest_Api {
 			$widget_settings,
 			$css_string
 		);
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * Register the HTML to widgets conversion route.
+	 *
+	 * @return void
+	 */
+	private function register_convert_html_route(): void {
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::ROUTE_CONVERT_HTML,
+			[
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'handle_convert_html_request' ],
+				'permission_callback' => [ $this, 'check_permissions' ],
+				'args'                => [
+					'html'     => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => [ $this, 'sanitize_html_with_styles' ],
+					],
+					'options'  => [
+						'type'    => 'object',
+						'default' => [],
+					],
+					'postId'   => [
+						'type'              => 'integer',
+						'required'          => false,
+						'sanitize_callback' => 'absint',
+					],
+					'widgetId' => [
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Handle the HTML to widgets conversion request.
+	 *
+	 * When postId and widgetId are provided, the converted widgets are inserted
+	 * into the specified container widget.
+	 *
+	 * @param \WP_REST_Request $request The REST request.
+	 * @return \WP_REST_Response The REST response.
+	 */
+	public function handle_convert_html_request( \WP_REST_Request $request ): \WP_REST_Response {
+		$params = $request->get_json_params();
+
+		$html       = $params['html'] ?? '';
+		$options    = $params['options'] ?? [];
+		$post_id    = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
+		$widget_id  = $params['widgetId'] ?? '';
+
+		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
+
+		// If conversion failed or no widgets, return the result as-is.
+		if ( ! $result['success'] || empty( $result['widgets'] ) ) {
+			return rest_ensure_response( $result );
+		}
+
+		// If postId is provided, insert widgets into the post.
+		if ( $post_id > 0 ) {
+			if ( ! empty( $widget_id ) ) {
+				// Insert into specific container.
+				$inserted_ids = $this->document_service->add_widgets_to_container(
+					$post_id,
+					$widget_id,
+					$result['widgets']
+				);
+
+				if ( false === $inserted_ids ) {
+					return rest_ensure_response( [
+						'success' => false,
+						'error'   => 'Failed to insert widgets into the container. Check that postId and widgetId are valid.',
+						'widgets' => $result['widgets'],
+					] );
+				}
+
+				$result['inserted']   = true;
+				$result['widget_ids'] = $inserted_ids;
+			} else {
+				// Insert to root level (wrapped in container if needed).
+				$insert_result = $this->document_service->add_widgets_to_root(
+					$post_id,
+					$result['widgets']
+				);
+
+				if ( false === $insert_result ) {
+					return rest_ensure_response( [
+						'success' => false,
+						'error'   => 'Failed to insert widgets into the post. Check that postId is valid.',
+						'widgets' => $result['widgets'],
+					] );
+				}
+
+				$result['inserted']     = true;
+				$result['container_id'] = $insert_result['container_id'];
+				$result['widget_ids']   = $insert_result['widget_ids'];
+			}
+
+			$result['post_id']  = $post_id;
+			$result['edit_url'] = $this->document_service->get_edit_url( $post_id );
+		}
 
 		return rest_ensure_response( $result );
 	}

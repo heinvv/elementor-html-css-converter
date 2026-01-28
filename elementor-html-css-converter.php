@@ -119,50 +119,60 @@ function ehcc_load_files() {
 	// Parsers.
 	require_once EHCC_PATH . 'includes/parsers/class-size-value-parser.php';
 	require_once EHCC_PATH . 'includes/parsers/class-color-value-parser.php';
+	require_once EHCC_PATH . 'includes/parsers/class-id-style-extractor.php';
 
-	// Converters.
-	require_once EHCC_PATH . 'includes/converters/class-color-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-background-color-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-font-size-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-width-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-height-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-padding-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-margin-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-display-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-position-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-direction-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-justify-content-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-align-items-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-gap-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-align-content-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-align-self-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-wrap-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-grow-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-shrink-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-flex-basis-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-order-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-border-radius-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-box-shadow-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-opacity-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-font-weight-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-text-align-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-line-height-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-letter-spacing-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-text-decoration-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-text-transform-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-font-style-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-word-spacing-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-text-shadow-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-positioning-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-border-width-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-border-style-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-border-color-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-border-converter.php';
-	require_once EHCC_PATH . 'includes/converters/class-transform-converter.php';
+	// CSS Converters.
+	require_once EHCC_PATH . 'includes/converters/css/class-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-background-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-font-size-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-width-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-height-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-padding-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-margin-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-display-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-position-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-direction-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-justify-content-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-align-items-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-gap-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-align-content-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-align-self-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-wrap-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-grow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-shrink-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-flex-basis-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-order-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-border-radius-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-box-shadow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-opacity-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-font-weight-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-text-align-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-line-height-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-letter-spacing-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-text-decoration-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-text-transform-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-font-style-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-word-spacing-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-text-shadow-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-positioning-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-border-width-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-border-style-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-border-color-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-border-converter.php';
+	require_once EHCC_PATH . 'includes/converters/css/class-transform-converter.php';
+
+	// HTML Converters.
+	require_once EHCC_PATH . 'includes/converters/html/class-html-to-atomic-widget-mapper.php';
+	require_once EHCC_PATH . 'includes/converters/html/class-atomic-widget-class-generator.php';
+	require_once EHCC_PATH . 'includes/converters/html/class-atomic-widget-settings-preparer.php';
+	require_once EHCC_PATH . 'includes/converters/html/class-atomic-widget-json-creator.php';
+	require_once EHCC_PATH . 'includes/converters/html/class-widget-styles-integrator.php';
+	require_once EHCC_PATH . 'includes/converters/html/class-atomic-data-parser.php';
 
 	// Conversion services.
 	require_once EHCC_PATH . 'includes/class-css-converter.php';
+	require_once EHCC_PATH . 'includes/class-html-converter.php';
 	require_once EHCC_PATH . 'includes/class-widget-style-applicator.php';
 
 	// API and plugin.

@@ -16,7 +16,17 @@ This file contains complete implementation details from the official PR.
 - **Branch**: `hein/convert-css-to-widgets`
 - **Repository**: `elementor/elementor`
 
-### Fetching Code from PR
+### Local PR Code Reference
+
+The PR code is available locally at:
+`/Users/janvanvlastuin1981/Local Sites/elementor/app/public/wp-content/plugins/elementor-css/modules/css-converter/`
+
+Key directories:
+- `services/atomic-widgets/` - HTML to widget conversion classes
+- `convertors/css-properties/` - CSS property mappers
+- `convertors/atomic-properties/` - Atomic property type mappers
+
+### Fetching Code from PR (Remote)
 
 ```bash
 # Fetch a specific mapper file from the PR branch

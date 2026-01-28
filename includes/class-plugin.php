@@ -7,45 +7,45 @@
 
 namespace ElementorHtmlCssConverter;
 
-use ElementorHtmlCssConverter\Converters\Color_Converter;
-use ElementorHtmlCssConverter\Converters\Background_Color_Converter;
-use ElementorHtmlCssConverter\Converters\Font_Size_Converter;
-use ElementorHtmlCssConverter\Converters\Width_Converter;
-use ElementorHtmlCssConverter\Converters\Height_Converter;
-use ElementorHtmlCssConverter\Converters\Padding_Converter;
-use ElementorHtmlCssConverter\Converters\Margin_Converter;
-use ElementorHtmlCssConverter\Converters\Display_Converter;
-use ElementorHtmlCssConverter\Converters\Position_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Direction_Converter;
-use ElementorHtmlCssConverter\Converters\Justify_Content_Converter;
-use ElementorHtmlCssConverter\Converters\Align_Items_Converter;
-use ElementorHtmlCssConverter\Converters\Gap_Converter;
-use ElementorHtmlCssConverter\Converters\Align_Content_Converter;
-use ElementorHtmlCssConverter\Converters\Align_Self_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Wrap_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Grow_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Shrink_Converter;
-use ElementorHtmlCssConverter\Converters\Flex_Basis_Converter;
-use ElementorHtmlCssConverter\Converters\Order_Converter;
-use ElementorHtmlCssConverter\Converters\Border_Radius_Converter;
-use ElementorHtmlCssConverter\Converters\Box_Shadow_Converter;
-use ElementorHtmlCssConverter\Converters\Opacity_Converter;
-use ElementorHtmlCssConverter\Converters\Font_Weight_Converter;
-use ElementorHtmlCssConverter\Converters\Text_Align_Converter;
-use ElementorHtmlCssConverter\Converters\Line_Height_Converter;
-use ElementorHtmlCssConverter\Converters\Letter_Spacing_Converter;
-use ElementorHtmlCssConverter\Converters\Text_Decoration_Converter;
-use ElementorHtmlCssConverter\Converters\Text_Transform_Converter;
-use ElementorHtmlCssConverter\Converters\Font_Style_Converter;
-use ElementorHtmlCssConverter\Converters\Word_Spacing_Converter;
-use ElementorHtmlCssConverter\Converters\Text_Shadow_Converter;
-use ElementorHtmlCssConverter\Converters\Positioning_Converter;
-use ElementorHtmlCssConverter\Converters\Border_Width_Converter;
-use ElementorHtmlCssConverter\Converters\Border_Style_Converter;
-use ElementorHtmlCssConverter\Converters\Border_Color_Converter;
-use ElementorHtmlCssConverter\Converters\Border_Converter;
-use ElementorHtmlCssConverter\Converters\Transform_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Color_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Background_Color_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Font_Size_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Width_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Height_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Padding_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Margin_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Display_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Position_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Direction_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Justify_Content_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Align_Items_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Gap_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Align_Content_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Align_Self_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Wrap_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Grow_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Shrink_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Flex_Basis_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Order_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Border_Radius_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Box_Shadow_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Opacity_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Font_Weight_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Text_Align_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Line_Height_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Letter_Spacing_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Text_Decoration_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Text_Transform_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Font_Style_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Word_Spacing_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Text_Shadow_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Positioning_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Border_Width_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Border_Style_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Border_Color_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Border_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Transform_Converter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -86,6 +86,20 @@ final class Plugin {
 	private Widget_Style_Applicator $widget_style_applicator;
 
 	/**
+	 * The HTML converter.
+	 *
+	 * @var Html_Converter
+	 */
+	private Html_Converter $html_converter;
+
+	/**
+	 * The Elementor document service.
+	 *
+	 * @var Elementor_Document_Service
+	 */
+	private Elementor_Document_Service $document_service;
+
+	/**
 	 * Get plugin instance.
 	 *
 	 * @return Plugin The plugin instance.
@@ -101,12 +115,20 @@ final class Plugin {
 	 * Constructor.
 	 */
 	private function __construct() {
-		$this->registry = new Converter_Registry();
+		$this->registry         = new Converter_Registry();
+		$this->document_service = new Elementor_Document_Service();
+
 		$this->register_converters();
 
 		$this->widget_style_applicator = $this->create_widget_style_applicator();
+		$this->html_converter          = new Html_Converter( $this->registry );
 
-		$this->rest_api = new Rest_Api( $this->registry, $this->widget_style_applicator );
+		$this->rest_api = new Rest_Api(
+			$this->registry,
+			$this->widget_style_applicator,
+			$this->html_converter,
+			$this->document_service
+		);
 		$this->rest_api->register_hooks();
 	}
 
@@ -116,11 +138,10 @@ final class Plugin {
 	 * @return Widget_Style_Applicator The widget style applicator.
 	 */
 	private function create_widget_style_applicator(): Widget_Style_Applicator {
-		$css_converter    = new Css_Converter( $this->registry );
-		$style_builder    = new Style_Definition_Builder();
-		$document_service = new Elementor_Document_Service();
+		$css_converter = new Css_Converter( $this->registry );
+		$style_builder = new Style_Definition_Builder();
 
-		return new Widget_Style_Applicator( $css_converter, $style_builder, $document_service );
+		return new Widget_Style_Applicator( $css_converter, $style_builder, $this->document_service );
 	}
 
 	/**
@@ -186,6 +207,15 @@ final class Plugin {
 	 */
 	public function get_widget_style_applicator(): Widget_Style_Applicator {
 		return $this->widget_style_applicator;
+	}
+
+	/**
+	 * Get the HTML converter.
+	 *
+	 * @return Html_Converter The HTML converter.
+	 */
+	public function get_html_converter(): Html_Converter {
+		return $this->html_converter;
 	}
 
 	/**
