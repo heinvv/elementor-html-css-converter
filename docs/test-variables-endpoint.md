@@ -111,6 +111,56 @@ curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variab
   }'
 ```
 
+### Example 5: Create New Mode - Value-Aware Deduplication
+
+The `create_new` mode is **value-aware**: it only creates a new variable if the same value doesn't already exist.
+
+**Scenario:**
+```bash
+# First import - creates "brand-color" with red
+curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{"css": "--brand-color: #ff0000;", "update_mode": "create_new"}'
+# Response: {"created": 1, "reused": 0}
+
+# Second import - different value, creates "brand-color-1" with yellow
+curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{"css": "--brand-color: #ffff00;", "update_mode": "create_new"}'
+# Response: {"created": 1, "reused": 0}
+
+# Third import - different value, creates "brand-color-2" with purple
+curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{"css": "--brand-color: #800080;", "update_mode": "create_new"}'
+# Response: {"created": 1, "reused": 0}
+
+# Fourth import - same value as second (yellow), REUSES "brand-color-1"
+curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{"css": "--brand-color: #ffff00;", "update_mode": "create_new"}'
+# Response: {"created": 0, "reused": 1} ← No duplicate created!
+```
+
+**How it works:**
+- Checks if the exact value already exists for this base label (including suffixed versions)
+- If value exists → reuses the existing variable (no duplicate created)
+- If value is new → creates new variable with incremental suffix
+- This prevents creating `brand-color-3`, `brand-color-4`, etc. with duplicate values
+
+## Response Format
+
+All successful responses include:
+```json
+{
+  "success": true,
+  "variables": { /* variable data */ },
+  "created": 1,   // Number of new variables created
+  "reused": 0,    // Number of existing variables reused (create_new mode)
+  "updated": 0    // Number of variables updated (update mode)
+}
+```
+
 ## Error Responses
 
 ### Missing CSS
@@ -155,7 +205,7 @@ curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/import-variab
 - [ ] Import pixel size variables
 - [ ] Import rem/em size variables
 - [ ] Import percentage variables
-- [ ] Test `create_new` mode (creates duplicates with suffix)
+- [ ] Test `create_new` mode (value-aware - only creates duplicate if value is different)
 - [ ] Test `update` mode (updates existing)
 - [ ] Test error handling (empty CSS)
 - [ ] Test error handling (no variables)

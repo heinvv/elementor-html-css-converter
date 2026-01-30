@@ -157,7 +157,7 @@ class Variables_Rest_API {
 
 		// Store in Elementor variables system
 		try {
-			$this->store_variables( $converted, $update_mode );
+			$storage_result = $this->store_variables( $converted, $update_mode );
 		} catch ( \Exception $e ) {
 			return new WP_REST_Response(
 				[
@@ -176,6 +176,9 @@ class Variables_Rest_API {
 			[
 				'success'   => true,
 				'variables' => $response_variables,
+				'created'   => $storage_result['created'],
+				'reused'    => $storage_result['reused'],
+				'updated'   => $storage_result['updated'],
 			],
 			200
 		);
@@ -235,10 +238,10 @@ class Variables_Rest_API {
 	 *
 	 * @param array  $variables   Converted variables.
 	 * @param string $update_mode Mode: 'create_new' or 'update'.
-	 * @return void
+	 * @return array Storage result with 'created', 'reused', and 'updated' counts.
 	 * @throws \Exception If Elementor is not active or storage fails.
 	 */
-	private function store_variables( array $variables, string $update_mode ) {
+	private function store_variables( array $variables, string $update_mode ): array {
 		// Check if Elementor is available
 		if ( ! class_exists( '\Elementor\Plugin' ) ) {
 			throw new \Exception( 'Elementor plugin is not active' );
@@ -247,6 +250,10 @@ class Variables_Rest_API {
 		$repository = new Variables_Repository(
 			Plugin::$instance->kits_manager->get_active_kit()
 		);
+
+		$created = 0;
+		$reused  = 0;
+		$updated = 0;
 
 		foreach ( $variables as $variable ) {
 			$name  = $variable['name'] ?? '';
@@ -279,6 +286,7 @@ class Variables_Rest_API {
 							'value' => $value,
 						]
 					);
+					++$updated;
 				} else {
 					$repository->create(
 						[
@@ -287,9 +295,19 @@ class Variables_Rest_API {
 							'value' => $value,
 						]
 					);
+					++$created;
 				}
 			} else {
-				// create_new mode: always create with incremental suffix if needed
+				// create_new mode: check if value already exists, reuse if found
+				$existing_match = $this->find_variable_by_base_label_and_value( $repository, $label, $value );
+
+				if ( $existing_match ) {
+					// Value already exists, don't create duplicate
+					++$reused;
+					continue;
+				}
+
+				// Value doesn't exist, create new with unique label
 				$final_label = $this->get_unique_label( $repository, $label );
 
 				$repository->create(
@@ -299,6 +317,7 @@ class Variables_Rest_API {
 						'value' => $value,
 					]
 				);
+				++$created;
 			}
 		}
 
@@ -306,6 +325,12 @@ class Variables_Rest_API {
 		if ( isset( Plugin::$instance->files_manager ) ) {
 			Plugin::$instance->files_manager->clear_cache();
 		}
+
+		return [
+			'created' => $created,
+			'reused'  => $reused,
+			'updated' => $updated,
+		];
 	}
 
 	/**
@@ -344,6 +369,50 @@ class Variables_Rest_API {
 
 			if ( isset( $item['label'] ) && strtolower( $item['label'] ) === strtolower( $label ) ) {
 				return $id;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Find variable by base label and value.
+	 *
+	 * Searches for any variable matching the base label (with or without suffix)
+	 * and the exact value. For example, if searching for "primary-color" with value "red",
+	 * it will match "primary-color", "primary-color-1", "primary-color-2", etc.
+	 *
+	 * @param Variables_Repository $repository  Variables repository.
+	 * @param string               $base_label  Base variable label (without suffix).
+	 * @param string               $value       Variable value to match.
+	 * @return array|null Variable data with 'id' and 'label' keys, or null if not found.
+	 */
+	private function find_variable_by_base_label_and_value( Variables_Repository $repository, string $base_label, string $value ): ?array {
+		$db_record = $repository->load();
+		$existing  = isset( $db_record['data'] ) && is_array( $db_record['data'] ) ? $db_record['data'] : [];
+
+		$base_label_lower = strtolower( $base_label );
+
+		foreach ( $existing as $id => $item ) {
+			if ( isset( $item['deleted'] ) && $item['deleted'] ) {
+				continue;
+			}
+
+			if ( ! isset( $item['label'] ) || ! isset( $item['value'] ) ) {
+				continue;
+			}
+
+			$item_label_lower = strtolower( $item['label'] );
+
+			// Check if label matches base label or base label with suffix (e.g., "primary-color-1")
+			$matches_base = $item_label_lower === $base_label_lower;
+			$matches_with_suffix = preg_match( '/^' . preg_quote( $base_label_lower, '/' ) . '-\d+$/', $item_label_lower );
+
+			if ( ( $matches_base || $matches_with_suffix ) && $item['value'] === $value ) {
+				return [
+					'id'    => $id,
+					'label' => $item['label'],
+				];
 			}
 		}
 
