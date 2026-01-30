@@ -175,8 +175,21 @@ function ehcc_load_files() {
 	require_once EHCC_PATH . 'includes/class-html-converter.php';
 	require_once EHCC_PATH . 'includes/class-widget-style-applicator.php';
 
+	// Variable convertor system.
+	require_once EHCC_PATH . 'includes/convertors/variables/variable-convertor-interface.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-abstract-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-color-hex-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-color-rgb-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-color-rgba-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-length-size-viewport-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/convertors/class-percentage-variable-convertor.php';
+	require_once EHCC_PATH . 'includes/convertors/variables/class-variable-convertor-registry.php';
+	require_once EHCC_PATH . 'includes/services/variables/class-variable-conversion-service.php';
+	require_once EHCC_PATH . 'includes/services/variables/class-variable-extractor.php';
+
 	// API and plugin.
 	require_once EHCC_PATH . 'includes/class-rest-api.php';
+	require_once EHCC_PATH . 'includes/class-variables-rest-api.php';
 	require_once EHCC_PATH . 'includes/class-plugin.php';
 }
 

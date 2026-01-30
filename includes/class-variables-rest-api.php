@@ -74,15 +74,11 @@ class Variables_Rest_API {
 	 *
 	 * @return bool True if user has permission.
 	 */
-	public function check_permissions() {
-		// Allow for development/testing - can be restricted later
-		$allow_public = apply_filters( 'elementor_html_css_converter_allow_public_access', false );
-
-		if ( $allow_public ) {
-			return true;
-		}
-
-		return current_user_can( 'edit_posts' );
+	public function check_permissions(): bool {
+		// TESTING ONLY - Allow public access without authentication.
+		// Remove this line and uncomment the next for production:
+		return true;
+		// return current_user_can( 'edit_posts' );
 	}
 
 	/**
