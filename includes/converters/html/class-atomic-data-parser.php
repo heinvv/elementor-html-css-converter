@@ -10,8 +10,8 @@
 
 namespace ElementorHtmlCssConverter\Converters\Html;
 
-use ElementorHtmlCssConverter\Converter_Registry;
-use ElementorHtmlCssConverter\Css_Converter;
+use ElementorHtmlCssConverter\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Core\Css_Converter;
 use ElementorHtmlCssConverter\Parsers\Id_Style_Extractor;
 
 if ( ! defined( 'ABSPATH' ) ) {

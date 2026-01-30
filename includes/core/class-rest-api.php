@@ -5,7 +5,9 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter;
+namespace ElementorHtmlCssConverter\Core;
+
+use ElementorHtmlCssConverter\Utilities\Widget_Style_Applicator;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

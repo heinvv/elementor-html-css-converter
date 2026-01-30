@@ -7,7 +7,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter;
+namespace ElementorHtmlCssConverter\Core;
 
 use ElementorHtmlCssConverter\Converters\Html\Atomic_Data_Parser;
 use ElementorHtmlCssConverter\Converters\Html\Atomic_Widget_JSON_Creator;

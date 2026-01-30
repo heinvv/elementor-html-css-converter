@@ -5,7 +5,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter;
+namespace ElementorHtmlCssConverter\Core;
 
 use ElementorHtmlCssConverter\Interfaces\Property_Converter_Interface;
 

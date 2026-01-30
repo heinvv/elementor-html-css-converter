@@ -8,13 +8,13 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Convertors\Variables;
+namespace ElementorHtmlCssConverter\Converters\Variables;
 
-use ElementorHtmlCssConverter\Convertors\Variables\Convertors\Color_Hex_Variable_Convertor;
-use ElementorHtmlCssConverter\Convertors\Variables\Convertors\Color_Rgb_Variable_Convertor;
-use ElementorHtmlCssConverter\Convertors\Variables\Convertors\Color_Rgba_Variable_Convertor;
-use ElementorHtmlCssConverter\Convertors\Variables\Convertors\Length_Size_Viewport_Variable_Convertor;
-use ElementorHtmlCssConverter\Convertors\Variables\Convertors\Percentage_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Hex_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgb_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgba_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Length_Size_Viewport_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Percentage_Variable_Convertor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

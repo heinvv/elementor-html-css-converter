@@ -7,7 +7,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter;
+namespace ElementorHtmlCssConverter\Core;
 
 use ElementorHtmlCssConverter\Services\Variables\Variable_Extractor;
 use ElementorHtmlCssConverter\Services\Variables\Variable_Conversion_Service;

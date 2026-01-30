@@ -7,6 +7,14 @@
 
 namespace ElementorHtmlCssConverter;
 
+use ElementorHtmlCssConverter\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Core\Css_Converter;
+use ElementorHtmlCssConverter\Core\Html_Converter;
+use ElementorHtmlCssConverter\Core\Rest_Api;
+use ElementorHtmlCssConverter\Core\Variables_Rest_Api;
+use ElementorHtmlCssConverter\Core\Elementor_Document_Service;
+use ElementorHtmlCssConverter\Utilities\Style_Definition_Builder;
+use ElementorHtmlCssConverter\Utilities\Widget_Style_Applicator;
 use ElementorHtmlCssConverter\Converters\Css\Color_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Background_Color_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Font_Size_Converter;
