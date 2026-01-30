@@ -130,6 +130,9 @@ final class Plugin {
 			$this->document_service
 		);
 		$this->rest_api->register_hooks();
+
+		// Initialize Variables REST API
+		new Variables_Rest_API();
 	}
 
 	/**
