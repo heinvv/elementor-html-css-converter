@@ -30,16 +30,20 @@ class Autoloader {
 		'ElementorHtmlCssConverter\Plugin' => 'includes/plugin.php',
 
 		// Core classes (most frequently instantiated)
-		'ElementorHtmlCssConverter\Core\Converter_Registry' => 'includes/core/class-converter-registry.php',
-		'ElementorHtmlCssConverter\Core\Css_Converter' => 'includes/core/class-css-converter.php',
-		'ElementorHtmlCssConverter\Core\Html_Converter' => 'includes/core/class-html-converter.php',
-		'ElementorHtmlCssConverter\Core\Rest_Api' => 'includes/core/class-rest-api.php',
-		'ElementorHtmlCssConverter\Core\Variables_Rest_Api' => 'includes/core/class-variables-rest-api.php',
-		'ElementorHtmlCssConverter\Core\Elementor_Document_Service' => 'includes/core/class-elementor-document-service.php',
+		'ElementorHtmlCssConverter\Converters\Core\Converter_Registry' => 'includes/converters/core/class-converter-registry.php',
+		'ElementorHtmlCssConverter\Converters\Core\Css_Converter' => 'includes/converters/core/class-css-converter.php',
+		'ElementorHtmlCssConverter\Converters\Core\Html_Converter' => 'includes/converters/core/class-html-converter.php',
+		'ElementorHtmlCssConverter\Converters\Core\Rest_Api' => 'includes/converters/core/class-rest-api.php',
+		'ElementorHtmlCssConverter\Converters\Core\Elementor_Document_Service' => 'includes/converters/core/class-elementor-document-service.php',
+
+		// Variables classes
+		'ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api' => 'includes/converters/variables/class-variables-rest-api.php',
+		'ElementorHtmlCssConverter\Converters\Variables\Variable_Extractor' => 'includes/converters/variables/class-variable-extractor.php',
+		'ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service' => 'includes/converters/variables/class-variable-conversion-service.php',
 
 		// Utilities - frequently used
-		'ElementorHtmlCssConverter\Utilities\Style_Definition_Builder' => 'includes/utilities/class-style-definition-builder.php',
-		'ElementorHtmlCssConverter\Utilities\Widget_Style_Applicator' => 'includes/utilities/class-widget-style-applicator.php',
+		'ElementorHtmlCssConverter\Converters\Utilities\Style_Definition_Builder' => 'includes/converters/utilities/class-style-definition-builder.php',
+		'ElementorHtmlCssConverter\Converters\Utilities\Widget_Style_Applicator' => 'includes/converters/utilities/class-widget-style-applicator.php',
 
 		// Most-used converters
 		'ElementorHtmlCssConverter\Converters\Css\Color_Converter' => 'includes/converters/css/class-color-converter.php',
@@ -52,13 +56,8 @@ class Autoloader {
 	 * @var array<string, string>
 	 */
 	private static $namespace_to_path = [
-		'ElementorHtmlCssConverter\Core' => 'includes/core/',
 		'ElementorHtmlCssConverter\Converters' => 'includes/converters/',
-		'ElementorHtmlCssConverter\Services' => 'includes/services/',
 		'ElementorHtmlCssConverter\Parsers' => 'includes/parsers/',
-		'ElementorHtmlCssConverter\Utilities' => 'includes/utilities/',
-		'ElementorHtmlCssConverter\Interfaces' => 'includes/interfaces/',
-		'ElementorHtmlCssConverter\Abstracts' => 'includes/abstracts/',
 	];
 
 	/**
@@ -143,8 +142,12 @@ class Autoloader {
 		$filename = strtolower( preg_replace( '/([a-z])([A-Z])/', '$1-$2', $filename ) );
 		$filename = str_replace( '_', '-', $filename );
 
+		// Check if we're in an interfaces directory (either base path or subdirectory)
+		$in_interfaces_dir = strpos( $base_path, 'interfaces/' ) !== false
+			|| in_array( 'Interfaces', $parts, true );
+
 		// Determine file prefix based on location and type
-		if ( strpos( $base_path, 'interfaces/' ) !== false ) {
+		if ( $in_interfaces_dir ) {
 			// Files in interfaces/ directory use 'interface-' prefix and strip '-interface' suffix
 			if ( strpos( $filename, '-interface' ) !== false ) {
 				$filename = str_replace( '-interface', '', $filename );

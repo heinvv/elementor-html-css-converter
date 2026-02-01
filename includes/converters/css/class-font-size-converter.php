@@ -1,8 +1,8 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,6 +26,11 @@ class Font_Size_Converter extends Property_Converter_Base {
 			return null;
 		}
 
+		// ✅ Pass through var() references as-is
+		if ( $this->is_css_variable( $value ) ) {
+			return Size_Prop_Type::generate( [ 'size' => $value, 'unit' => '' ] );
+		}
+
 		$parsed = $this->parse_size_value( $value );
 
 		if ( null === $parsed ) {
@@ -33,6 +38,10 @@ class Font_Size_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $parsed );
+	}
+
+	private function is_css_variable( string $value ): bool {
+		return str_starts_with( $value, 'var(' );
 	}
 
 	private function is_valid_string_value( $value ): bool {

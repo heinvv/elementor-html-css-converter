@@ -1,7 +1,7 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use Elementor\Modules\AtomicWidgets\PropTypes\Flex_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Number_Prop_Type;
 

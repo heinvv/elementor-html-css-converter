@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Parsers;
+namespace ElementorHtmlCssConverter\Converters\Parsers;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -42,7 +42,7 @@ class Color_Value_Parser {
 
 	private static function is_supported_color_format( string $value ): bool {
 		if ( self::is_css_variable( $value ) ) {
-			return false;
+			return true; // ✅ Accept var() references
 		}
 
 		return self::is_hex_color( $value )

@@ -1,0 +1,101 @@
+[
+        {
+                "id": "3a668512",
+                "elType": "e-div-block",
+                "settings": {
+                        "classes": {
+                                "$$type": "classes",
+                                "value": [
+                                        "e-c8562dbe-708942e"
+                                ]
+                        }
+                },
+                "elements": [
+                        {
+                                "id": "11969d4",
+                                "elType": "widget",
+                                "settings": {
+                                        "classes": {
+                                                "$$type": "classes",
+                                                "value": []
+                                        },
+                                        "paragraph": {
+                                                "$$type": "html",
+                                                "value": "Text"
+                                        }
+                                },
+                                "elements": [],
+                                "widgetType": "e-paragraph",
+                                "styles": [],
+                                "interactions": [],
+                                "editor_settings": [],
+                                "version": "0.0"
+                        },
+                        {
+                                "id": "e0a862b",
+                                "elType": "widget",
+                                "settings": {
+                                        "classes": {
+                                                "$$type": "classes",
+                                                "value": [
+                                                        "e-e0a862b-c1e8998"
+                                                ]
+                                        }
+                                },
+                                "elements": [],
+                                "widgetType": "e-paragraph",
+                                "styles": {
+                                        "e-e0a862b-c1e8998": {
+                                                "id": "e-e0a862b-c1e8998",
+                                                "label": "local",
+                                                "type": "class",
+                                                "variants": [
+                                                        {
+                                                                "meta": {
+                                                                        "breakpoint": "desktop",
+                                                                        "state": null
+                                                                },
+                                                                "props": {
+                                                                        "color": {
+                                                                                "$$type": "global-color-variable",
+                                                                                "value": "e-gv-9868976"
+                                                                        }
+                                                                },
+                                                                "custom_css": null
+                                                        }
+                                                ]
+                                        }
+                                },
+                                "interactions": [],
+                                "editor_settings": [],
+                                "version": "0.0"
+                        }
+                ],
+                "isInner": false,
+                "styles": {
+                        "e-c8562dbe-708942e": {
+                                "id": "e-c8562dbe-708942e",
+                                "label": "local",
+                                "type": "class",
+                                "variants": [
+                                        {
+                                                "meta": {
+                                                        "breakpoint": "desktop",
+                                                        "state": null
+                                                },
+                                                "props": {
+                                                        "color": {
+                                                                "$$type": "color",
+                                                                "value": "var(--primary-colora)"
+                                                        }
+                                                },
+                                                "custom_css": null
+                                        }
+                                ]
+                        }
+                },
+                "interactions": [],
+                "editor_settings": [],
+                "version": "0.0"
+        }
+]

@@ -5,7 +5,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Utilities;
+namespace ElementorHtmlCssConverter\Converters\Utilities;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

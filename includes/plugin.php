@@ -7,14 +7,15 @@
 
 namespace ElementorHtmlCssConverter;
 
-use ElementorHtmlCssConverter\Core\Converter_Registry;
-use ElementorHtmlCssConverter\Core\Css_Converter;
-use ElementorHtmlCssConverter\Core\Html_Converter;
-use ElementorHtmlCssConverter\Core\Rest_Api;
-use ElementorHtmlCssConverter\Core\Variables_Rest_Api;
-use ElementorHtmlCssConverter\Core\Elementor_Document_Service;
-use ElementorHtmlCssConverter\Utilities\Style_Definition_Builder;
-use ElementorHtmlCssConverter\Utilities\Widget_Style_Applicator;
+use ElementorHtmlCssConverter\Converters\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Core\Css_Converter;
+use ElementorHtmlCssConverter\Converters\Core\Html_Converter;
+use ElementorHtmlCssConverter\Converters\Core\Rest_Api;
+use ElementorHtmlCssConverter\Converters\Core\Elementor_Document_Service;
+use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api;
+use ElementorHtmlCssConverter\Converters\Classes\Classes_Rest_API;
+use ElementorHtmlCssConverter\Converters\Utilities\Style_Definition_Builder;
+use ElementorHtmlCssConverter\Converters\Utilities\Widget_Style_Applicator;
 use ElementorHtmlCssConverter\Converters\Css\Color_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Background_Color_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Font_Size_Converter;
@@ -141,6 +142,9 @@ final class Plugin {
 
 		// Initialize Variables REST API
 		new Variables_Rest_API();
+
+		// Initialize Classes REST API
+		new Classes_Rest_API( $this->registry );
 	}
 
 	/**

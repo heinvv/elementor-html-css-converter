@@ -5,9 +5,9 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Core;
+namespace ElementorHtmlCssConverter\Converters\Core;
 
-use ElementorHtmlCssConverter\Utilities\Widget_Style_Applicator;
+use ElementorHtmlCssConverter\Converters\Utilities\Widget_Style_Applicator;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -387,32 +387,59 @@ class Rest_Api {
 				'callback'            => [ $this, 'handle_convert_html_request' ],
 				'permission_callback' => [ $this, 'check_permissions' ],
 				'args'                => [
-					'html'       => [
+					'html'             => [
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => [ $this, 'sanitize_html_with_styles' ],
 					],
-					'options'    => [
+					'options'          => [
 						'type'    => 'object',
 						'default' => [],
 					],
-					'postId'     => [
+					'css_variables'    => [
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_textarea_field',
+						'description'       => 'Raw CSS variable declarations (e.g., "--primary-color: #ff0000;")',
+					],
+					'import_variables' => [
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'description'       => 'Extract variables from <style> tags in HTML',
+					],
+					'import_classes'   => [
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'description'       => 'Create global classes from .class selectors in <style> tags',
+					],
+					'update_mode'      => [
+						'type'              => 'string',
+						'required'          => false,
+						'default'           => 'create_new',
+						'enum'              => [ 'create_new', 'update' ],
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'postId'           => [
 						'type'              => 'integer',
 						'required'          => false,
 						'sanitize_callback' => 'absint',
 					],
-					'widgetId'   => [
+					'widgetId'         => [
 						'type'              => 'string',
 						'required'          => false,
 						'sanitize_callback' => 'sanitize_text_field',
 					],
-					'postTitle'  => [
+					'postTitle'        => [
 						'type'              => 'string',
 						'required'          => false,
 						'default'           => 'Converted HTML',
 						'sanitize_callback' => 'sanitize_text_field',
 					],
-					'postStatus' => [
+					'postStatus'       => [
 						'type'              => 'string',
 						'required'          => false,
 						'default'           => 'draft',
@@ -436,12 +463,22 @@ class Rest_Api {
 	public function handle_convert_html_request( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
 
-		$html        = $params['html'] ?? '';
-		$options     = $params['options'] ?? [];
-		$post_id     = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
-		$widget_id   = $params['widgetId'] ?? '';
-		$post_title  = $params['postTitle'] ?? 'Converted HTML';
-		$post_status = $params['postStatus'] ?? 'draft';
+		$html             = $params['html'] ?? '';
+		$options          = $params['options'] ?? [];
+		$css_variables    = $params['css_variables'] ?? '';
+		$import_variables = $params['import_variables'] ?? false;
+		$import_classes   = $params['import_classes'] ?? true;
+		$update_mode      = $params['update_mode'] ?? 'create_new';
+		$post_id          = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
+		$widget_id        = $params['widgetId'] ?? '';
+		$post_title       = $params['postTitle'] ?? 'Converted HTML';
+		$post_status      = $params['postStatus'] ?? 'draft';
+
+		// Add variable and class import options to the options array.
+		$options['css_variables']    = $css_variables;
+		$options['import_variables'] = $import_variables;
+		$options['import_classes']   = $import_classes;
+		$options['update_mode']      = $update_mode;
 
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
 

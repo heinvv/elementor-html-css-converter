@@ -5,11 +5,11 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Utilities;
+namespace ElementorHtmlCssConverter\Converters\Utilities;
 
-use ElementorHtmlCssConverter\Core\Css_Converter;
-use ElementorHtmlCssConverter\Core\Elementor_Document_Service;
-use ElementorHtmlCssConverter\Interfaces\Widget_Style_Applicator_Interface;
+use ElementorHtmlCssConverter\Converters\Core\Css_Converter;
+use ElementorHtmlCssConverter\Converters\Core\Elementor_Document_Service;
+use ElementorHtmlCssConverter\Converters\Interfaces\Widget_Style_Applicator_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

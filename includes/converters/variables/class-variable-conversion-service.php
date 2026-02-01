@@ -7,9 +7,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Services\Variables;
-
-use ElementorHtmlCssConverter\Converters\Variables\Variable_Convertor_Registry;
+namespace ElementorHtmlCssConverter\Converters\Variables;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

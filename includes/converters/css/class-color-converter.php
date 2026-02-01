@@ -1,8 +1,9 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,6 +25,18 @@ class Color_Converter extends Property_Converter_Base {
 
 		if ( ! $this->is_valid_string_value( $value ) ) {
 			return null;
+		}
+
+		// Check if value is a CSS variable reference
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			$resolved = Variable_Resolver::resolve( $value, 'color' );
+
+			if ( null !== $resolved ) {
+				return $resolved;
+			}
+
+			// If variable couldn't be resolved, fall through to regular parsing
+			// which will handle var() as a pass-through value
 		}
 
 		$parsed_color = Color_Value_Parser::parse( $value );

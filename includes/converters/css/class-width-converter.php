@@ -1,8 +1,8 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -51,6 +51,14 @@ class Width_Converter extends Property_Converter_Base {
 			return Size_Prop_Type::generate( self::KEYWORD_VALUES[ $value ] );
 		}
 
+		// ✅ Check for var() references
+		if ( $this->is_css_variable( $value ) ) {
+			return Size_Prop_Type::generate( [
+				'size' => $value,
+				'unit' => 'custom',
+			] );
+		}
+
 		// Check for calc() expressions
 		if ( $this->is_calc_value( $value ) ) {
 			return Size_Prop_Type::generate( [
@@ -83,5 +91,9 @@ class Width_Converter extends Property_Converter_Base {
 
 	private function is_calc_value( string $value ): bool {
 		return str_starts_with( $value, 'calc(' );
+	}
+
+	private function is_css_variable( string $value ): bool {
+		return str_starts_with( $value, 'var(' );
 	}
 }

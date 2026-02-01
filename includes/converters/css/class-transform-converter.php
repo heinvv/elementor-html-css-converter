@@ -1,8 +1,8 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Transform\Transform_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Transform\Transform_Functions_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Transform\Functions\Transform_Move_Prop_Type;

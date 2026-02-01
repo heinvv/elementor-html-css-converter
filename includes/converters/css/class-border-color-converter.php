@@ -1,8 +1,8 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {

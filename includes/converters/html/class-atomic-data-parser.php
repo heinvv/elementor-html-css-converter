@@ -10,9 +10,9 @@
 
 namespace ElementorHtmlCssConverter\Converters\Html;
 
-use ElementorHtmlCssConverter\Core\Converter_Registry;
-use ElementorHtmlCssConverter\Core\Css_Converter;
-use ElementorHtmlCssConverter\Parsers\Id_Style_Extractor;
+use ElementorHtmlCssConverter\Converters\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Core\Css_Converter;
+use ElementorHtmlCssConverter\Converters\Parsers\Id_Style_Extractor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -194,6 +194,9 @@ class Atomic_Data_Parser {
 		$id_styles    = $this->id_style_extractor->get_styles_for_id( $element_id, $this->id_rules );
 		$atomic_props = $this->convert_styles_to_atomic_props( $id_styles );
 
+		// Extract class names from the class attribute.
+		$element_classes = $this->extract_class_names( $element );
+
 		$content    = $this->extract_text_content( $element );
 		$attributes = $this->extract_attributes( $element );
 		$children   = $this->extract_children( $element );
@@ -201,13 +204,14 @@ class Atomic_Data_Parser {
 		$attributes['original_tag'] = $tag_name;
 
 		return [
-			'tag'           => $tag_name,
-			'widget_type'   => $widget_config['type'],
-			'widget_config' => $widget_config,
-			'atomic_props'  => $atomic_props,
-			'content'       => $content,
-			'attributes'    => $attributes,
-			'children'      => $children,
+			'tag'             => $tag_name,
+			'widget_type'     => $widget_config['type'],
+			'widget_config'   => $widget_config,
+			'atomic_props'    => $atomic_props,
+			'element_classes' => $element_classes,
+			'content'         => $content,
+			'attributes'      => $attributes,
+			'children'        => $children,
 		];
 	}
 
@@ -222,6 +226,44 @@ class Atomic_Data_Parser {
 	 */
 	private function convert_styles_to_atomic_props( array $styles ): array {
 		return $this->css_converter->convert_properties( $styles );
+	}
+
+	/**
+	 * Extract class names from an element's class attribute.
+	 *
+	 * Parses the space-separated class attribute into an array of individual class names.
+	 * Filters out empty strings and Elementor internal classes.
+	 *
+	 * @param \DOMElement $element DOM element.
+	 * @return array Array of class names.
+	 */
+	private function extract_class_names( \DOMElement $element ): array {
+		$class_attr = $element->getAttribute( 'class' );
+
+		if ( empty( $class_attr ) ) {
+			return [];
+		}
+
+		// Split by whitespace and filter empty strings.
+		$classes = preg_split( '/\s+/', trim( $class_attr ), -1, PREG_SPLIT_NO_EMPTY );
+
+		if ( empty( $classes ) ) {
+			return [];
+		}
+
+		// Filter out Elementor internal classes.
+		$filtered = array_filter(
+			$classes,
+			function ( $class_name ) {
+				// Skip Elementor internal classes.
+				if ( preg_match( '/^(elementor-|e-con-|e-)/', $class_name ) ) {
+					return false;
+				}
+				return true;
+			}
+		);
+
+		return array_values( $filtered );
 	}
 
 	/**
@@ -347,14 +389,15 @@ class Atomic_Data_Parser {
 
 		if ( $has_direct_text ) {
 			$paragraph_element = [
-				'tag'           => 'p',
-				'widget_type'   => 'e-paragraph',
-				'widget_config' => [ 'type' => 'e-paragraph' ],
-				'atomic_props'  => [],
-				'content'       => trim( $element['content'] ),
-				'attributes'    => [ 'original_tag' => 'p' ],
-				'children'      => [],
-				'synthetic'     => true,
+				'tag'             => 'p',
+				'widget_type'     => 'e-paragraph',
+				'widget_config'   => [ 'type' => 'e-paragraph' ],
+				'atomic_props'    => [],
+				'element_classes' => [],
+				'content'         => trim( $element['content'] ),
+				'attributes'      => [ 'original_tag' => 'p' ],
+				'children'        => [],
+				'synthetic'       => true,
 			];
 
 			if ( $has_children ) {

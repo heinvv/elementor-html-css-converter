@@ -5,9 +5,9 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Abstracts;
+namespace ElementorHtmlCssConverter\Converters\Abstracts;
 
-use ElementorHtmlCssConverter\Interfaces\Property_Converter_Interface;
+use ElementorHtmlCssConverter\Converters\Interfaces\Property_Converter_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

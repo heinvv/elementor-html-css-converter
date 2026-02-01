@@ -1,7 +1,7 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

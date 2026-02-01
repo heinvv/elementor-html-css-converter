@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Parsers;
+namespace ElementorHtmlCssConverter\Converters\Parsers;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -42,6 +42,14 @@ class Size_Value_Parser {
 			return null;
 		}
 
+		// ✅ Accept var() references - return as custom value
+		if ( self::is_css_variable( $value ) ) {
+			return [
+				'size' => $value,
+				'unit' => 'custom',
+			];
+		}
+
 		if ( self::is_zero_without_unit( $value ) ) {
 			return self::create_size_array( 0, 'px' );
 		}
@@ -62,6 +70,10 @@ class Size_Value_Parser {
 		}
 
 		return self::create_size_array( $size, $unit );
+	}
+
+	private static function is_css_variable( string $value ): bool {
+		return str_starts_with( $value, 'var(' );
 	}
 
 	public static function is_valid_unit( string $unit ): bool {

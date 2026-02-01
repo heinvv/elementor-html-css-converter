@@ -7,10 +7,8 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Core;
+namespace ElementorHtmlCssConverter\Converters\Variables;
 
-use ElementorHtmlCssConverter\Services\Variables\Variable_Extractor;
-use ElementorHtmlCssConverter\Services\Variables\Variable_Conversion_Service;
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 use Elementor\Plugin;
 use WP_REST_Request;
@@ -241,7 +239,7 @@ class Variables_Rest_API {
 	 * @return array Storage result with 'created', 'reused', and 'updated' counts.
 	 * @throws \Exception If Elementor is not active or storage fails.
 	 */
-	private function store_variables( array $variables, string $update_mode ): array {
+	public function store_variables( array $variables, string $update_mode ): array {
 		// Check if Elementor is available
 		if ( ! class_exists( '\Elementor\Plugin' ) ) {
 			throw new \Exception( 'Elementor plugin is not active' );
