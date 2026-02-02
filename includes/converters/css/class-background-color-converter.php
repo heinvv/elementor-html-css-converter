@@ -58,7 +58,8 @@ class Background_Color_Converter extends Property_Converter_Base {
 				] );
 			}
 
-			// If variable couldn't be resolved, fall through to regular parsing
+			// Variable not found in Elementor, return null (don't pass through raw var()).
+			return null;
 		}
 
 		// Try to parse as gradient first

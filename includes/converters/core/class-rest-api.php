@@ -405,7 +405,7 @@ class Rest_Api {
 					'import_variables' => [
 						'type'              => 'boolean',
 						'required'          => false,
-						'default'           => false,
+						'default'           => true,
 						'sanitize_callback' => 'rest_sanitize_boolean',
 						'description'       => 'Extract variables from <style> tags in HTML',
 					],

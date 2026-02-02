@@ -35,8 +35,8 @@ class Color_Converter extends Property_Converter_Base {
 				return $resolved;
 			}
 
-			// If variable couldn't be resolved, fall through to regular parsing
-			// which will handle var() as a pass-through value
+			// Variable not found in Elementor, return null (don't pass through raw var()).
+			return null;
 		}
 
 		$parsed_color = Color_Value_Parser::parse( $value );

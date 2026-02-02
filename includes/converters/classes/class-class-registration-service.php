@@ -130,74 +130,108 @@ class Class_Registration_Service {
 							'status'       => 'reused',
 						];
 					} else {
-						// Different styles, create with suffix.
-						if ( $available_slots <= 0 ) {
-							$overflow[] = $class_name;
-							continue;
+						// Different styles - check if any suffixed version has matching styles.
+						$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
+
+						if ( $existing_match ) {
+							// Found a suffixed version with matching styles, reuse it.
+							++$skipped;
+
+							$classes[ $class_name ] = [
+								'id'           => $class_name,
+								'label'        => $existing_match['label'],
+								'elementor_id' => $existing_match['id'],
+								'props'        => $atomic_props,
+								'custom_css'   => $custom_css,
+								'status'       => 'reused',
+							];
+						} else {
+							// No matching styles found, create with suffix.
+							if ( $available_slots <= 0 ) {
+								$overflow[] = $class_name;
+								continue;
+							}
+
+							$unique_label = $this->get_unique_label( $class_name, $existing_labels );
+							$new_id       = $this->generate_class_id( $unique_label );
+
+							$existing_items[ $new_id ] = $this->create_class_config(
+								$new_id,
+								$unique_label,
+								$atomic_props,
+								$custom_css
+							);
+							$existing_order[]   = $new_id;
+							$existing_labels[]  = strtolower( $unique_label );
+
+							++$registered;
+							--$available_slots;
+
+							$classes[ $class_name ] = [
+								'id'           => $class_name,
+								'label'        => $unique_label,
+								'elementor_id' => $new_id,
+								'props'        => $atomic_props,
+								'custom_css'   => $custom_css,
+								'status'       => 'created_with_suffix',
+							];
 						}
-
-						$unique_label = $this->get_unique_label( $class_name, $existing_labels );
-						$new_id       = $this->generate_class_id( $unique_label );
-
-						$existing_items[ $new_id ] = $this->create_class_config(
-							$new_id,
-							$unique_label,
-							$atomic_props,
-							$custom_css
-						);
-						$existing_order[]   = $new_id;
-						$existing_labels[]  = strtolower( $unique_label );
-
-						++$registered;
-						--$available_slots;
-
-						$classes[ $class_name ] = [
-							'id'           => $class_name,
-							'label'        => $unique_label,
-							'elementor_id' => $new_id,
-							'props'        => $atomic_props,
-							'custom_css'   => $custom_css,
-							'status'       => 'created_with_suffix',
-						];
 					}
 				}
 			} else {
-				// New class.
-				if ( $available_slots <= 0 ) {
-					$overflow[] = $class_name;
-					continue;
+				// No exact label match - check if any suffixed version has matching styles.
+				$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
+
+				if ( $existing_match ) {
+					// Found a suffixed version with matching styles, reuse it.
+					++$skipped;
+
+					$classes[ $class_name ] = [
+						'id'           => $class_name,
+						'label'        => $existing_match['label'],
+						'elementor_id' => $existing_match['id'],
+						'props'        => $atomic_props,
+						'custom_css'   => $custom_css,
+						'status'       => 'reused',
+					];
+				} else {
+					// New class - no matching styles found anywhere.
+					if ( $available_slots <= 0 ) {
+						$overflow[] = $class_name;
+						continue;
+					}
+
+					$label  = $this->truncate_label( $class_name );
+					$new_id = $this->generate_class_id( $label );
+
+					// Ensure ID is unique.
+					$counter = 1;
+					while ( isset( $existing_items[ $new_id ] ) ) {
+						$new_id = $this->generate_class_id( $label ) . '-' . $counter;
+						++$counter;
+					}
+
+					$existing_items[ $new_id ] = $this->create_class_config(
+						$new_id,
+						$label,
+						$atomic_props,
+						$custom_css
+					);
+					$existing_order[]   = $new_id;
+					$existing_labels[]  = strtolower( $label );
+
+					++$registered;
+					--$available_slots;
+
+					$classes[ $class_name ] = [
+						'id'           => $class_name,
+						'label'        => $label,
+						'elementor_id' => $new_id,
+						'props'        => $atomic_props,
+						'custom_css'   => $custom_css,
+						'status'       => 'created',
+					];
 				}
-
-				$label  = $this->truncate_label( $class_name );
-				$new_id = $this->generate_class_id( $label );
-
-				// Ensure ID is unique.
-				$counter = 1;
-				while ( isset( $existing_items[ $new_id ] ) ) {
-					$new_id = $this->generate_class_id( $label ) . '-' . $counter;
-					++$counter;
-				}
-
-				$existing_items[ $new_id ] = $this->create_class_config(
-					$new_id,
-					$label,
-					$atomic_props,
-					$custom_css
-				);
-				$existing_order[]   = $new_id;
-				$existing_labels[]  = strtolower( $label );
-
-				++$registered;
-				--$available_slots;
-
-				$classes[ $class_name ] = [
-					'id'           => $class_name,
-					'label'        => $label,
-					'elementor_id' => $new_id,
-					'props'        => $atomic_props,
-					'custom_css'   => $custom_css,
-					'status'       => 'created',
-				];
 			}
 		}
 
@@ -270,6 +304,47 @@ class Class_Registration_Service {
 		foreach ( $items as $id => $item ) {
 			if ( isset( $item['label'] ) && strtolower( $item['label'] ) === $label_lower ) {
 				return $id;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Find class by base label and styles.
+	 *
+	 * Searches for any class matching the base label (with or without suffix)
+	 * and identical styles. For example, if searching for "btn" with certain styles,
+	 * it will match "btn", "btn-2", "btn-3", etc.
+	 *
+	 * @param array  $items        Existing global class items.
+	 * @param string $base_label   Base class label (without suffix).
+	 * @param array  $atomic_props Atomic props to match.
+	 * @return array|null Class data with 'id' and 'label' keys, or null if not found.
+	 */
+	private function find_class_by_base_label_and_styles( array $items, string $base_label, array $atomic_props ): ?array {
+		$base_label_lower = strtolower( $base_label );
+
+		foreach ( $items as $id => $item ) {
+			if ( ! isset( $item['label'] ) ) {
+				continue;
+			}
+
+			$item_label_lower = strtolower( $item['label'] );
+
+			// Check if label matches base label or base label with suffix (e.g., "btn-2").
+			$matches_base        = $item_label_lower === $base_label_lower;
+			$matches_with_suffix = preg_match( '/^' . preg_quote( $base_label_lower, '/' ) . '-\d+$/', $item_label_lower );
+
+			if ( $matches_base || $matches_with_suffix ) {
+				// Extract props and compare.
+				$existing_props = $this->extract_props_from_class( $item );
+				if ( $this->are_styles_identical( $atomic_props, $existing_props ) ) {
+					return [
+						'id'    => $id,
+						'label' => $item['label'],
+					];
+				}
 			}
 		}
 

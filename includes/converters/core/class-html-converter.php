@@ -15,6 +15,7 @@ use ElementorHtmlCssConverter\Converters\Html\Widget_Styles_Integrator;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Extractor;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service;
 use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_API;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Extractor;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Conversion_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Registration_Service;
@@ -93,8 +94,9 @@ class Html_Converter {
 		$imported_variables  = [];
 		$imported_classes    = [];
 		$global_class_map    = []; // Maps CSS class name to Elementor global class ID.
+		$variable_renames    = []; // Maps original var names to final names (e.g., '--color' => '--color-1').
 		$css_variables       = $options['css_variables'] ?? '';
-		$import_variables    = $options['import_variables'] ?? false;
+		$import_variables    = $options['import_variables'] ?? true;
 		$import_classes      = $options['import_classes'] ?? true;
 		$update_mode         = $options['update_mode'] ?? 'create_new';
 
@@ -105,6 +107,7 @@ class Html_Converter {
 		if ( ! empty( trim( $css_variables ) ) ) {
 			$import_result      = $this->import_css_variables( $css_variables, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
+			$variable_renames   = array_merge( $variable_renames, $import_result['renames'] ?? [] );
 		}
 
 		// Import variables from HTML <style> tags if requested.
@@ -112,6 +115,19 @@ class Html_Converter {
 			// Import variables BEFORE conversion.
 			$import_result      = $this->import_css_variables( $css, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
+			$variable_renames   = array_merge( $variable_renames, $import_result['renames'] ?? [] );
+		}
+
+		// Clear Variable_Resolver cache after import so it can find newly imported variables.
+		// This is critical for class conversion to resolve var() references to Elementor variable IDs.
+		if ( ! empty( $imported_variables ) ) {
+			Variable_Resolver::clear_cache();
+		}
+
+		// Apply variable renames to CSS before class parsing.
+		// This ensures class definitions use the correct (possibly suffixed) variable names.
+		if ( ! empty( $variable_renames ) ) {
+			$css = $this->apply_variable_renames( $css, $variable_renames );
 		}
 
 		// Check for undefined var() references if any variables were imported.
@@ -377,15 +393,37 @@ class Html_Converter {
 	}
 
 	/**
+	 * Apply variable renames to CSS.
+	 *
+	 * When variables are created with suffixes (e.g., --color-1 instead of --color),
+	 * this method updates all var() references in CSS to use the new names.
+	 *
+	 * @param string $css     CSS content.
+	 * @param array  $renames Map of original names to final names (e.g., '--color' => '--color-1').
+	 * @return string CSS with updated variable references.
+	 */
+	private function apply_variable_renames( string $css, array $renames ): string {
+		foreach ( $renames as $original => $renamed ) {
+			// Replace var(--original) with var(--renamed)
+			// Also handle var(--original, fallback) syntax
+			$pattern     = '/var\s*\(\s*' . preg_quote( $original, '/' ) . '(\s*,|\s*\))/';
+			$replacement = 'var(' . $renamed . '$1';
+			$css         = preg_replace( $pattern, $replacement, $css );
+		}
+
+		return $css;
+	}
+
+	/**
 	 * Import CSS variables from extracted CSS.
 	 *
 	 * @param string $css         CSS content containing variable declarations.
 	 * @param string $update_mode Update mode: 'create_new' or 'update'.
-	 * @return array Import result with list of imported variable names.
+	 * @return array Import result with list of imported variable names and renames mapping.
 	 */
 	private function import_css_variables( string $css, string $update_mode ): array {
 		if ( empty( trim( $css ) ) ) {
-			return [ 'imported' => [] ];
+			return [ 'imported' => [], 'renames' => [] ];
 		}
 
 		// Use Variable_Extractor to find variables.
@@ -393,14 +431,14 @@ class Html_Converter {
 		$raw_vars  = $extractor->extract_from_css( $css );
 
 		if ( empty( $raw_vars ) ) {
-			return [ 'imported' => [] ];
+			return [ 'imported' => [], 'renames' => [] ];
 		}
 
 		// Convert to Elementor format.
 		$converted = Variable_Conversion_Service::convert_to_editor_variables( $raw_vars );
 
 		if ( empty( $converted ) ) {
-			return [ 'imported' => [] ];
+			return [ 'imported' => [], 'renames' => [] ];
 		}
 
 		// Store variables using Variables_Rest_API logic.
@@ -414,6 +452,7 @@ class Html_Converter {
 
 		return [
 			'imported'     => $imported_names,
+			'renames'      => $store_result['renames'] ?? [],
 			'store_result' => $store_result,
 		];
 	}

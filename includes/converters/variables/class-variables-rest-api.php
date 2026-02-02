@@ -236,7 +236,8 @@ class Variables_Rest_API {
 	 *
 	 * @param array  $variables   Converted variables.
 	 * @param string $update_mode Mode: 'create_new' or 'update'.
-	 * @return array Storage result with 'created', 'reused', and 'updated' counts.
+	 * @return array Storage result with 'created', 'reused', 'updated' counts, and 'renames' mapping.
+	 *               'renames' maps original CSS variable names to final names (e.g., '--color' => '--color-1').
 	 * @throws \Exception If Elementor is not active or storage fails.
 	 */
 	public function store_variables( array $variables, string $update_mode ): array {
@@ -252,6 +253,7 @@ class Variables_Rest_API {
 		$created = 0;
 		$reused  = 0;
 		$updated = 0;
+		$renames = [];
 
 		foreach ( $variables as $variable ) {
 			$name  = $variable['name'] ?? '';
@@ -302,6 +304,13 @@ class Variables_Rest_API {
 				if ( $existing_match ) {
 					// Value already exists, don't create duplicate
 					++$reused;
+
+					// Track if we're reusing a suffixed version (e.g., primary-color-1)
+					$existing_label = $existing_match['label'];
+					if ( strtolower( $existing_label ) !== strtolower( $label ) ) {
+						// Original label was "primary-color", reusing "primary-color-1"
+						$renames[ '--' . $label ] = '--' . $existing_label;
+					}
 					continue;
 				}
 
@@ -316,6 +325,11 @@ class Variables_Rest_API {
 					]
 				);
 				++$created;
+
+				// Track rename if label was changed (suffix added)
+				if ( $final_label !== $label ) {
+					$renames[ '--' . $label ] = '--' . $final_label;
+				}
 			}
 		}
 
@@ -328,6 +342,7 @@ class Variables_Rest_API {
 			'created' => $created,
 			'reused'  => $reused,
 			'updated' => $updated,
+			'renames' => $renames,
 		];
 	}
 
