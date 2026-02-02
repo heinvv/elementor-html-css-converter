@@ -3,6 +3,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Border_Radius_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
@@ -46,12 +47,16 @@ class Border_Radius_Converter extends Property_Converter_Base {
 		return 'border-radius';
 	}
 
+	/**
+	 * Override convert to handle shorthand properties with multiple values.
+	 * Each value needs individual variable resolution.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			return null;
 		}
 
@@ -74,8 +79,28 @@ class Border_Radius_Converter extends Property_Converter_Base {
 		return Border_Radius_Prop_Type::generate( $border_radius_value );
 	}
 
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
+		return null;
+	}
+
+	/**
+	 * Resolve a single size value, handling CSS variables.
+	 */
+	private function resolve_size_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'size' );
+		}
+
+		$parsed = Size_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Size_Prop_Type::generate( $parsed );
 	}
 
 	private function contains_elliptical_syntax( string $value ): bool {
@@ -90,17 +115,17 @@ class Border_Radius_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		$size_value = Size_Value_Parser::parse( $value );
+		$resolved = $this->resolve_size_value( $value );
 
-		if ( null === $size_value ) {
+		if ( null === $resolved ) {
 			return null;
 		}
 
 		return [
-			'start-start' => 'start-start' === $logical_corner ? $this->create_size_prop( $size_value ) : null,
-			'start-end' => 'start-end' === $logical_corner ? $this->create_size_prop( $size_value ) : null,
-			'end-end' => 'end-end' === $logical_corner ? $this->create_size_prop( $size_value ) : null,
-			'end-start' => 'end-start' === $logical_corner ? $this->create_size_prop( $size_value ) : null,
+			'start-start' => 'start-start' === $logical_corner ? $resolved : null,
+			'start-end' => 'start-end' === $logical_corner ? $resolved : null,
+			'end-end' => 'end-end' === $logical_corner ? $resolved : null,
+			'end-start' => 'end-start' === $logical_corner ? $resolved : null,
 		];
 	}
 
@@ -112,65 +137,58 @@ class Border_Radius_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		$parsed_values = array_map( [ Size_Value_Parser::class, 'parse' ], $values );
-
-		if ( in_array( null, $parsed_values, true ) ) {
-			return null;
+		// Resolve each value (handles CSS variables)
+		$resolved_values = [];
+		foreach ( $values as $val ) {
+			$resolved = $this->resolve_size_value( $val );
+			if ( null === $resolved ) {
+				return null;
+			}
+			$resolved_values[] = $resolved;
 		}
 
-		return $this->map_shorthand_values_to_corners( $parsed_values );
+		return $this->map_shorthand_values_to_corners( $resolved_values );
 	}
 
-	private function map_shorthand_values_to_corners( array $parsed_values ): ?array {
-		$count = count( $parsed_values );
+	private function map_shorthand_values_to_corners( array $resolved_values ): ?array {
+		$count = count( $resolved_values );
 
 		switch ( $count ) {
 			case 1:
-				$size_prop = $this->create_size_prop( $parsed_values[0] );
 				return [
-					'start-start' => $size_prop,
-					'start-end' => $size_prop,
-					'end-end' => $size_prop,
-					'end-start' => $size_prop,
+					'start-start' => $resolved_values[0],
+					'start-end' => $resolved_values[0],
+					'end-end' => $resolved_values[0],
+					'end-start' => $resolved_values[0],
 				];
 
 			case 2:
-				$tl_br = $this->create_size_prop( $parsed_values[0] );
-				$tr_bl = $this->create_size_prop( $parsed_values[1] );
 				return [
-					'start-start' => $tl_br,
-					'start-end' => $tr_bl,
-					'end-end' => $tl_br,
-					'end-start' => $tr_bl,
+					'start-start' => $resolved_values[0],
+					'start-end' => $resolved_values[1],
+					'end-end' => $resolved_values[0],
+					'end-start' => $resolved_values[1],
 				];
 
 			case 3:
 				return [
-					'start-start' => $this->create_size_prop( $parsed_values[0] ),
-					'start-end' => $this->create_size_prop( $parsed_values[1] ),
-					'end-end' => $this->create_size_prop( $parsed_values[2] ),
-					'end-start' => $this->create_size_prop( $parsed_values[1] ),
+					'start-start' => $resolved_values[0],
+					'start-end' => $resolved_values[1],
+					'end-end' => $resolved_values[2],
+					'end-start' => $resolved_values[1],
 				];
 
 			case 4:
 				return [
-					'start-start' => $this->create_size_prop( $parsed_values[0] ),
-					'start-end' => $this->create_size_prop( $parsed_values[1] ),
-					'end-end' => $this->create_size_prop( $parsed_values[2] ),
-					'end-start' => $this->create_size_prop( $parsed_values[3] ),
+					'start-start' => $resolved_values[0],
+					'start-end' => $resolved_values[1],
+					'end-end' => $resolved_values[2],
+					'end-start' => $resolved_values[3],
 				];
 
 			default:
 				return null;
 		}
-	}
-
-	private function create_size_prop( ?array $size_value ): array {
-		if ( null === $size_value ) {
-			return $this->create_zero_size();
-		}
-
-		return Size_Prop_Type::generate( $size_value );
 	}
 
 	private function create_zero_size(): array {

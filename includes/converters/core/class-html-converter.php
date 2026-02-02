@@ -128,6 +128,9 @@ class Html_Converter {
 		// This ensures class definitions use the correct (possibly suffixed) variable names.
 		if ( ! empty( $variable_renames ) ) {
 			$css = $this->apply_variable_renames( $css, $variable_renames );
+
+			// Also update HTML so the parser sees the renamed variables in <style> tags.
+			$html = $this->apply_variable_renames_to_html( $html, $variable_renames );
 		}
 
 		// Check for undefined var() references if any variables were imported.
@@ -412,6 +415,33 @@ class Html_Converter {
 		}
 
 		return $css;
+	}
+
+	/**
+	 * Apply variable renames to HTML by updating <style> tag contents.
+	 *
+	 * Updates var() references inside <style> tags so the parser sees
+	 * the correct (renamed) variable names.
+	 *
+	 * @param string $html    HTML content.
+	 * @param array  $renames Map of original names to final names.
+	 * @return string HTML with updated variable references in <style> tags.
+	 */
+	private function apply_variable_renames_to_html( string $html, array $renames ): string {
+		// Find and replace within <style> tags only.
+		return preg_replace_callback(
+			'/<style([^>]*)>(.*?)<\/style>/is',
+			function ( $matches ) use ( $renames ) {
+				$attributes = $matches[1];
+				$css        = $matches[2];
+
+				// Apply renames to CSS content.
+				$css = $this->apply_variable_renames( $css, $renames );
+
+				return '<style' . $attributes . '>' . $css . '</style>';
+			},
+			$html
+		);
 	}
 
 	/**

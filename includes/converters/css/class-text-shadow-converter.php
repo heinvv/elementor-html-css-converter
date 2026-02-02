@@ -26,13 +26,14 @@ class Text_Shadow_Converter extends Property_Converter_Base {
 	/**
 	 * Convert text-shadow property.
 	 *
+	 * Elementor atomic widgets do not support text-shadow.
+	 * Returns null to skip this property (it will be handled as custom CSS).
+	 *
 	 * @param string $property The CSS property name.
 	 * @param mixed  $value    The CSS property value.
-	 * @return null Always returns null as text-shadow is not supported in Elementor atomic widgets.
+	 * @return null Always returns null as text-shadow is not supported.
 	 */
-	public function convert( string $property, $value ): ?array {
-		// Elementor atomic widgets do not support text-shadow.
-		// Return null to skip this property (it will be handled as custom CSS).
+	protected function convert_value( string $property, $value ): ?array {
 		return null;
 	}
 }

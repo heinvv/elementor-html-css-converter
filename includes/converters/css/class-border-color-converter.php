@@ -37,6 +37,10 @@ class Border_Color_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function get_variable_type(): ?string {
+		return 'color';
+	}
+
 	public function get_output_property( string $property ): string {
 		// Map physical to logical properties
 		if ( isset( self::PHYSICAL_TO_LOGICAL_MAPPING[ $property ] ) ) {
@@ -46,15 +50,7 @@ class Border_Color_Converter extends Property_Converter_Base {
 		return $property;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$parsed_color = Color_Value_Parser::parse( trim( $value ) );
 
 		if ( null === $parsed_color ) {
@@ -62,9 +58,5 @@ class Border_Color_Converter extends Property_Converter_Base {
 		}
 
 		return Color_Prop_Type::generate( $parsed_color );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 }

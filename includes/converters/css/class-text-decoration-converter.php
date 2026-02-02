@@ -23,15 +23,7 @@ class Text_Decoration_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$decoration_value = $this->parse_text_decoration_value( $value );
 
 		if ( null === $decoration_value ) {
@@ -39,10 +31,6 @@ class Text_Decoration_Converter extends Property_Converter_Base {
 		}
 
 		return String_Prop_Type::generate( $decoration_value );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function parse_text_decoration_value( string $value ): ?string {

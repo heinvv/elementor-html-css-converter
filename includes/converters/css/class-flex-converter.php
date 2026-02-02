@@ -28,6 +28,11 @@ class Flex_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
+		return null;
+	}
+
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;

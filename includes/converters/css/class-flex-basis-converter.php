@@ -32,6 +32,10 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function get_variable_type(): ?string {
+		return 'size';
+	}
+
 	/**
 	 * Output property is 'flex' to allow merging with flex shorthand.
 	 */
@@ -39,15 +43,16 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 		return 'flex';
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
+	/**
+	 * Wrap resolved variable in Flex_Prop_Type structure.
+	 */
+	protected function wrap_resolved_variable( array $resolved, string $property ): array {
+		return Flex_Prop_Type::generate( [
+			'flexBasis' => $resolved,
+		] );
+	}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$value = strtolower( trim( $value ) );
 
 		// Check for keyword values
@@ -68,9 +73,5 @@ class Flex_Basis_Converter extends Property_Converter_Base {
 		return Flex_Prop_Type::generate( [
 			'flexBasis' => Size_Prop_Type::generate( $parsed ),
 		] );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 }

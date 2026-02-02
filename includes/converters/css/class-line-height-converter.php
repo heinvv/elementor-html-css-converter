@@ -18,15 +18,11 @@ class Line_Height_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
+	protected function get_variable_type(): ?string {
+		return 'size';
+	}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$line_height_data = $this->parse_line_height_value( $value );
 
 		if ( null === $line_height_data ) {
@@ -34,10 +30,6 @@ class Line_Height_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $line_height_data );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function parse_line_height_value( string $value ): ?array {

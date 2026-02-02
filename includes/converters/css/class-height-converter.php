@@ -30,15 +30,11 @@ class Height_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
+	protected function get_variable_type(): ?string {
+		return 'size';
+	}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$value = strtolower( trim( $value ) );
 
 		// Check for unsupported CSS keywords
@@ -67,10 +63,6 @@ class Height_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $parsed );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function is_keyword_value( string $value ): bool {

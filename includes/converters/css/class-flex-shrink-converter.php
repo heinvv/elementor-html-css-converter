@@ -30,15 +30,7 @@ class Flex_Shrink_Converter extends Property_Converter_Base {
 		return 'flex';
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$value = trim( $value );
 
 		if ( ! is_numeric( $value ) ) {
@@ -56,9 +48,5 @@ class Flex_Shrink_Converter extends Property_Converter_Base {
 		return Flex_Prop_Type::generate( [
 			'flexShrink' => Number_Prop_Type::generate( $number ),
 		] );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 }

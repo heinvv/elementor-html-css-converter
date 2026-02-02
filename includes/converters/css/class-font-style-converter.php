@@ -22,15 +22,7 @@ class Font_Style_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$normalized_value = $this->normalize_value( $value );
 
 		if ( null === $normalized_value ) {
@@ -38,10 +30,6 @@ class Font_Style_Converter extends Property_Converter_Base {
 		}
 
 		return String_Prop_Type::generate( $normalized_value );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function normalize_value( string $value ): ?string {

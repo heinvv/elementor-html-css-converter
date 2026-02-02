@@ -68,6 +68,11 @@ class Transform_Converter extends Property_Converter_Base {
 		return 'transform';
 	}
 
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for transform properties.
+		return null;
+	}
+
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;

@@ -46,6 +46,10 @@ class Border_Width_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function get_variable_type(): ?string {
+		return 'size';
+	}
+
 	public function get_output_property( string $property ): string {
 		// Map physical to logical properties
 		if ( isset( self::PHYSICAL_TO_LOGICAL_MAPPING[ $property ] ) ) {
@@ -55,15 +59,7 @@ class Border_Width_Converter extends Property_Converter_Base {
 		return $property;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$normalized_value = strtolower( trim( $value ) );
 
 		// Handle keyword values
@@ -78,9 +74,5 @@ class Border_Width_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $size_value );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 }

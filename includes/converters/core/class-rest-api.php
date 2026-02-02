@@ -461,18 +461,17 @@ class Rest_Api {
 	 * @return \WP_REST_Response The REST response.
 	 */
 	public function handle_convert_html_request( \WP_REST_Request $request ): \WP_REST_Response {
-		$params = $request->get_json_params();
-
-		$html             = $params['html'] ?? '';
-		$options          = $params['options'] ?? [];
-		$css_variables    = $params['css_variables'] ?? '';
-		$import_variables = $params['import_variables'] ?? false;
-		$import_classes   = $params['import_classes'] ?? true;
-		$update_mode      = $params['update_mode'] ?? 'create_new';
-		$post_id          = isset( $params['postId'] ) ? (int) $params['postId'] : 0;
-		$widget_id        = $params['widgetId'] ?? '';
-		$post_title       = $params['postTitle'] ?? 'Converted HTML';
-		$post_status      = $params['postStatus'] ?? 'draft';
+		// Use get_param() to apply route defaults correctly.
+		$html             = $request->get_param( 'html' ) ?? '';
+		$options          = $request->get_param( 'options' ) ?? [];
+		$css_variables    = $request->get_param( 'css_variables' ) ?? '';
+		$import_variables = $request->get_param( 'import_variables' ) ?? true;
+		$import_classes   = $request->get_param( 'import_classes' ) ?? true;
+		$update_mode      = $request->get_param( 'update_mode' ) ?? 'create_new';
+		$post_id          = (int) ( $request->get_param( 'postId' ) ?? 0 );
+		$widget_id        = $request->get_param( 'widgetId' ) ?? '';
+		$post_title       = $request->get_param( 'postTitle' ) ?? 'Converted HTML';
+		$post_status      = $request->get_param( 'postStatus' ) ?? 'draft';
 
 		// Add variable and class import options to the options array.
 		$options['css_variables']    = $css_variables;

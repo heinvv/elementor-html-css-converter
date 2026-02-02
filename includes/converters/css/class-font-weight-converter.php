@@ -38,15 +38,7 @@ class Font_Weight_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		if ( $this->is_css_keyword_to_skip( $value ) ) {
 			return null;
 		}
@@ -58,10 +50,6 @@ class Font_Weight_Converter extends Property_Converter_Base {
 		}
 
 		return String_Prop_Type::generate( $normalized_value );
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function is_css_keyword_to_skip( string $value ): bool {

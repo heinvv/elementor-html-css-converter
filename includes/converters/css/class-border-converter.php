@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type;
@@ -78,7 +79,7 @@ class Border_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			return null;
 		}
 
@@ -91,15 +92,54 @@ class Border_Converter extends Property_Converter_Base {
 		return $this->build_expanded_properties( $parsed );
 	}
 
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
+		return null;
+	}
+
+	/**
+	 * Resolve a size value, handling CSS variables.
+	 */
+	private function resolve_size_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'size' );
+		}
+
+		$parsed = Size_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Size_Prop_Type::generate( $parsed );
+	}
+
+	/**
+	 * Resolve a color value, handling CSS variables.
+	 */
+	private function resolve_color_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'color' );
+		}
+
+		$parsed = Color_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Color_Prop_Type::generate( $parsed );
 	}
 
 	private function parse_border_shorthand( string $value ): ?array {
 		// Handle 'none' keyword
 		if ( 'none' === strtolower( $value ) ) {
 			return [
-				'width' => [ 'size' => 0, 'unit' => 'px' ],
+				'width' => Size_Prop_Type::generate( [ 'size' => 0, 'unit' => 'px' ] ),
 				'style' => 'none',
 				'color' => null,
 			];
@@ -122,20 +162,42 @@ class Border_Converter extends Property_Converter_Base {
 
 			// Check for width keyword
 			if ( isset( self::WIDTH_KEYWORDS[ $lower_part ] ) ) {
-				$width = self::WIDTH_KEYWORDS[ $lower_part ];
+				$width = Size_Prop_Type::generate( self::WIDTH_KEYWORDS[ $lower_part ] );
+				continue;
+			}
+
+			// Check for CSS variable (could be width or color - try size first)
+			if ( Variable_Resolver::is_css_variable( $part ) ) {
+				// Try to resolve as size first (for width)
+				if ( null === $width ) {
+					$resolved_size = Variable_Resolver::resolve( $part, 'size' );
+					if ( null !== $resolved_size ) {
+						$width = $resolved_size;
+						continue;
+					}
+				}
+
+				// Try to resolve as color
+				if ( null === $color ) {
+					$resolved_color = Variable_Resolver::resolve( $part, 'color' );
+					if ( null !== $resolved_color ) {
+						$color = $resolved_color;
+						continue;
+					}
+				}
 				continue;
 			}
 
 			// Check for size value (width)
 			$size_value = Size_Value_Parser::parse( $part );
 			if ( null !== $size_value && null === $width ) {
-				$width = $size_value;
+				$width = Size_Prop_Type::generate( $size_value );
 				continue;
 			}
 
 			// Check for color
 			if ( $this->is_color_value( $part ) ) {
-				$color = Color_Value_Parser::parse( $part );
+				$color = $this->resolve_color_value( $part );
 				continue;
 			}
 		}
@@ -146,7 +208,7 @@ class Border_Converter extends Property_Converter_Base {
 		}
 
 		return [
-			'width' => $width ?? [ 'size' => 3, 'unit' => 'px' ], // Default: medium
+			'width' => $width ?? Size_Prop_Type::generate( [ 'size' => 3, 'unit' => 'px' ] ), // Default: medium
 			'style' => $style,
 			'color' => $color,
 		];
@@ -208,14 +270,14 @@ class Border_Converter extends Property_Converter_Base {
 		$result = [];
 
 		// Add width
-		$result['border-width'] = Size_Prop_Type::generate( $parsed['width'] );
+		$result['border-width'] = $parsed['width'];
 
 		// Add style
 		$result['border-style'] = String_Prop_Type::generate( $parsed['style'] );
 
 		// Add color if present
 		if ( null !== $parsed['color'] ) {
-			$result['border-color'] = Color_Prop_Type::generate( $parsed['color'] );
+			$result['border-color'] = $parsed['color'];
 		}
 
 		return $result;

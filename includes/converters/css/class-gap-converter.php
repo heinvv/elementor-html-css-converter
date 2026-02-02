@@ -3,6 +3,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Layout_Direction_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 
@@ -28,12 +29,16 @@ class Gap_Converter extends Property_Converter_Base {
 		return self::OUTPUT_PROPERTY;
 	}
 
+	/**
+	 * Override convert to handle shorthand properties with multiple values.
+	 * Each value needs individual variable resolution.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			return null;
 		}
 
@@ -54,8 +59,28 @@ class Gap_Converter extends Property_Converter_Base {
 		}
 	}
 
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
+		return null;
+	}
+
+	/**
+	 * Resolve a single size value, handling CSS variables.
+	 */
+	private function resolve_size_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'size' );
+		}
+
+		$parsed = Size_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Size_Prop_Type::generate( $parsed );
 	}
 
 	private function parse_gap_shorthand( string $value ): ?array {
@@ -66,7 +91,7 @@ class Gap_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		$row_gap = Size_Value_Parser::parse( $parts[0] );
+		$row_gap = $this->resolve_size_value( $parts[0] );
 
 		if ( null === $row_gap ) {
 			return null;
@@ -76,7 +101,7 @@ class Gap_Converter extends Property_Converter_Base {
 		if ( 1 === $count ) {
 			$column_gap = $row_gap;
 		} else {
-			$column_gap = Size_Value_Parser::parse( $parts[1] );
+			$column_gap = $this->resolve_size_value( $parts[1] );
 
 			if ( null === $column_gap ) {
 				return null;
@@ -84,32 +109,32 @@ class Gap_Converter extends Property_Converter_Base {
 		}
 
 		return Layout_Direction_Prop_Type::generate( [
-			'row'    => Size_Prop_Type::generate( $row_gap ),
-			'column' => Size_Prop_Type::generate( $column_gap ),
+			'row'    => $row_gap,
+			'column' => $column_gap,
 		] );
 	}
 
 	private function parse_row_gap( string $value ): ?array {
-		$parsed = Size_Value_Parser::parse( $value );
+		$resolved = $this->resolve_size_value( $value );
 
-		if ( null === $parsed ) {
+		if ( null === $resolved ) {
 			return null;
 		}
 
 		return Layout_Direction_Prop_Type::generate( [
-			'row' => Size_Prop_Type::generate( $parsed ),
+			'row' => $resolved,
 		] );
 	}
 
 	private function parse_column_gap( string $value ): ?array {
-		$parsed = Size_Value_Parser::parse( $value );
+		$resolved = $this->resolve_size_value( $value );
 
-		if ( null === $parsed ) {
+		if ( null === $resolved ) {
 			return null;
 		}
 
 		return Layout_Direction_Prop_Type::generate( [
-			'column' => Size_Prop_Type::generate( $parsed ),
+			'column' => $resolved,
 		] );
 	}
 }

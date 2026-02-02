@@ -16,11 +16,7 @@ class Opacity_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$opacity_data = $this->parse_opacity_value( $value );
 
 		if ( null === $opacity_data ) {
@@ -33,16 +29,8 @@ class Opacity_Converter extends Property_Converter_Base {
 		] );
 	}
 
-	private function parse_opacity_value( $value ): ?array {
-		if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
-			return null;
-		}
-
-		$value = trim( (string) $value );
-
-		if ( '' === $value ) {
-			return null;
-		}
+	private function parse_opacity_value( string $value ): ?array {
+		$value = trim( $value );
 
 		if ( $this->is_percentage_value( $value ) ) {
 			return $this->parse_percentage_value( $value );

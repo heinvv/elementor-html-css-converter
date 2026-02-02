@@ -3,6 +3,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Number_Prop_Type;
 
@@ -38,6 +39,10 @@ class Positioning_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function get_variable_type(): ?string {
+		return 'size';
+	}
+
 	public function get_output_property( string $property ): string {
 		// Map physical to logical properties
 		if ( isset( self::PHYSICAL_TO_LOGICAL_MAPPING[ $property ] ) ) {
@@ -47,20 +52,28 @@ class Positioning_Converter extends Property_Converter_Base {
 		return $property;
 	}
 
+	/**
+	 * Override convert to handle z-index separately (no variable resolution for z-index).
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			return null;
 		}
 
 		$normalized_value = trim( $value );
 
-		// Handle z-index separately (it's a number, not a size)
+		// Handle z-index separately (it's a number, not a size, no variable support)
 		if ( 'z-index' === $property ) {
 			return $this->convert_z_index( $normalized_value );
+		}
+
+		// Check for CSS variable and resolve
+		if ( Variable_Resolver::is_css_variable( $normalized_value ) ) {
+			return Variable_Resolver::resolve( $normalized_value, 'size' );
 		}
 
 		// Handle 'auto' keyword
@@ -80,8 +93,9 @@ class Positioning_Converter extends Property_Converter_Base {
 		return Size_Prop_Type::generate( $size_value );
 	}
 
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used directly - convert() handles everything
+		return null;
 	}
 
 	private function convert_z_index( string $value ): ?array {

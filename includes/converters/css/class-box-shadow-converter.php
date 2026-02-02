@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Box_Shadow_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Shadow_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
@@ -28,12 +29,15 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	/**
+	 * Override convert to handle complex shadow parsing with CSS variables.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			return null;
 		}
 
@@ -46,8 +50,47 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		return Box_Shadow_Prop_Type::generate( $shadows_data );
 	}
 
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
+	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for this property.
+		return null;
+	}
+
+	/**
+	 * Resolve a color value, handling CSS variables.
+	 */
+	private function resolve_color_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'color' );
+		}
+
+		$parsed = Color_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Color_Prop_Type::generate( $parsed );
+	}
+
+	/**
+	 * Resolve a size value, handling CSS variables.
+	 */
+	private function resolve_size_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return Variable_Resolver::resolve( $value, 'size' );
+		}
+
+		$parsed = Size_Value_Parser::parse( $value );
+
+		if ( null === $parsed ) {
+			return null;
+		}
+
+		return Size_Prop_Type::generate( $parsed );
 	}
 
 	private function parse_box_shadow_value( string $value ): ?array {
@@ -185,6 +228,11 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_color_value( string $value ): bool {
 		$value = trim( $value );
 
+		// CSS variable could be a color
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return true;
+		}
+
 		if ( str_starts_with( $value, '#' ) ) {
 			return true;
 		}
@@ -199,6 +247,11 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_size_value( string $value ): bool {
 		$value = trim( $value );
 
+		// CSS variable could be a size
+		if ( Variable_Resolver::is_css_variable( $value ) ) {
+			return true;
+		}
+
 		if ( '0' === $value ) {
 			return true;
 		}
@@ -208,24 +261,31 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	}
 
 	private function build_shadow_prop_type( array $size_values, ?string $color_value, bool $is_inset ): array {
-		$h_offset = Size_Value_Parser::parse( $size_values[0] );
-		$v_offset = Size_Value_Parser::parse( $size_values[1] );
+		$h_offset = $this->resolve_size_value( $size_values[0] );
+		$v_offset = $this->resolve_size_value( $size_values[1] );
 
 		if ( null === $h_offset || null === $v_offset ) {
 			return null;
 		}
 
-		$blur = isset( $size_values[2] ) ? Size_Value_Parser::parse( $size_values[2] ) : $this->create_zero_size();
-		$spread = isset( $size_values[3] ) ? Size_Value_Parser::parse( $size_values[3] ) : $this->create_zero_size();
+		$blur = isset( $size_values[2] ) ? $this->resolve_size_value( $size_values[2] ) : Size_Prop_Type::generate( $this->create_zero_size() );
+		$spread = isset( $size_values[3] ) ? $this->resolve_size_value( $size_values[3] ) : Size_Prop_Type::generate( $this->create_zero_size() );
 
-		$color = $color_value ?? 'rgba(0, 0, 0, 0.5)';
+		// Resolve color (could be a CSS variable)
+		$color = null;
+		if ( null !== $color_value ) {
+			$color = $this->resolve_color_value( $color_value );
+		}
+		if ( null === $color ) {
+			$color = Color_Prop_Type::generate( 'rgba(0, 0, 0, 0.5)' );
+		}
 
 		$shadow_data = [
-			'hOffset' => Size_Prop_Type::generate( $h_offset ),
-			'vOffset' => Size_Prop_Type::generate( $v_offset ),
-			'blur' => Size_Prop_Type::generate( $blur ?? $this->create_zero_size() ),
-			'spread' => Size_Prop_Type::generate( $spread ?? $this->create_zero_size() ),
-			'color' => Color_Prop_Type::generate( $color ),
+			'hOffset' => $h_offset,
+			'vOffset' => $v_offset,
+			'blur' => $blur ?? Size_Prop_Type::generate( $this->create_zero_size() ),
+			'spread' => $spread ?? Size_Prop_Type::generate( $this->create_zero_size() ),
+			'color' => $color,
 		];
 
 		if ( $is_inset ) {

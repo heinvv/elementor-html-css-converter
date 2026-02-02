@@ -3,7 +3,6 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
-use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Overlay_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Gradient_Overlay_Prop_Type;
@@ -28,37 +27,27 @@ class Background_Color_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	protected function get_variable_type(): ?string {
+		return 'color';
+	}
+
 	public function get_output_property( string $property ): string {
 		return self::OUTPUT_PROPERTY;
 	}
 
-	public function convert( string $property, $value ): ?array {
-		if ( ! $this->supports( $property ) ) {
-			return null;
-		}
+	/**
+	 * Wrap resolved variable in Background_Prop_Type structure.
+	 */
+	protected function wrap_resolved_variable( array $resolved, string $property ): array {
+		return Background_Prop_Type::generate( [
+			'color' => $resolved,
+		] );
+	}
 
-		if ( ! $this->is_valid_string_value( $value ) ) {
-			return null;
-		}
-
+	protected function convert_value( string $property, $value ): ?array {
 		$value = trim( $value );
 
 		if ( 'none' === strtolower( $value ) ) {
-			return null;
-		}
-
-		// Check if value is a CSS variable reference
-		if ( Variable_Resolver::is_css_variable( $value ) ) {
-			$resolved = Variable_Resolver::resolve( $value, 'color' );
-
-			if ( null !== $resolved ) {
-				// Wrap the resolved variable in background prop type structure
-				return Background_Prop_Type::generate( [
-					'color' => $resolved,
-				] );
-			}
-
-			// Variable not found in Elementor, return null (don't pass through raw var()).
 			return null;
 		}
 
@@ -82,10 +71,6 @@ class Background_Color_Converter extends Property_Converter_Base {
 		}
 
 		return null;
-	}
-
-	private function is_valid_string_value( $value ): bool {
-		return is_string( $value ) && '' !== trim( $value );
 	}
 
 	private function is_gradient_value( string $value ): bool {
