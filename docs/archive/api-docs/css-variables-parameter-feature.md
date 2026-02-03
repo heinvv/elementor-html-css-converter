@@ -348,7 +348,7 @@ if ( ! empty( $css_variables ) || $import_variables ) {
 
 ## Testing
 
-See [test-variables-integration.md](test-variables-integration.md) for comprehensive test scenarios:
+See [test-variables-integration.md](../tests/test-variables-integration.md) for comprehensive test scenarios:
 
 - **Test 13:** Direct css_variables parameter
 - **Test 14:** Combined css_variables + import_variables

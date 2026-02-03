@@ -89,7 +89,7 @@ curl -s "https://raw.githubusercontent.com/elementor/elementor/hein/convert-css-
 1. `flex: 1 0 auto; flex-grow: 2;` outputs `flex-grow: 2` (or merged flex prop)
 2. `flex-grow: 2; flex: 1 0 auto;` outputs `flex: 1 0 auto` (shorthand wins when it comes later)
 3. Individual flex properties without shorthand work as before
-4. Flex shorthand without individual properties works as before
+4. Flex shorthand without individual properties work as before
 
 ## Priority
 

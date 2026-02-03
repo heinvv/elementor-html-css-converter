@@ -15,6 +15,7 @@
 - [ ] Port phpunit tests and playwright tests from the PR.
 - [ ] Support core and pro features.
 - [ ] Study responsive support.
+- [ ] Support Widget Abilities API.
 - [ ] Support compositions.
 - [ ] Support v3 > v4 conversions.
 
