@@ -118,6 +118,18 @@ POST /wp-json/html-css-converter/v1/convert-html
 }
 ```
 
+### Unsupported Properties → custom_css
+
+Properties that atomic widgets do not support are stored in the style’s `custom_css` field and rendered as-is. Use this payload to verify that `vertical-align` (and other unsupported properties) end up in `custom_css`:
+
+```json
+{
+  "html": "<style>\n:root {\n  --text-color: #333333;\n  --box-padding: 12px;\n}\n.aligned-box {\n  color: var(--text-color);\n  padding: var(--box-padding);\n  vertical-align: middle;\n}\n</style>\n<div class=\"aligned-box\">Content</div>"
+}
+```
+
+Expected: the widget’s style variant has supported props (e.g. `color`, `padding`) as atomic props, and `vertical-align: middle;` in `custom_css`.
+
 ---
 
 ## cURL Examples
