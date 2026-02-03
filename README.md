@@ -223,7 +223,49 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/convert-html"
 
 ---
 
+## Architecture & API Reference
+
+### Plugin structure
+
+Standalone WordPress plugin (not an Elementor module). Integrates via REST API and Elementor hooks.
+
+```
+elementor-html-css-converter/
+├── elementor-html-css-converter.php
+├── includes/
+│   ├── class-plugin.php
+│   ├── class-rest-api.php
+│   ├── class-css-converter.php
+│   ├── class-converter-registry.php
+│   ├── interfaces/
+│   ├── abstracts/
+│   ├── converters/
+│   └── prop-types/
+```
+
+### Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST .../convert-html` | HTML + `<style>` → atomic widgets; optional variable/class import |
+| `POST .../css-to-atomic` | CSS → atomic props (no document) |
+| `POST .../import-classes` | CSS class definitions → Elementor Global Classes (`css` or `url`, `update_mode`: `create_new` \| `update`) |
+| `POST .../import-variables` | CSS variable definitions → Elementor global variables |
+
+### CSS variables (convert-html)
+
+- **From HTML:** `import_variables: true` (default) extracts variables from `:root` (and other selectors) in `<style>` tags.
+- **From request:** pass raw declarations in `css_variables`, e.g. `"--primary: #ff0000; --spacing: 16px;"`.
+- Both can be combined; value-aware deduplication applies. Undefined `var()` references produce warnings only.
+
+### Elementor parity
+
+- **Style ID:** `e-{widget_id}-{7_char_hex}` (e.g. `e-d91b1ac-2e48908`).
+- **Unsupported CSS:** Properties that atomic widgets do not support (e.g. `vertical-align`) are stored in the style variant’s `custom_css` field and rendered as-is.
+- **Dimensions:** Padding/margin use logical properties (`block-start`, `inline-end`, `block-end`, `inline-start`). Implementation aligns with Elementor’s css-converter (PR #32856) where applicable.
+
+---
+
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Claude Code context file
-- [docs/](docs/) - Additional documentation
