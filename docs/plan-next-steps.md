@@ -11,7 +11,10 @@
 - [x] Create v4 widgets based on html.
 - [x] Support css variables.
 - [x] Support css classes.
-- [ ] Test custom css.
+- [x] Test custom css.
+
+- [ ] Create Playwright environment that can scrape a page and send to Elementor converter api.
+
 - [ ] Port phpunit tests and playwright tests from the PR.
 - [ ] Support core and pro features.
 - [ ] Study responsive support.
