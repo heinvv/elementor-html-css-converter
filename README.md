@@ -269,3 +269,4 @@ elementor-html-css-converter/
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Claude Code context file
+- [docs/](docs/) - Architecture overview ([ARCHITECTURE.md](docs/ARCHITECTURE.md)), plans ([docs/archive/planning/](docs/archive/planning/)), API details and Elementor parity references ([docs/archive/](docs/archive/))
