@@ -102,6 +102,92 @@ POST /wp-json/html-css-converter/v1/convert-html
 }
 ```
 
+### Grid layout with templates
+
+`display: grid` and `gap` are supported as atomic props. Grid template properties (`grid-template-columns`, `grid-template-rows`, `grid-template-areas`, etc.) have no converter and go to `custom_css`. Use these payloads to verify the split.
+
+#### 1. Grid with template columns and rows
+
+```json
+{
+  "html": "<style>\n:root {\n  --gap: 12px;\n  --cell-bg: #e8e8e8;\n  --cell-pad: 8px;\n}\n.grid {\n  display: grid;\n  gap: var(--gap);\n  grid-template-columns: 1fr 1fr 1fr;\n  grid-template-rows: auto 100px;\n}\n.cell {\n  background-color: var(--cell-bg);\n  padding: var(--cell-pad);\n}\n</style>\n<div class=\"grid\">\n  <div class=\"cell\">A</div>\n  <div class=\"cell\">B</div>\n  <div class=\"cell\">C</div>\n  <div class=\"cell\">D</div>\n  <div class=\"cell\">E</div>\n  <div class=\"cell\">F</div>\n</div>"
+}
+```
+
+Expected: container has `display`, `gap` as atomic props; `grid-template-columns` and `grid-template-rows` in `custom_css`. Cells have atomic `background-color` and `padding`. Example rendered output:
+
+```css
+.elementor .grid {
+    column-gap: var(--gap);
+    display: grid;
+    row-gap: var(--gap);
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto 100px;
+}
+
+.elementor .cell {
+    padding-block-start: var(--cell-pad);
+    padding-block-end: var(--cell-pad);
+    padding-inline-start: var(--cell-pad);
+    padding-inline-end: var(--cell-pad);
+    background-color: var(--cell-bg);
+}
+```
+
+#### 2. Grid with template areas (named areas)
+
+```json
+{
+  "html": "<style>\n:root {\n  --gap: 8px;\n  --header-bg: #333;\n  --main-bg: #fff;\n  --aside-bg: #f5f5f5;\n  --footer-bg: #333;\n}\n.page {\n  display: grid;\n  gap: var(--gap);\n  grid-template-columns: 1fr 200px;\n  grid-template-rows: 60px 1fr 40px;\n  grid-template-areas: \"header header\" \"main aside\" \"footer footer\";\n}\n.header { grid-area: header; background-color: var(--header-bg); }\n.main { grid-area: main; background-color: var(--main-bg); }\n.aside { grid-area: aside; background-color: var(--aside-bg); }\n.footer { grid-area: footer; background-color: var(--footer-bg); }\n</style>\n<div class=\"page\">\n  <div class=\"header\">Header</div>\n  <div class=\"main\">Main</div>\n  <div class=\"aside\">Sidebar</div>\n  <div class=\"footer\">Footer</div>\n</div>"
+}
+```
+
+Expected: `.page` has `display`, `gap` as atomic; `grid-template-columns`, `grid-template-rows`, `grid-template-areas` in `custom_css`. Area children have atomic `background-color` and `grid-area` in `custom_css`. Example rendered output:
+
+```css
+.elementor .page {
+    column-gap: var(--gap-1);
+    display: grid;
+    row-gap: var(--gap-1);
+    grid-template-columns: 1fr 200px;
+    grid-template-rows: 60px 1fr 40px;
+    grid-template-areas:
+        "header header"
+        "main aside"
+        "footer footer";
+}
+
+.elementor .header {
+    background-color: var(--header-bg);
+    grid-area: header;
+}
+
+.elementor .main {
+    background-color: var(--main-bg);
+    grid-area: main;
+}
+
+.elementor .aside {
+    background-color: var(--aside-bg);
+    grid-area: aside;
+}
+
+.elementor .footer {
+    background-color: var(--footer-bg);
+    grid-area: footer;
+}
+```
+
+#### 3. Grid with repeat() and minmax()
+
+```json
+{
+  "html": "<style>\n:root {\n  --gap: 16px;\n  --card-bg: #fafafa;\n  --card-padding: 16px;\n}\n.masonry {\n  display: grid;\n  gap: var(--gap);\n  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\n}\n.card {\n  background-color: var(--card-bg);\n  padding: var(--card-padding);\n}\n</style>\n<div class=\"masonry\">\n  <div class=\"card\">Card 1</div>\n  <div class=\"card\">Card 2</div>\n  <div class=\"card\">Card 3</div>\n</div>"
+}
+```
+
+Expected: `display`, `gap` atomic; `grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));` in `custom_css`. Cards have atomic `background-color` and `padding`.
+
 ### Button Styles
 
 ```json
@@ -118,17 +204,74 @@ POST /wp-json/html-css-converter/v1/convert-html
 }
 ```
 
-### Unsupported Properties → custom_css
+### Unsupported Properties / Values → custom_css
 
-Properties that atomic widgets do not support are stored in the style’s `custom_css` field and rendered as-is. Use this payload to verify that `vertical-align` (and other unsupported properties) end up in `custom_css`:
+Properties that have no converter, or values that a converter rejects, are stored in the style’s `custom_css` field and rendered as-is.
+
+**Unsupported property (no converter):** e.g. `vertical-align`, `cursor`, `outline`, `resize`, `overflow-wrap`, `list-style`.
+
+**Unsupported value (converter returns null):** e.g. `display: table-cell` (only block/flex/grid/etc. are supported), or `text-shadow` (converter not implemented; always goes to custom_css).
+
+**Mixed:** same rule can have both atomic props and `custom_css`; only the unsupported parts go to `custom_css`.
+
+Single payload covering all scenarios: aligned-box (vertical-align), clickable (cursor, outline), table-cell (display: table-cell), glow (text-shadow), special (resize, overflow-wrap, list-style).
 
 ```json
 {
-  "html": "<style>\n:root {\n  --text-color: #333333;\n  --box-padding: 12px;\n}\n.aligned-box {\n  color: var(--text-color);\n  padding: var(--box-padding);\n  vertical-align: middle;\n}\n</style>\n<div class=\"aligned-box\">Content</div>"
+  "html": "<style>\n:root {\n  --text-color: #333333;\n  --box-padding: 12px;\n  --bg: #f0f0f0;\n  --pad: 16px;\n  --pad-sm: 8px;\n  --color: #111;\n  --gap: 12px;\n}\n.aligned-box {\n  color: var(--text-color);\n  padding: var(--box-padding);\n  vertical-align: middle;\n}\n.clickable {\n  background-color: var(--bg);\n  padding: var(--pad);\n  cursor: pointer;\n  outline: 2px solid blue;\n}\n.table-cell {\n  padding: var(--pad-sm);\n  display: table-cell;\n}\n.glow {\n  color: var(--color);\n  text-shadow: 0 0 10px rgba(0,0,0,0.5);\n}\n.special {\n  gap: var(--gap);\n  resize: both;\n  overflow-wrap: break-word;\n  list-style: disc inside;\n}\n</style>\n<div class=\"aligned-box\">vertical-align</div>\n<div class=\"clickable\">cursor, outline</div>\n<div class=\"table-cell\">display: table-cell</div>\n<p class=\"glow\">text-shadow</p>\n<div class=\"special\">resize, overflow-wrap, list-style</div>"
 }
 ```
 
-Expected: the widget’s style variant has supported props (e.g. `color`, `padding`) as atomic props, and `vertical-align: middle;` in `custom_css`.
+Expected per class:
+- **aligned-box:** atomic `color`, `padding`; `custom_css`: `vertical-align: middle;`
+- **clickable:** atomic `background-color`, `padding`; `custom_css`: `cursor: pointer; outline: 2px solid blue;`
+- **table-cell:** atomic `padding`; `custom_css`: `display: table-cell;`
+- **glow:** atomic `color`; `custom_css`: `text-shadow: 0 0 10px rgba(0,0,0,0.5);`
+- **special:** atomic `gap`; `custom_css`: `resize: both; overflow-wrap: break-word; list-style: disc inside;`
+
+Expected output when Elementor renders (atomic props as logical properties + custom_css under `.elementor`). Property order may vary; dimensions become `padding-block-*` / `padding-inline-*`, and `gap` becomes `row-gap` and `column-gap`.
+
+```css
+.elementor .aligned-box {
+    color: var(--text-color);
+    padding-block-start: var(--box-padding);
+    padding-block-end: var(--box-padding);
+    padding-inline-start: var(--box-padding);
+    padding-inline-end: var(--box-padding);
+    vertical-align: middle;
+}
+
+.elementor .clickable {
+    padding-block-start: var(--pad);
+    padding-block-end: var(--pad);
+    padding-inline-start: var(--pad);
+    padding-inline-end: var(--pad);
+    background-color: var(--bg);
+    cursor: pointer;
+    outline: 2px solid blue;
+}
+
+.elementor .table-cell {
+    padding-block-start: var(--pad-sm);
+    padding-block-end: var(--pad-sm);
+    padding-inline-start: var(--pad-sm);
+    padding-inline-end: var(--pad-sm);
+    display: table-cell;
+}
+
+.elementor .glow {
+    color: var(--color);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.elementor .special {
+    column-gap: var(--gap);
+    row-gap: var(--gap);
+    resize: both;
+    overflow-wrap: break-word;
+    list-style: disc inside;
+}
+```
 
 ---
 
