@@ -5,14 +5,14 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Utilities;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
-use ElementorHtmlCssConverter\Converters\Core\Css_Converter;
-use ElementorHtmlCssConverter\Converters\Core\Elementor_Document_Service;
+use ElementorHtmlCssConverter\Converters\Css\Css_Converter;
+use ElementorHtmlCssConverter\Converters\Classes\Elementor_Document_Service;
 use ElementorHtmlCssConverter\Converters\Interfaces\Widget_Style_Applicator_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -92,7 +92,6 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 
 		$styles_applied = $conversion_result['props'];
 
-		// Check for existing "local" style and reuse it instead of creating a new one.
 		$existing_local_style = $this->find_existing_local_style( $widget );
 		$style_builder        = $this->style_builder;
 		$applicator           = $this;
@@ -103,20 +102,16 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			}
 
 			if ( null !== $existing_local_style ) {
-				// Update existing local style - merge props into first variant.
 				$style_id = $existing_local_style['id'];
 
 				if ( isset( $widget_data['styles'][ $style_id ]['variants'][0]['props'] ) ) {
-					// Merge new props with existing props (new props take precedence).
 					$existing_props = $widget_data['styles'][ $style_id ]['variants'][0]['props'];
 					$merged_props   = array_merge( $existing_props, $styles_applied );
 					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
 				} else {
-					// No existing props, just set them.
 					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $styles_applied;
 				}
 			} else {
-				// Create new local style.
 				$style_definition = $style_builder->build( $styles_applied, $widget_id );
 				$style_id         = $style_definition['id'];
 
@@ -264,10 +259,8 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 				$style_definition = $this->style_builder->build( $conversion_result['props'], $widget_id );
 				$style_id = $style_definition['id'];
 
-				// Add style definition.
 				$widget['styles'][ $style_id ] = $style_definition;
 
-				// Add class reference to settings.
 				$widget = $this->add_class_reference_to_widget( $widget, $style_id );
 			}
 		}
@@ -383,31 +376,25 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 	private function add_styles_to_widget( array $widget, array $atomic_props ): array {
 		$widget = $this->ensure_styles_property( $widget );
 
-		// Check for existing "local" style.
 		$existing_local_style = $this->find_existing_local_style( $widget );
 
 		if ( null !== $existing_local_style ) {
-			// Update existing local style - merge props into first variant.
 			$style_id = $existing_local_style['id'];
 
 			if ( isset( $widget['styles'][ $style_id ]['variants'][0]['props'] ) ) {
-				// Merge new props with existing props (new props take precedence).
 				$existing_props = $widget['styles'][ $style_id ]['variants'][0]['props'];
 				$merged_props   = array_merge( $existing_props, $atomic_props );
 				$widget['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
 			} else {
-				// No existing props, just set them.
 				$widget['styles'][ $style_id ]['variants'][0]['props'] = $atomic_props;
 			}
 		} else {
-			// Create new local style.
 			$widget_id        = $this->get_widget_id( $widget );
 			$style_definition = $this->style_builder->build( $atomic_props, $widget_id );
 			$style_id         = $style_definition['id'];
 
 			$widget['styles'][ $style_id ] = $style_definition;
 
-			// Add class reference to settings for the style to be applied to HTML.
 			$widget = $this->add_class_reference_to_widget( $widget, $style_id );
 		}
 
@@ -457,12 +444,10 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 	 * @return array The widget with class reference added.
 	 */
 	public function add_class_reference_to_widget( array $widget, string $class_id ): array {
-		// Ensure settings exist.
 		if ( ! isset( $widget['settings'] ) ) {
 			$widget['settings'] = [];
 		}
 
-		// Ensure classes structure exists with proper atomic prop type format.
 		if ( ! isset( $widget['settings']['classes'] ) ) {
 			$widget['settings']['classes'] = [
 				'$$type' => 'classes',
@@ -470,7 +455,6 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			];
 		}
 
-		// Handle case where classes exists but isn't in the expected format.
 		if ( ! isset( $widget['settings']['classes']['value'] ) ) {
 			$existing = $widget['settings']['classes'];
 			$widget['settings']['classes'] = [
@@ -479,7 +463,6 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			];
 		}
 
-		// Add class ID to the classes array if not already present.
 		if ( ! in_array( $class_id, $widget['settings']['classes']['value'], true ) ) {
 			$widget['settings']['classes']['value'][] = $class_id;
 		}

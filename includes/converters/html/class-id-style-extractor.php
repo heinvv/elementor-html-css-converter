@@ -7,7 +7,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Parsers;
+namespace ElementorHtmlCssConverter\Converters\Html;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -62,11 +62,8 @@ class Id_Style_Extractor {
 			return $this->id_rules;
 		}
 
-		// Remove CSS comments.
 		$css = preg_replace( '/\/\*.*?\*\//s', '', $css );
 
-		// Match ID selector rules: #id { declarations }
-		// Only match simple #id selectors, not combined selectors.
 		$pattern = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
 
 		if ( preg_match_all( $pattern, $css, $matches, PREG_SET_ORDER ) ) {
@@ -77,7 +74,6 @@ class Id_Style_Extractor {
 				$parsed_declarations = $this->parse_declarations( $declarations );
 
 				if ( ! empty( $parsed_declarations ) ) {
-					// Merge with existing rules for same ID (later rules override).
 					if ( isset( $this->id_rules[ $id ] ) ) {
 						$this->id_rules[ $id ] = array_merge(
 							$this->id_rules[ $id ],
@@ -118,7 +114,6 @@ class Id_Style_Extractor {
 			$value    = trim( substr( $part, $colon_pos + 1 ) );
 
 			if ( ! empty( $property ) && '' !== $value ) {
-				// Remove !important flag (we don't need specificity).
 				$value = preg_replace( '/\s*!important\s*$/i', '', $value );
 				$value = trim( $value );
 

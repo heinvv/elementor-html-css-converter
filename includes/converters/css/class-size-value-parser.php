@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Converters\Parsers;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -42,7 +42,6 @@ class Size_Value_Parser {
 			return null;
 		}
 
-		// ✅ Accept var() references - return as custom value
 		if ( self::is_css_variable( $value ) ) {
 			return [
 				'size' => $value,

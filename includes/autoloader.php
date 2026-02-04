@@ -29,21 +29,23 @@ class Autoloader {
 		// Root
 		'ElementorHtmlCssConverter\Plugin' => 'includes/plugin.php',
 
-		// Core classes (most frequently instantiated)
-		'ElementorHtmlCssConverter\Converters\Core\Converter_Registry' => 'includes/converters/core/class-converter-registry.php',
-		'ElementorHtmlCssConverter\Converters\Core\Css_Converter' => 'includes/converters/core/class-css-converter.php',
-		'ElementorHtmlCssConverter\Converters\Core\Html_Converter' => 'includes/converters/core/class-html-converter.php',
-		'ElementorHtmlCssConverter\Converters\Core\Rest_Api' => 'includes/converters/core/class-rest-api.php',
-		'ElementorHtmlCssConverter\Converters\Core\Elementor_Document_Service' => 'includes/converters/core/class-elementor-document-service.php',
+		// Classes (most frequently instantiated)
+		'ElementorHtmlCssConverter\Converters\Classes\Converter_Registry' => 'includes/converters/classes/class-converter-registry.php',
+		'ElementorHtmlCssConverter\Converters\Classes\Rest_Api' => 'includes/converters/classes/class-rest-api.php',
+		'ElementorHtmlCssConverter\Converters\Classes\Elementor_Document_Service' => 'includes/converters/classes/class-elementor-document-service.php',
+
+		// CSS classes
+		'ElementorHtmlCssConverter\Converters\Css\Css_Converter' => 'includes/converters/css/class-css-converter.php',
+		'ElementorHtmlCssConverter\Converters\Css\Style_Definition_Builder' => 'includes/converters/css/class-style-definition-builder.php',
+		'ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator' => 'includes/converters/css/class-widget-style-applicator.php',
+
+		// HTML classes
+		'ElementorHtmlCssConverter\Converters\Html\Html_Converter' => 'includes/converters/html/class-html-converter.php',
 
 		// Variables classes
 		'ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api' => 'includes/converters/variables/class-variables-rest-api.php',
 		'ElementorHtmlCssConverter\Converters\Variables\Variable_Extractor' => 'includes/converters/variables/class-variable-extractor.php',
 		'ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service' => 'includes/converters/variables/class-variable-conversion-service.php',
-
-		// Utilities - frequently used
-		'ElementorHtmlCssConverter\Converters\Utilities\Style_Definition_Builder' => 'includes/converters/utilities/class-style-definition-builder.php',
-		'ElementorHtmlCssConverter\Converters\Utilities\Widget_Style_Applicator' => 'includes/converters/utilities/class-widget-style-applicator.php',
 
 		// Most-used converters
 		'ElementorHtmlCssConverter\Converters\Css\Color_Converter' => 'includes/converters/css/class-color-converter.php',
@@ -57,7 +59,6 @@ class Autoloader {
 	 */
 	private static $namespace_to_path = [
 		'ElementorHtmlCssConverter\Converters' => 'includes/converters/',
-		'ElementorHtmlCssConverter\Parsers' => 'includes/parsers/',
 	];
 
 	/**

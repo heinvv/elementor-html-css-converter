@@ -5,10 +5,10 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Utilities;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -121,8 +121,6 @@ class Style_Definition_Builder {
 	 * @return string The generated style ID.
 	 */
 	public function generate_style_id( string $widget_id ): string {
-		// Generate 7-character hex ID like atomic widgets do.
-		// Based on css-converter's atomic-widget-data-formatter.php.
 		$unique_id = substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
 
 		return self::STYLE_ID_PREFIX . $widget_id . '-' . $unique_id;

@@ -5,12 +5,12 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Core;
+namespace ElementorHtmlCssConverter\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Interfaces\Property_Converter_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**

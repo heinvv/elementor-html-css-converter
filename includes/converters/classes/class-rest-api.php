@@ -5,12 +5,13 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Core;
+namespace ElementorHtmlCssConverter\Converters\Classes;
 
-use ElementorHtmlCssConverter\Converters\Utilities\Widget_Style_Applicator;
+use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
+use ElementorHtmlCssConverter\Converters\Html\Html_Converter;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -268,10 +269,7 @@ class Rest_Api {
 	 * @return bool True if user has permission.
 	 */
 	public function check_permissions(): bool {
-		// TESTING ONLY - Allow public access without authentication.
-		// Remove this line and uncomment the next for production:
 		return true;
-		// return current_user_can( 'edit_posts' );
 	}
 
 	/**
@@ -283,7 +281,6 @@ class Rest_Api {
 	 * @return string Sanitized HTML.
 	 */
 	public function sanitize_html_with_styles( string $html ): string {
-		// Allow style tags in addition to post content tags.
 		$allowed_html = wp_kses_allowed_html( 'post' );
 		$allowed_html['style'] = [];
 
@@ -299,7 +296,7 @@ class Rest_Api {
 	public function handle_css_to_atomic_request( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
 
-		$converter = new Css_Converter( $this->registry );
+		$converter = new \ElementorHtmlCssConverter\Converters\Css\Css_Converter( $this->registry );
 		$result    = $converter->convert( $params );
 
 		return rest_ensure_response( $result );
@@ -461,7 +458,6 @@ class Rest_Api {
 	 * @return \WP_REST_Response The REST response.
 	 */
 	public function handle_convert_html_request( \WP_REST_Request $request ): \WP_REST_Response {
-		// Use get_param() to apply route defaults correctly.
 		$html             = $request->get_param( 'html' ) ?? '';
 		$options          = $request->get_param( 'options' ) ?? [];
 		$css_variables    = $request->get_param( 'css_variables' ) ?? '';
@@ -473,7 +469,6 @@ class Rest_Api {
 		$post_title       = $request->get_param( 'postTitle' ) ?? 'Converted HTML';
 		$post_status      = $request->get_param( 'postStatus' ) ?? 'draft';
 
-		// Add variable and class import options to the options array.
 		$options['css_variables']    = $css_variables;
 		$options['import_variables'] = $import_variables;
 		$options['import_classes']   = $import_classes;
@@ -481,12 +476,10 @@ class Rest_Api {
 
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
 
-		// If conversion failed or no widgets, return the result as-is.
 		if ( ! $result['success'] || empty( $result['widgets'] ) ) {
 			return rest_ensure_response( $result );
 		}
 
-		// If no postId provided, auto-create a new Elementor page.
 		if ( 0 === $post_id ) {
 			$post_result = $this->document_service->create_post( $post_title, $post_status );
 
@@ -502,9 +495,7 @@ class Rest_Api {
 			$result['page_created'] = true;
 		}
 
-		// Insert widgets into the post.
 		if ( ! empty( $widget_id ) ) {
-			// Insert into specific container.
 			$inserted_ids = $this->document_service->add_widgets_to_container(
 				$post_id,
 				$widget_id,
@@ -522,7 +513,6 @@ class Rest_Api {
 			$result['inserted']   = true;
 			$result['widget_ids'] = $inserted_ids;
 		} else {
-			// Insert to root level.
 			$insert_result = $this->document_service->add_widgets_to_root(
 				$post_id,
 				$result['widgets']

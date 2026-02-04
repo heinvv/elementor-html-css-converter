@@ -13,8 +13,19 @@
 - [x] Support css classes.
 - [x] Test custom css.
 
-- [ ] Create Playwright environment that can scrape a page and send to Elementor converter api.
+- [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
+- [ ] Clean up CSS properties + dimensions
+- [ ] Support variables.
+- [ ] Support classes.
+- [ ] Create endpoint to trigger external UI.
+- [ ] Create NextJS frontend.
 
+- [ ] Support v4 inline editor > strong / bold / italic etc.
+- [ ] Handle class priority.
+- [ ] Support font-family styles.
+- [ ] Handle base styles.
+- [ ] Handle reset styles.
+- [ ] Support core and pro features.
 - [ ] Port phpunit tests and playwright tests from the PR.
 - [ ] Support core and pro features.
 - [ ] Study responsive support.

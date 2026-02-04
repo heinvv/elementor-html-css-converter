@@ -7,7 +7,7 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Core;
+namespace ElementorHtmlCssConverter\Converters\Html;
 
 use ElementorHtmlCssConverter\Converters\Html\Atomic_Data_Parser;
 use ElementorHtmlCssConverter\Converters\Html\Atomic_Widget_JSON_Creator;
@@ -19,6 +19,7 @@ use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Extractor;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Conversion_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Registration_Service;
+use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 
 if ( ! defined( 'ABSPATH' ) ) {

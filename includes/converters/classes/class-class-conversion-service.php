@@ -9,8 +9,8 @@
 
 namespace ElementorHtmlCssConverter\Converters\Classes;
 
-use ElementorHtmlCssConverter\Converters\Core\Css_Converter;
-use ElementorHtmlCssConverter\Converters\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Css\Css_Converter;
+use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

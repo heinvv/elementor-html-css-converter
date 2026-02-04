@@ -5,12 +5,13 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Core;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Interfaces\Property_Converter_Interface;
+use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -105,15 +106,11 @@ class Css_Converter {
 			if ( null !== $converter ) {
 				$converted = $converter->convert( $property, $value );
 				if ( null !== $converted ) {
-					// Check if this is a multi-property return (shorthand expansion)
-					// Multi-property returns don't have $$type at the root level
 					if ( $this->is_multi_property_result( $converted ) ) {
-						// Merge each expanded property
 						foreach ( $converted as $expanded_property => $expanded_value ) {
 							$props[ $expanded_property ] = $this->merge_props( $props[ $expanded_property ] ?? null, $expanded_value );
 						}
 					} else {
-						// Single property return
 						$output_property = $converter->get_output_property( $property );
 						$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
 					}
@@ -147,12 +144,10 @@ class Css_Converter {
 	 * @return bool True if this is a multi-property result.
 	 */
 	private function is_multi_property_result( array $converted ): bool {
-		// If it has $$type at root, it's a single property
 		if ( isset( $converted['$$type'] ) ) {
 			return false;
 		}
 
-		// Check if all values are prop type arrays (have $$type)
 		foreach ( $converted as $key => $value ) {
 			if ( ! is_array( $value ) || ! isset( $value['$$type'] ) ) {
 				return false;
@@ -174,17 +169,14 @@ class Css_Converter {
 			return $new;
 		}
 
-		// Check if both are dimensions type (have $$type = 'dimensions')
 		if ( $this->is_dimensions_prop( $existing ) && $this->is_dimensions_prop( $new ) ) {
 			return $this->merge_dimensions( $existing, $new );
 		}
 
-		// Check if both are flex type (have $$type = 'flex')
 		if ( $this->is_flex_prop( $existing ) && $this->is_flex_prop( $new ) ) {
 			return $this->merge_flex( $existing, $new );
 		}
 
-		// For other props, new value overwrites
 		return $new;
 	}
 
@@ -208,7 +200,6 @@ class Css_Converter {
 	private function merge_dimensions( array $existing, array $new ): array {
 		$merged_value = $existing['value'] ?? [];
 
-		// Merge new dimension values into existing
 		if ( isset( $new['value'] ) && is_array( $new['value'] ) ) {
 			foreach ( $new['value'] as $dimension => $size_prop ) {
 				$merged_value[ $dimension ] = $size_prop;
@@ -243,7 +234,6 @@ class Css_Converter {
 	private function merge_flex( array $existing, array $new ): array {
 		$merged_value = $existing['value'] ?? [];
 
-		// Merge new flex component values into existing
 		if ( isset( $new['value'] ) && is_array( $new['value'] ) ) {
 			foreach ( $new['value'] as $component => $component_value ) {
 				$merged_value[ $component ] = $component_value;

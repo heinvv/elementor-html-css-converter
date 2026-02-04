@@ -2,8 +2,8 @@
 namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
-use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Color_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Box_Shadow_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Shadow_Prop_Type;

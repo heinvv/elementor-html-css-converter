@@ -2,7 +2,7 @@
 namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Converters\Parsers\Size_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Dimensions_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;

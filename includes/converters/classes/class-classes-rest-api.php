@@ -9,7 +9,7 @@
 
 namespace ElementorHtmlCssConverter\Converters\Classes;
 
-use ElementorHtmlCssConverter\Converters\Core\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use WP_REST_Request;
 use WP_REST_Response;
 

@@ -5,10 +5,10 @@
  * @package ElementorHtmlCssConverter
  */
 
-namespace ElementorHtmlCssConverter\Converters\Core;
+namespace ElementorHtmlCssConverter\Converters\Classes;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -135,21 +135,18 @@ class Elementor_Document_Service {
 			return false;
 		}
 
-		// Assign IDs to all widgets.
 		$widget_ids = [];
 		foreach ( $widgets as &$widget ) {
 			$widget_id         = $this->generate_element_id();
 			$widget['id']      = $widget_id;
 			$widget_ids[]      = $widget_id;
 
-			// Recursively assign IDs to children.
 			if ( ! empty( $widget['elements'] ) ) {
 				$widget['elements'] = $this->assign_ids_recursively( $widget['elements'] );
 			}
 		}
 		unset( $widget );
 
-		// Find and update the container.
 		$updated_elements = $this->add_widgets_to_container_recursive( $elements, $container_id, $widgets );
 
 		if ( ! $this->save_elements( $document, $updated_elements ) ) {
@@ -191,7 +188,6 @@ class Elementor_Document_Service {
 	private function add_widgets_to_container_recursive( array $elements, string $container_id, array $widgets ): array {
 		foreach ( $elements as $index => $element ) {
 			if ( isset( $element['id'] ) && $element['id'] === $container_id ) {
-				// Found the container - add widgets to its elements.
 				if ( ! isset( $elements[ $index ]['elements'] ) ) {
 					$elements[ $index ]['elements'] = [];
 				}
@@ -199,7 +195,6 @@ class Elementor_Document_Service {
 				return $elements;
 			}
 
-			// Recursively search in children.
 			if ( ! empty( $element['elements'] ) ) {
 				$elements[ $index ]['elements'] = $this->add_widgets_to_container_recursive(
 					$element['elements'],
@@ -230,7 +225,6 @@ class Elementor_Document_Service {
 
 		$elements = $document->get_elements_data();
 
-		// Assign IDs to all widgets recursively.
 		$widget_ids = [];
 		foreach ( $widgets as &$widget ) {
 			$widget_id    = $this->generate_element_id();
@@ -243,7 +237,6 @@ class Elementor_Document_Service {
 		}
 		unset( $widget );
 
-		// Add all widgets directly to root (no wrapper).
 		$elements = array_merge( $elements, $widgets );
 
 		if ( ! $this->save_elements( $document, $elements ) ) {
@@ -272,7 +265,6 @@ class Elementor_Document_Service {
 			}
 		}
 
-		// All widgets are containers - no wrapper needed.
 		return false;
 	}
 
@@ -285,19 +277,16 @@ class Elementor_Document_Service {
 	private function is_container_element( array $widget ): bool {
 		$container_types = [ 'e-div-block', 'e-flexbox', 'container' ];
 
-		// Check elType field.
 		$el_type = $widget['elType'] ?? '';
 		if ( in_array( $el_type, $container_types, true ) ) {
 			return true;
 		}
 
-		// Check widgetType field (for atomic widgets).
 		$widget_type = $widget['widgetType'] ?? '';
 		if ( in_array( $widget_type, $container_types, true ) ) {
 			return true;
 		}
 
-		// Check if it has child elements (containers have children).
 		if ( ! empty( $widget['elements'] ) && is_array( $widget['elements'] ) ) {
 			return true;
 		}
@@ -434,33 +423,26 @@ class Elementor_Document_Service {
 	private function save_elements( $document, array $elements ): bool {
 		$post_id = $document->get_main_id();
 
-		// Convert elements to the format Elementor expects.
 		$editor_data = $this->get_elements_raw_data( $elements );
 
-		// Save using update_metadata (matches PR approach).
 		$json_value = wp_slash( wp_json_encode( $editor_data ) );
 
 		if ( false === $json_value ) {
 			return false;
 		}
 
-		// Update the Elementor data using update_metadata (as in css-converter PR).
 		update_metadata( 'post', $post_id, '_elementor_data', $json_value );
 
-		// Set required Elementor post meta fields (as in css-converter PR).
 		update_post_meta( $post_id, '_elementor_edit_mode', 'builder' );
 		update_post_meta( $post_id, '_elementor_template_type', 'wp-post' );
 		update_post_meta( $post_id, '_elementor_version', ELEMENTOR_VERSION );
 
-		// Ensure document is marked as built with Elementor.
 		$document->set_is_built_with_elementor( true );
 
-		// Clear all caches (as in css-converter PR widget-cache-manager.php).
 		delete_post_meta( $post_id, '_elementor_element_cache' );
 		delete_post_meta( $post_id, '_elementor_css' );
 		delete_post_meta( $post_id, '_elementor_atomic_cache_validity' );
 
-		// Clear atomic styles cache for both frontend and preview contexts.
 		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id ] );
 		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id, 'frontend' ] );
 		do_action( 'elementor/atomic-widgets/styles/clear', [ 'local', $post_id, 'preview' ] );
@@ -500,17 +482,14 @@ class Elementor_Document_Service {
 			'elements' => [],
 		];
 
-		// Add widgetType for widgets.
 		if ( isset( $element_data['widgetType'] ) ) {
 			$data['widgetType'] = $element_data['widgetType'];
 		}
 
-		// Add styles for atomic widgets.
 		if ( isset( $element_data['styles'] ) ) {
 			$data['styles'] = $element_data['styles'];
 		}
 
-		// Add other atomic widget properties.
 		if ( isset( $element_data['interactions'] ) ) {
 			$data['interactions'] = $element_data['interactions'];
 		}
@@ -527,7 +506,6 @@ class Elementor_Document_Service {
 			$data['isInner'] = $element_data['isInner'];
 		}
 
-		// Process child elements recursively.
 		if ( ! empty( $element_data['elements'] ) ) {
 			foreach ( $element_data['elements'] as $child ) {
 				$data['elements'][] = $this->get_element_raw_data( $child );
@@ -568,7 +546,6 @@ class Elementor_Document_Service {
 		foreach ( $elements as $element ) {
 			$widget_type = $element['widgetType'] ?? '';
 
-			// v4 atomic containers: e-div-block or e-flexbox
 			if ( in_array( $widget_type, [ 'e-div-block', 'e-flexbox' ], true ) ) {
 				return true;
 			}
@@ -588,7 +565,6 @@ class Elementor_Document_Service {
 		foreach ( $elements as $index => $element ) {
 			$widget_type = $element['widgetType'] ?? '';
 
-			// v4 atomic containers: e-div-block or e-flexbox
 			if ( in_array( $widget_type, [ 'e-div-block', 'e-flexbox' ], true ) ) {
 				if ( ! isset( $elements[ $index ]['elements'] ) ) {
 					$elements[ $index ]['elements'] = [];
@@ -597,7 +573,6 @@ class Elementor_Document_Service {
 				return $elements;
 			}
 
-			// Recursively check nested elements
 			if ( ! empty( $element['elements'] ) ) {
 				$elements[ $index ]['elements'] = $this->add_to_container( $element['elements'], $widget_data );
 				return $elements;

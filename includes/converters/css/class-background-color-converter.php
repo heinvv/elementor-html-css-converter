@@ -2,7 +2,7 @@
 namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
-use ElementorHtmlCssConverter\Converters\Parsers\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Color_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Overlay_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Gradient_Overlay_Prop_Type;
