@@ -17,13 +17,14 @@
 - [ ] Clean up CSS properties + dimensions
 - [ ] Support variables.
 - [ ] Support classes.
+
 - [ ] Create endpoint to trigger external UI.
 - [ ] Create NextJS frontend.
 
 - [ ] Support v4 inline editor > strong / bold / italic etc.
 - [ ] Handle class priority.
 - [ ] Support font-family styles.
-- [ ] Handle base styles.
+- [ ] Handle Elementor v4 base styles.
 - [ ] Handle reset styles.
 - [ ] Support core and pro features.
 - [ ] Port phpunit tests and playwright tests from the PR.
