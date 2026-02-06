@@ -89,7 +89,9 @@ class Flex_Converter extends Property_Converter_Base {
 				}
 				$basis = $parsed_basis;
 			}
-		} elseif ( 2 === $count ) {
+		}
+
+		if ( 2 === $count ) {
 			if ( ! is_numeric( $parts[0] ) ) {
 				return null;
 			}
@@ -106,7 +108,9 @@ class Flex_Converter extends Property_Converter_Base {
 				$basis  = $parsed_basis;
 				$shrink = self::FLEX_SHRINK_DEFAULT;
 			}
-		} elseif ( 3 === $count ) {
+		}
+
+		if ( 3 === $count ) {
 			if ( ! is_numeric( $parts[0] ) || ! is_numeric( $parts[1] ) ) {
 				return null;
 			}
