@@ -273,9 +273,10 @@ class Rest_Api {
 	}
 
 	/**
-	 * Sanitize HTML content while preserving style tags.
+	 * Sanitize HTML content while preserving style tags and SVG elements.
 	 *
-	 * wp_kses_post strips <style> tags, but we need them for ID-based CSS extraction.
+	 * wp_kses_post strips <style> tags and SVG elements, but we need them for
+	 * ID-based CSS extraction and inline SVG import.
 	 *
 	 * @param string $html HTML content.
 	 * @return string Sanitized HTML.
@@ -283,6 +284,156 @@ class Rest_Api {
 	public function sanitize_html_with_styles( string $html ): string {
 		$allowed_html = wp_kses_allowed_html( 'post' );
 		$allowed_html['style'] = [];
+		
+		$allowed_html['svg'] = [
+			'xmlns' => true,
+			'viewbox' => true,
+			'viewBox' => true,
+			'width' => true,
+			'height' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+			'preserveaspectratio' => true,
+			'preserveAspectRatio' => true,
+			'fill' => true,
+			'stroke' => true,
+			'xml:space' => true,
+		];
+		
+		$allowed_html['path'] = [
+			'd' => true,
+			'fill' => true,
+			'stroke' => true,
+			'stroke-width' => true,
+			'stroke-linecap' => true,
+			'stroke-linejoin' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+			'transform' => true,
+		];
+		
+		$allowed_html['circle'] = [
+			'cx' => true,
+			'cy' => true,
+			'r' => true,
+			'fill' => true,
+			'stroke' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['rect'] = [
+			'x' => true,
+			'y' => true,
+			'width' => true,
+			'height' => true,
+			'rx' => true,
+			'ry' => true,
+			'fill' => true,
+			'stroke' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['line'] = [
+			'x1' => true,
+			'y1' => true,
+			'x2' => true,
+			'y2' => true,
+			'stroke' => true,
+			'stroke-width' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['polyline'] = [
+			'points' => true,
+			'fill' => true,
+			'stroke' => true,
+			'stroke-width' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['polygon'] = [
+			'points' => true,
+			'fill' => true,
+			'stroke' => true,
+			'stroke-width' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['g'] = [
+			'fill' => true,
+			'stroke' => true,
+			'transform' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['text'] = [
+			'x' => true,
+			'y' => true,
+			'fill' => true,
+			'font-family' => true,
+			'font-size' => true,
+			'font-weight' => true,
+			'text-anchor' => true,
+			'class' => true,
+			'id' => true,
+			'style' => true,
+		];
+		
+		$allowed_html['defs'] = [];
+		$allowed_html['use'] = [
+			'href' => true,
+			'x' => true,
+			'y' => true,
+			'width' => true,
+			'height' => true,
+			'class' => true,
+			'id' => true,
+		];
+		
+		$allowed_html['clipPath'] = [
+			'id' => true,
+		];
+		
+		$allowed_html['mask'] = [
+			'id' => true,
+		];
+		
+		$allowed_html['linearGradient'] = [
+			'id' => true,
+			'x1' => true,
+			'y1' => true,
+			'x2' => true,
+			'y2' => true,
+			'gradientUnits' => true,
+		];
+		
+		$allowed_html['radialGradient'] = [
+			'id' => true,
+			'cx' => true,
+			'cy' => true,
+			'r' => true,
+			'gradientUnits' => true,
+		];
+		
+		$allowed_html['stop'] = [
+			'offset' => true,
+			'stop-color' => true,
+			'stop-opacity' => true,
+		];
 
 		return wp_kses( $html, $allowed_html );
 	}

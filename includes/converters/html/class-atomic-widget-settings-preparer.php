@@ -12,8 +12,12 @@ namespace ElementorHtmlCssConverter\Converters\Html;
 use ElementorHtmlCssConverter\Converters\Images\Image_Import_Service;
 use ElementorHtmlCssConverter\Converters\Images\Image_Url_Helper;
 use Elementor\Modules\AtomicWidgets\PropTypes\Image_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Image_Src_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Image_Attachment_Id_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Attributes_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Key_Value_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -48,6 +52,13 @@ class Atomic_Widget_Settings_Preparer {
 	private bool $import_images = false;
 
 	/**
+	 * Warnings collected during settings preparation.
+	 *
+	 * @var array
+	 */
+	private array $warnings = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param bool $import_images Whether to import external images during preparation.
@@ -59,6 +70,24 @@ class Atomic_Widget_Settings_Preparer {
 		if ( $import_images ) {
 			$this->image_import_service = new Image_Import_Service();
 		}
+	}
+
+	/**
+	 * Get collected warnings.
+	 *
+	 * @return array Array of warning messages.
+	 */
+	public function get_warnings(): array {
+		return $this->warnings;
+	}
+
+	/**
+	 * Clear collected warnings.
+	 *
+	 * @return void
+	 */
+	public function clear_warnings(): void {
+		$this->warnings = [];
 	}
 
 	/**
@@ -83,9 +112,9 @@ class Atomic_Widget_Settings_Preparer {
 		];
 
 		if ( ! empty( $attributes ) ) {
-			$filtered_attributes = $this->filter_attributes( $attributes );
+			$filtered_attributes = $this->filter_attributes( $attributes, $widget_type );
 			if ( ! empty( $filtered_attributes ) ) {
-				$settings['attributes'] = $filtered_attributes;
+				$settings['attributes'] = $this->create_attributes_prop( $filtered_attributes );
 			}
 		}
 
@@ -127,6 +156,26 @@ class Atomic_Widget_Settings_Preparer {
 					'size' => String_Prop_Type::generate( 'full' ),
 				] );
 				$settings['alt'] = $this->create_atomic_prop( 'string', $attributes['alt'] ?? '' );
+				break;
+
+			case 'e-svg':
+				$svg_content = $attributes['svg_content'] ?? null;
+				if ( ! empty( $svg_content ) && $this->import_images && $this->image_import_service ) {
+					$import_result = $this->image_import_service->import_inline_svg( $svg_content );
+					if ( $import_result['success'] && isset( $import_result['id'] ) ) {
+						$settings['svg'] = Image_Src_Prop_Type::generate( [
+							'id'  => Image_Attachment_Id_Prop_Type::generate( $import_result['id'] ),
+							'url' => null,
+						] );
+					} else {
+						if ( ! empty( $import_result['warnings'] ) ) {
+							$this->warnings = array_merge( $this->warnings, $import_result['warnings'] );
+						}
+					}
+				}
+				if ( isset( $attributes['href'] ) ) {
+					$settings['link'] = $this->create_link_prop( $attributes['href'], $attributes );
+				}
 				break;
 
 			case 'e-flexbox':
@@ -179,7 +228,7 @@ class Atomic_Widget_Settings_Preparer {
 	 */
 	private function create_link_prop( string $url, array $attributes ): array {
 		$target          = $attributes['target'] ?? '_self';
-		$is_target_blank = ( '_blank' === $target ) ? true : null;
+		$is_target_blank = ( '_blank' === $target );
 
 		return [
 			'$$type' => 'link',
@@ -188,7 +237,7 @@ class Atomic_Widget_Settings_Preparer {
 					'$$type' => 'url',
 					'value'  => $url,
 				],
-				'isTargetBlank' => $is_target_blank,
+				'isTargetBlank' => $is_target_blank ? Boolean_Prop_Type::generate( true ) : null,
 			],
 		];
 	}
@@ -268,12 +317,18 @@ class Atomic_Widget_Settings_Preparer {
 	/**
 	 * Filter attributes to exclude standard ones.
 	 *
-	 * @param array $attributes HTML attributes.
+	 * @param array  $attributes  HTML attributes.
+	 * @param string $widget_type Widget type.
 	 * @return array Filtered attributes.
 	 */
-	private function filter_attributes( array $attributes ): array {
+	private function filter_attributes( array $attributes, string $widget_type = '' ): array {
 		$filtered            = [];
-		$excluded_attributes = [ 'style', 'class', 'id', 'href', 'src', 'alt', 'width', 'height', 'original_tag' ];
+		$excluded_attributes = [ 'style', 'class', 'id', 'href', 'src', 'alt', 'original_tag', 'svg_content' ];
+
+		if ( 'e-svg' !== $widget_type ) {
+			$excluded_attributes[] = 'width';
+			$excluded_attributes[] = 'height';
+		}
 
 		foreach ( $attributes as $name => $value ) {
 			if ( ! in_array( $name, $excluded_attributes, true ) ) {
@@ -301,6 +356,25 @@ class Atomic_Widget_Settings_Preparer {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Create attributes prop structure.
+	 *
+	 * @param array $attributes HTML attributes.
+	 * @return array Attributes prop structure.
+	 */
+	private function create_attributes_prop( array $attributes ): array {
+		$key_value_items = [];
+
+		foreach ( $attributes as $name => $value ) {
+			$key_value_items[] = Key_Value_Prop_Type::generate( [
+				'key'   => String_Prop_Type::generate( $name ),
+				'value' => String_Prop_Type::generate( $value ),
+			] );
+		}
+
+		return Attributes_Prop_Type::generate( $key_value_items );
 	}
 }
 

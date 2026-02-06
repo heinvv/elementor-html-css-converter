@@ -14,6 +14,7 @@
 - [x] Test custom css.
 - [x] Study images support.
 - [ ] Study svg support.
+- [ ] Suppport pseudo classes as :hover() and :focus()
 - [ ] Support v4 inline editor > strong / bold / italic etc.
 - [x] Support for Google font-family styles.
 - [x] Study responsive support.

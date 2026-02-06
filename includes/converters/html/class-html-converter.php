@@ -77,7 +77,7 @@ class Html_Converter {
 		$this->converter_registry = $converter_registry;
 		$matcher                   = $breakpoint_matcher ?? new Breakpoint_Matcher();
 		$this->data_parser        = new Atomic_Data_Parser( $converter_registry, $matcher );
-		$this->json_creator       = new Atomic_Widget_JSON_Creator();
+		$this->json_creator       = new Atomic_Widget_JSON_Creator( false );
 		$this->styles_integrator  = new Widget_Styles_Integrator();
 	}
 
@@ -154,10 +154,16 @@ class Html_Converter {
 			}
 		}
 
-		$widgets = $this->create_widgets( $widget_data_array );
+		$json_creator = new Atomic_Widget_JSON_Creator( $import_images );
+		$widgets = $json_creator->create_multiple_widgets( $widget_data_array );
 
 		if ( empty( $widgets ) ) {
 			return $this->build_error_result( 'No widgets could be created from the HTML' );
+		}
+
+		$svg_warnings = $json_creator->get_warnings();
+		if ( ! empty( $svg_warnings ) ) {
+			$warnings = array_merge( $warnings, $svg_warnings );
 		}
 
 		$widgets_with_styles = $this->integrate_styles( $widgets, $widget_data_array, $global_class_map );
@@ -188,12 +194,12 @@ class Html_Converter {
 		if ( $import_images ) {
 			$result['imported_images'] = $imported_images;
 			if ( ! empty( $import_warnings ) ) {
-				$result['warnings'] = $import_warnings;
+				$warnings = array_merge( $warnings, $import_warnings );
 			}
 		}
 
 		if ( ! empty( $warnings ) ) {
-			$result['warnings'] = $warnings;
+			$result['warnings'] = array_unique( $warnings );
 		}
 
 		return $result;

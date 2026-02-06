@@ -14,6 +14,7 @@ use Elementor\Core\Files\Uploads_Manager;
 use Elementor\Core\Files\File_Types\Svg;
 use Elementor\User;
 use Elementor\Modules\AtomicWidgets\PropTypes\Image_Attachment_Id_Prop_Type;
+use ElementorHtmlCssConverter\Converters\Images\Svg_Security_Bypass_Handler;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -27,34 +28,140 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Image_Import_Service {
 
 	/**
+	 * Security bypass handler instance.
+	 *
+	 * @var Svg_Security_Bypass_Handler
+	 */
+	private Svg_Security_Bypass_Handler $security_bypass_handler;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->security_bypass_handler = new Svg_Security_Bypass_Handler();
+	}
+
+	/**
 	 * Check if SVG imports are allowed.
 	 *
 	 * @return array Array with 'allowed' boolean and 'warnings' array.
 	 */
 	public function check_svg_import_permissions(): array {
+		$this->ensure_svg_mime_type_registered();
+		
 		$warnings = [];
 
-		if ( ! Uploads_Manager::are_unfiltered_uploads_enabled() ) {
+		$unfiltered_enabled = $this->security_bypass_handler->are_unfiltered_uploads_enabled();
+		
+		if ( ! $unfiltered_enabled ) {
 			$warnings[] = 'SVG import requires "Enable Unfiltered File Uploads" to be enabled in Elementor > Settings > Advanced';
 		}
 
-		if ( ! Svg::file_sanitizer_can_run() ) {
+		$sanitizer_can_run = Svg::file_sanitizer_can_run();
+		if ( ! $sanitizer_can_run ) {
 			$warnings[] = 'SVG import requires PHP classes DOMDocument and SimpleXMLElement to be available';
 		}
 
-		if ( ! User::is_current_user_can_upload_json() ) {
+		$can_upload_json = $this->security_bypass_handler->can_upload_json();
+		
+		if ( ! $can_upload_json ) {
 			$warnings[] = 'SVG import requires user to have manage_options capability or Elementor role manager to allow JSON uploads';
 		}
 
 		$mimes = get_allowed_mime_types();
-		if ( ! isset( $mimes['svg'] ) && ! isset( $mimes['svgz'] ) ) {
-			$warnings[] = 'SVG mime type (image/svg+xml) is not registered in WordPress upload_mimes filter';
+		$has_svg_mime = isset( $mimes['svg'] ) || isset( $mimes['svgz'] );
+		
+		if ( ! $has_svg_mime ) {
+			$has_filter = has_filter( 'upload_mimes', [ $this, 'add_svg_mime_type' ] );
+			if ( $this->security_bypass_handler->should_suppress_mime_type_warning( $has_filter ) ) {
+			} else {
+				$safe_svg_active = class_exists( 'safe_svg' ) || function_exists( 'safe_svg_current_user_can_upload' );
+				
+				if ( $safe_svg_active ) {
+					$safe_svg_instance = null;
+					if ( class_exists( 'safe_svg' ) && isset( $GLOBALS['safe_svg'] ) ) {
+						$safe_svg_instance = $GLOBALS['safe_svg'];
+					} elseif ( class_exists( 'safe_svg' ) ) {
+						$reflection = new \ReflectionClass( 'safe_svg' );
+						if ( $reflection->hasMethod( 'get_instance' ) ) {
+							$safe_svg_instance = \safe_svg::get_instance();
+						}
+					}
+					
+					if ( $safe_svg_instance && method_exists( $safe_svg_instance, 'current_user_can_upload_svg' ) ) {
+						$can_upload = $safe_svg_instance->current_user_can_upload_svg();
+						if ( ! $can_upload ) {
+							$warnings[] = 'SVG mime type (image/svg+xml) is not registered. Safe SVG plugin detected but current user does not have permission to upload SVGs. Check Safe SVG settings (Settings > Safe SVG) to ensure your user role can upload SVGs.';
+						} else {
+							$warnings[] = 'SVG mime type (image/svg+xml) is not registered in WordPress upload_mimes filter. Safe SVG plugin is active but the mime type is not available in REST API context. This may be a timing issue - try adding this to your theme\'s functions.php: add_filter( \'upload_mimes\', function($mimes) { $mimes[\'svg\'] = \'image/svg+xml\'; return $mimes; }, 999 );';
+						}
+					} else {
+						$warnings[] = 'SVG mime type (image/svg+xml) is not registered in WordPress upload_mimes filter. Safe SVG plugin detected but could not verify permissions.';
+					}
+				} else {
+					$warnings[] = 'SVG mime type (image/svg+xml) is not registered in WordPress upload_mimes filter. Add this to your theme\'s functions.php: add_filter( \'upload_mimes\', function($mimes) { $mimes[\'svg\'] = \'image/svg+xml\'; return $mimes; } );';
+				}
+			}
 		}
 
 		return [
 			'allowed'  => empty( $warnings ),
 			'warnings' => $warnings,
 		];
+	}
+
+	/**
+	 * Ensure SVG mime type is registered for REST API context.
+	 *
+	 * Safe SVG and other plugins may only register SVG mime type in admin contexts.
+	 * This ensures it's available for REST API calls.
+	 *
+	 * @return void
+	 */
+	private function ensure_svg_mime_type_registered(): void {
+		$mimes = get_allowed_mime_types();
+		if ( isset( $mimes['svg'] ) || isset( $mimes['svgz'] ) ) {
+			return;
+		}
+
+		if ( class_exists( 'safe_svg' ) ) {
+			$safe_svg_instance = null;
+			if ( isset( $GLOBALS['safe_svg'] ) ) {
+				$safe_svg_instance = $GLOBALS['safe_svg'];
+			} else {
+				try {
+					$reflection = new \ReflectionClass( 'safe_svg' );
+					if ( $reflection->hasMethod( 'get_instance' ) ) {
+						$safe_svg_instance = \safe_svg::get_instance();
+					}
+				} catch ( \Exception $e ) {
+				}
+			}
+
+			if ( $safe_svg_instance && method_exists( $safe_svg_instance, 'current_user_can_upload_svg' ) ) {
+				$can_upload = $safe_svg_instance->current_user_can_upload_svg();
+				if ( $can_upload && method_exists( $safe_svg_instance, 'allow_svg' ) ) {
+					add_filter( 'upload_mimes', [ $safe_svg_instance, 'allow_svg' ], 10, 1 );
+					return;
+				}
+			}
+		}
+
+		if ( $this->security_bypass_handler->should_register_svg_mime_type() ) {
+			add_filter( 'upload_mimes', [ $this, 'add_svg_mime_type' ], 999, 1 );
+		}
+	}
+
+	/**
+	 * Add SVG mime type to upload_mimes filter.
+	 *
+	 * @param array $mimes Existing mime types.
+	 * @return array Mime types with SVG added.
+	 */
+	public function add_svg_mime_type( array $mimes ): array {
+		$mimes['svg'] = 'image/svg+xml';
+		$mimes['svgz'] = 'image/svg+xml';
+		return $mimes;
 	}
 
 	/**
@@ -578,6 +685,147 @@ class Image_Import_Service {
 		}
 
 		return $background;
+	}
+
+	/**
+	 * Find existing SVG attachment by content hash.
+	 *
+	 * @param string $svg_content SVG content to check.
+	 * @return int|null Existing attachment ID if found, null otherwise.
+	 */
+	private function find_existing_svg_by_content( string $svg_content ): ?int {
+		$content_hash = md5( $svg_content );
+		
+		global $wpdb;
+		$existing_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT post_id FROM {$wpdb->postmeta}
+				WHERE meta_key = '_elementor_inline_svg_hash'
+				AND meta_value = %s
+				LIMIT 1",
+				$content_hash
+			)
+		);
+		
+		if ( $existing_id ) {
+			return (int) $existing_id;
+		}
+		
+		return null;
+	}
+
+	/**
+	 * Import inline SVG content into WordPress media library.
+	 *
+	 * @param string      $svg_content SVG content to import.
+	 * @param string|null  $filename    Optional filename. If not provided, generated from content hash.
+	 * @return array|null Imported image data with 'id' and 'url' keys, or null on failure.
+	 */
+	public function import_inline_svg( string $svg_content, ?string $filename = null ): array {
+		if ( empty( trim( $svg_content ) ) ) {
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => [ 'SVG content is empty' ],
+			];
+		}
+
+		$permission_check = $this->check_svg_import_permissions();
+		if ( ! $permission_check['allowed'] ) {
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => $permission_check['warnings'],
+			];
+		}
+
+		$existing_id = $this->find_existing_svg_by_content( $svg_content );
+		if ( $existing_id ) {
+			return [
+				'success' => true,
+				'id'  => $existing_id,
+				'url' => wp_get_attachment_url( $existing_id ),
+				'warnings' => [],
+			];
+		}
+
+		$svg_instance = new Svg();
+		$sanitized_svg = $svg_instance->sanitizer( $svg_content );
+		if ( false === $sanitized_svg ) {
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => [ 'SVG sanitization failed' ],
+			];
+		}
+
+		if ( null === $filename ) {
+			$content_hash = md5( $svg_content );
+			$filename = 'svg-' . substr( $content_hash, 0, 8 ) . '.svg';
+		}
+
+		$upload_dir = wp_upload_dir();
+		if ( $upload_dir['error'] ) {
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => [ 'WordPress upload directory error: ' . $upload_dir['error'] ],
+			];
+		}
+
+		$file_path = $upload_dir['path'] . '/' . $filename;
+		$file_url = $upload_dir['url'] . '/' . $filename;
+
+		$unique_filename = wp_unique_filename( $upload_dir['path'], $filename );
+		$file_path = $upload_dir['path'] . '/' . $unique_filename;
+		$file_url = $upload_dir['url'] . '/' . $unique_filename;
+
+		$upload_result = wp_upload_bits( $unique_filename, null, $sanitized_svg );
+		if ( $upload_result['error'] ) {
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => [ 'File upload failed: ' . $upload_result['error'] ],
+			];
+		}
+
+		$attachment_data = [
+			'post_mime_type' => 'image/svg+xml',
+			'post_title'     => sanitize_file_name( pathinfo( $unique_filename, PATHINFO_FILENAME ) ),
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		];
+
+		$attachment_id = wp_insert_attachment( $attachment_data, $upload_result['file'] );
+		if ( is_wp_error( $attachment_id ) || ! $attachment_id ) {
+			$error_message = is_wp_error( $attachment_id ) ? $attachment_id->get_error_message() : 'unknown error';
+			return [
+				'success' => false,
+				'id' => null,
+				'url' => null,
+				'warnings' => [ 'Attachment creation failed: ' . $error_message ],
+			];
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attachment_metadata = wp_generate_attachment_metadata( $attachment_id, $upload_result['file'] );
+		wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
+
+		$content_hash = md5( $svg_content );
+		update_post_meta( $attachment_id, '_elementor_inline_svg_hash', $content_hash );
+
+		$result = [
+			'success' => true,
+			'id'  => $attachment_id,
+			'url' => wp_get_attachment_url( $attachment_id ),
+			'warnings' => [],
+		];
+		return $result;
 	}
 
 	/**

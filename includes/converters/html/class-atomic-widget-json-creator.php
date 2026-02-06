@@ -36,10 +36,12 @@ class Atomic_Widget_JSON_Creator {
 
 	/**
 	 * Constructor.
+	 *
+	 * @param bool $import_images Whether to import images during widget creation.
 	 */
-	public function __construct() {
+	public function __construct( bool $import_images = false ) {
 		$this->widget_mapper     = new HTML_To_Atomic_Widget_Mapper();
-		$this->settings_preparer = new Atomic_Widget_Settings_Preparer();
+		$this->settings_preparer = new Atomic_Widget_Settings_Preparer( $import_images );
 	}
 
 	/**
@@ -85,6 +87,7 @@ class Atomic_Widget_JSON_Creator {
 	 */
 	public function create_multiple_widgets( array $widgets_data ): array {
 		$widgets = [];
+		$this->settings_preparer->clear_warnings();
 
 		foreach ( $widgets_data as $widget_data ) {
 			$widget = $this->create_widget_json( $widget_data );
@@ -94,6 +97,15 @@ class Atomic_Widget_JSON_Creator {
 		}
 
 		return $widgets;
+	}
+
+	/**
+	 * Get warnings collected during widget creation.
+	 *
+	 * @return array Array of warning messages.
+	 */
+	public function get_warnings(): array {
+		return $this->settings_preparer->get_warnings();
 	}
 
 	/**

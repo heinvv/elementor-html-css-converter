@@ -55,6 +55,7 @@ class HTML_To_Atomic_Widget_Mapper {
 		'button'     => [ 'type' => 'e-button' ],
 		'a'          => [ 'type' => 'e-button' ],
 		'img'        => [ 'type' => 'e-image' ],
+		'svg'        => [ 'type' => 'e-svg' ],
 		'div'        => [ 'type' => 'e-div-block' ],
 		'section'    => [ 'type' => 'e-div-block' ],
 		'article'    => [ 'type' => 'e-div-block' ],

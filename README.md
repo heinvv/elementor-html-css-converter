@@ -923,6 +923,44 @@ When `import_images: true` (default), external images from `<img>` tags and `bac
 
 If SVG import requirements are not met, warnings will be included in the API response. Regular images will still import successfully.
 
+#### Security Bypass Handler for Unauthenticated REST API
+
+The plugin includes a security bypass handler (`Svg_Security_Bypass_Handler`) that allows SVG imports to work in unauthenticated REST API contexts while still respecting Elementor's security settings.
+
+**How it works:**
+
+When the REST API endpoint is called without authentication (user ID = 0), the bypass handler:
+
+1. **Checks Elementor option directly**: Instead of requiring user context, it checks the `elementor_unfiltered_files_upload` option directly from the database
+2. **Registers SVG mime type**: Automatically registers the SVG mime type for REST API requests if Safe SVG plugin is active or if the option is enabled
+3. **Allows operations conditionally**: Only allows SVG imports when:
+   - Elementor "Enable Unfiltered File Uploads" setting is enabled
+   - SVG sanitizer can run (DOMDocument/SimpleXMLElement available)
+   - The request is a REST API request
+
+**Security considerations:**
+
+- The bypass handler does NOT override WordPress or Elementor security hooks
+- It only applies to unauthenticated REST API requests
+- It still requires Elementor's unfiltered uploads setting to be enabled
+- SVG content is still sanitized using Elementor's sanitizer
+- All security checks are centralized in `class-svg-security-bypass-handler.php` for easy maintenance
+
+**Configuration:**
+
+To enable SVG imports for unauthenticated REST API requests:
+
+1. Enable "Enable Unfiltered File Uploads" in Elementor > Settings > Advanced
+2. Ensure Safe SVG plugin is active (recommended) OR add SVG mime type to your theme's `functions.php`:
+   ```php
+   add_filter( 'upload_mimes', function($mimes) {
+       $mimes['svg'] = 'image/svg+xml';
+       return $mimes;
+   } );
+   ```
+
+The bypass handler logic can be updated independently in `includes/converters/images/class-svg-security-bypass-handler.php` without modifying the main import service code.
+
 #### Example: Image Import
 
 ```json
