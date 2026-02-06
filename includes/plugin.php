@@ -190,8 +190,6 @@ final class Plugin {
 			return null;
 		}
 
-		$filename = str_replace( '-converter', '', $filename );
-
 		$parts = explode( '-', $filename );
 		$parts = array_map( 'ucfirst', $parts );
 
