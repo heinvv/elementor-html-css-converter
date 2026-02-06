@@ -22,6 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 abstract class Abstract_Variable_Convertor implements Variable_Convertor_Interface {
 
+	private const REGEX_SLUG_SANITIZATION = '/[^a-z0-9_\-]+/';
+
 	/**
 	 * Convert variable to Elementor format.
 	 *
@@ -65,7 +67,7 @@ abstract class Abstract_Variable_Convertor implements Variable_Convertor_Interfa
 	private function generate_variable_id( string $name ): string {
 		$trimmed = ltrim( $name, '-' );
 		$slug    = strtolower( $trimmed );
-		$slug    = preg_replace( '/[^a-z0-9_\-]+/', '-', $slug );
+		$slug    = preg_replace( self::REGEX_SLUG_SANITIZATION, '-', $slug );
 		$slug    = trim( $slug, '-' );
 
 		if ( '' === $slug ) {
@@ -75,3 +77,4 @@ abstract class Abstract_Variable_Convertor implements Variable_Convertor_Interfa
 		return 'e-gv-' . $this->get_type() . '-' . $slug . '-variable';
 	}
 }
+

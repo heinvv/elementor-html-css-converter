@@ -13,24 +13,26 @@
 - [x] Support css classes.
 - [x] Test custom css.
 
+## Playwright Scraper
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
 - [ ] Clean up CSS properties + dimensions
 - [ ] Support variables.
 - [ ] Support classes.
 
+## External Frontend
 - [ ] Create endpoint to trigger external UI.
 - [ ] Create NextJS frontend.
 
+## Future for Converter
 - [ ] Support v4 inline editor > strong / bold / italic etc.
-- [ ] Handle class priority.
 - [ ] Support font-family styles.
+- [ ] Study responsive support.
 - [ ] Handle Elementor v4 base styles.
+- [ ] Handle class priority.
 - [ ] Handle reset styles.
 - [ ] Support core and pro features.
 - [ ] Port phpunit tests and playwright tests from the PR.
-- [ ] Support core and pro features.
-- [ ] Study responsive support.
-- [ ] Support Widget Abilities API.
+- [ ] Support Wordpress Abilities API.
 - [ ] Support compositions.
 - [ ] Support v3 > v4 conversions.
 

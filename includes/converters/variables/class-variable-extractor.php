@@ -20,6 +20,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Variable_Extractor {
 
+	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
+	private const REGEX_CSS_VARIABLE_DECLARATION = '/(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+);/';
+
 	/**
 	 * Extract variables from raw CSS.
 	 *
@@ -33,14 +36,9 @@ class Variable_Extractor {
 	public function extract_from_css( string $css ): array {
 		$variables = [];
 
-		// Remove CSS comments
-		$css = preg_replace( '/\/\*.*?\*\//s', '', $css );
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		// Pattern: --variable-name: value;
-		// Matches CSS custom property declarations
-		$pattern = '/(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+);/';
-
-		if ( preg_match_all( $pattern, $css, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_CSS_VARIABLE_DECLARATION, $css, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$name  = trim( $match[1] );
 				$value = trim( $match[2] );
@@ -57,3 +55,4 @@ class Variable_Extractor {
 		return $variables;
 	}
 }
+

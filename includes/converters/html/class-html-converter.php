@@ -33,6 +33,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Html_Converter {
 
+	private const REGEX_STYLE_TAG_EXTRACTION = '/<style[^>]*>(.*?)<\/style>/is';
+	private const REGEX_CSS_VARIABLE_IN_HTML = '/var\s*\(\s*(--[a-zA-Z0-9_-]+)/';
+	private const REGEX_VARIABLE_RENAME_PATTERN = '/var\s*\(\s*%s(\s*,|\s*\))/';
+
 	/**
 	 * Data parser instance.
 	 *
@@ -90,88 +94,70 @@ class Html_Converter {
 			return $this->build_error_result( $status['reason'] );
 		}
 
-		// STEP 1: Handle variable import if requested.
 		$warnings            = [];
 		$imported_variables  = [];
 		$imported_classes    = [];
-		$global_class_map    = []; // Maps CSS class name to Elementor global class ID.
-		$variable_renames    = []; // Maps original var names to final names (e.g., '--color' => '--color-1').
+		$global_class_map    = [];
+		$variable_renames    = [];
 		$css_variables       = $options['css_variables'] ?? '';
 		$import_variables    = $options['import_variables'] ?? true;
 		$import_classes      = $options['import_classes'] ?? true;
 		$update_mode         = $options['update_mode'] ?? 'create_new';
 
-		// Extract CSS from <style> tags (needed for both variables and classes).
 		$css = $this->extract_css_from_html( $html );
 
-		// Import variables from css_variables parameter.
 		if ( ! empty( trim( $css_variables ) ) ) {
 			$import_result      = $this->import_css_variables( $css_variables, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
 			$variable_renames   = array_merge( $variable_renames, $import_result['renames'] ?? [] );
 		}
 
-		// Import variables from HTML <style> tags if requested.
 		if ( $import_variables ) {
-			// Import variables BEFORE conversion.
 			$import_result      = $this->import_css_variables( $css, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
 			$variable_renames   = array_merge( $variable_renames, $import_result['renames'] ?? [] );
 		}
 
-		// Clear Variable_Resolver cache after import so it can find newly imported variables.
-		// This is critical for class conversion to resolve var() references to Elementor variable IDs.
 		if ( ! empty( $imported_variables ) ) {
 			Variable_Resolver::clear_cache();
 		}
 
-		// Apply variable renames to CSS before class parsing.
-		// This ensures class definitions use the correct (possibly suffixed) variable names.
 		if ( ! empty( $variable_renames ) ) {
 			$css = $this->apply_variable_renames( $css, $variable_renames );
 
-			// Also update HTML so the parser sees the renamed variables in <style> tags.
 			$html = $this->apply_variable_renames_to_html( $html, $variable_renames );
 		}
 
-		// Check for undefined var() references if any variables were imported.
 		if ( ! empty( $css_variables ) || $import_variables ) {
 			$warnings = $this->check_undefined_variables( $html, $imported_variables );
 		}
 
-		// STEP 2: Parse HTML to get widget data and collect element classes.
 		$widget_data_array = $this->data_parser->parse_html_for_atomic_widgets( $html );
 
 		if ( empty( $widget_data_array ) ) {
 			return $this->build_error_result( 'No supported HTML elements found' );
 		}
 
-		// STEP 3: Import CSS classes if requested.
 		if ( $import_classes && ! empty( $css ) ) {
 			$class_import_result = $this->import_css_classes( $css, $widget_data_array, $update_mode );
 			$imported_classes    = $class_import_result['classes'] ?? [];
 			$global_class_map    = $class_import_result['class_map'] ?? [];
 
-			// Add class-related warnings.
 			if ( ! empty( $class_import_result['warnings'] ) ) {
 				$warnings = array_merge( $warnings, $class_import_result['warnings'] );
 			}
 		}
 
-		// STEP 4: Create widgets.
 		$widgets = $this->create_widgets( $widget_data_array );
 
 		if ( empty( $widgets ) ) {
 			return $this->build_error_result( 'No widgets could be created from the HTML' );
 		}
 
-		// STEP 5: Integrate styles (ID-based local styles + global class references).
 		$widgets_with_styles = $this->integrate_styles( $widgets, $widget_data_array, $global_class_map );
 
-		// Wrap non-container top-level widgets in div containers.
 		$wrapped_widgets = $this->wrap_non_container_widgets( $widgets_with_styles );
 
-		// STEP 6: Build result with imported info.
 		$result = $this->build_success_result( $wrapped_widgets );
 
 		if ( ! empty( $css_variables ) || $import_variables ) {
@@ -241,7 +227,6 @@ class Html_Converter {
 		$atomic_props    = $widget_data['atomic_props'] ?? [];
 		$element_classes = $widget_data['element_classes'] ?? [];
 
-		// Step 1: Add global class references for HTML classes.
 		$global_class_ids = [];
 		foreach ( $element_classes as $class_name ) {
 			if ( isset( $global_class_map[ $class_name ] ) ) {
@@ -249,7 +234,6 @@ class Html_Converter {
 			}
 		}
 
-		// Ensure widget has classes structure.
 		if ( ! isset( $widget['settings']['classes'] ) ) {
 			$widget['settings']['classes'] = [
 				'$$type' => 'classes',
@@ -257,18 +241,15 @@ class Html_Converter {
 			];
 		}
 
-		// Add global class IDs to widget.
 		if ( ! empty( $global_class_ids ) ) {
 			$existing_classes                    = $widget['settings']['classes']['value'] ?? [];
 			$widget['settings']['classes']['value'] = array_merge( $existing_classes, $global_class_ids );
 		}
 
-		// Step 2: Integrate ID-based atomic props as local styles (if any).
 		if ( ! empty( $atomic_props ) ) {
 			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $atomic_props );
 		}
 
-		// Recursively process children.
 		if ( ! empty( $widget['elements'] ) && ! empty( $widget_data['children'] ) ) {
 			$processed_children = [];
 
@@ -297,10 +278,8 @@ class Html_Converter {
 
 		foreach ( $widgets as $widget ) {
 			if ( $this->is_container_widget( $widget ) ) {
-				// Already a container, keep as-is.
 				$wrapped_widgets[] = $widget;
 			} else {
-				// Wrap non-container in a div-block.
 				$wrapped_widgets[] = $this->create_wrapper_container( $widget );
 			}
 		}
@@ -317,13 +296,11 @@ class Html_Converter {
 	private function is_container_widget( array $widget ): bool {
 		$container_types = [ 'e-div-block', 'e-flexbox', 'container' ];
 
-		// Check elType (for containers built with Element_Builder).
 		$el_type = $widget['elType'] ?? '';
 		if ( in_array( $el_type, $container_types, true ) ) {
 			return true;
 		}
 
-		// Check widgetType.
 		$widget_type = $widget['widgetType'] ?? '';
 		if ( in_array( $widget_type, $container_types, true ) ) {
 			return true;
@@ -339,7 +316,6 @@ class Html_Converter {
 	 * @return array Wrapper container with widget as child.
 	 */
 	private function create_wrapper_container( array $widget ): array {
-		// Create a minimal e-div-block container.
 		$wrapper = [
 			'elType'          => 'e-div-block',
 			'settings'        => [
@@ -391,8 +367,7 @@ class Html_Converter {
 	 * @return string Combined CSS from all style tags.
 	 */
 	private function extract_css_from_html( string $html ): string {
-		// Extract all <style> tag contents (includes ALL selectors: :root, html, .class, #id, etc.).
-		preg_match_all( '/<style[^>]*>(.*?)<\/style>/is', $html, $matches );
+		preg_match_all( self::REGEX_STYLE_TAG_EXTRACTION, $html, $matches );
 		return implode( "\n", $matches[1] ?? [] );
 	}
 
@@ -408,9 +383,7 @@ class Html_Converter {
 	 */
 	private function apply_variable_renames( string $css, array $renames ): string {
 		foreach ( $renames as $original => $renamed ) {
-			// Replace var(--original) with var(--renamed)
-			// Also handle var(--original, fallback) syntax
-			$pattern     = '/var\s*\(\s*' . preg_quote( $original, '/' ) . '(\s*,|\s*\))/';
+			$pattern     = sprintf( self::REGEX_VARIABLE_RENAME_PATTERN, preg_quote( $original, '/' ) );
 			$replacement = 'var(' . $renamed . '$1';
 			$css         = preg_replace( $pattern, $replacement, $css );
 		}
@@ -429,14 +402,12 @@ class Html_Converter {
 	 * @return string HTML with updated variable references in <style> tags.
 	 */
 	private function apply_variable_renames_to_html( string $html, array $renames ): string {
-		// Find and replace within <style> tags only.
 		return preg_replace_callback(
 			'/<style([^>]*)>(.*?)<\/style>/is',
 			function ( $matches ) use ( $renames ) {
 				$attributes = $matches[1];
 				$css        = $matches[2];
 
-				// Apply renames to CSS content.
 				$css = $this->apply_variable_renames( $css, $renames );
 
 				return '<style' . $attributes . '>' . $css . '</style>';
@@ -457,7 +428,6 @@ class Html_Converter {
 			return [ 'imported' => [], 'renames' => [] ];
 		}
 
-		// Use Variable_Extractor to find variables.
 		$extractor = new Variable_Extractor();
 		$raw_vars  = $extractor->extract_from_css( $css );
 
@@ -465,20 +435,16 @@ class Html_Converter {
 			return [ 'imported' => [], 'renames' => [] ];
 		}
 
-		// Convert to Elementor format.
 		$converted = Variable_Conversion_Service::convert_to_editor_variables( $raw_vars );
 
 		if ( empty( $converted ) ) {
 			return [ 'imported' => [], 'renames' => [] ];
 		}
 
-		// Store variables using Variables_Rest_API logic.
 		$api = new Variables_Rest_API();
 
-		// Call the public store_variables method.
 		$store_result = $api->store_variables( $converted, $update_mode );
 
-		// Extract variable names for tracking.
 		$imported_names = array_column( $converted, 'name' );
 
 		return [
@@ -510,14 +476,12 @@ class Html_Converter {
 			return $result;
 		}
 
-		// Step 1: Collect all class names used in HTML elements.
 		$used_classes = $this->collect_used_classes( $widget_data_array );
 
 		if ( empty( $used_classes ) ) {
 			return $result;
 		}
 
-		// Step 2: Extract class selectors from CSS.
 		$extractor         = new Class_Extractor();
 		$extracted_classes = $extractor->extract_from_css( $css );
 
@@ -525,7 +489,6 @@ class Html_Converter {
 			return $result;
 		}
 
-		// Step 3: Filter to only classes used in HTML.
 		$classes_to_import = [];
 		foreach ( $extracted_classes as $class_name => $class_data ) {
 			if ( in_array( $class_name, $used_classes, true ) ) {
@@ -542,7 +505,6 @@ class Html_Converter {
 			return $result;
 		}
 
-		// Step 4: Convert to atomic format.
 		$conversion_service = new Class_Conversion_Service( $this->converter_registry );
 		$converted_classes  = $conversion_service->convert_to_atomic( $classes_to_import );
 
@@ -551,7 +513,6 @@ class Html_Converter {
 			return $result;
 		}
 
-		// Step 5: Register as global classes.
 		$registration_service = new Class_Registration_Service();
 		$registration_result  = $registration_service->register_with_elementor(
 			$converted_classes,
@@ -564,7 +525,6 @@ class Html_Converter {
 			return $result;
 		}
 
-		// Step 6: Build class map (CSS class name -> Elementor global class ID).
 		foreach ( $registration_result['classes'] as $class_name => $class_info ) {
 			$result['class_map'][ $class_name ] = $class_info['elementor_id'];
 			$result['classes'][ $class_name ]   = [
@@ -574,7 +534,6 @@ class Html_Converter {
 			];
 		}
 
-		// Add overflow to skipped.
 		foreach ( $registration_result['overflow'] as $overflow_class ) {
 			$result['skipped'][] = [
 				'selector' => '.' . $overflow_class,
@@ -595,11 +554,9 @@ class Html_Converter {
 		$classes = [];
 
 		foreach ( $widget_data_array as $widget_data ) {
-			// Collect classes from this element.
 			$element_classes = $widget_data['element_classes'] ?? [];
 			$classes         = array_merge( $classes, $element_classes );
 
-			// Recursively collect from children.
 			if ( ! empty( $widget_data['children'] ) ) {
 				$child_classes = $this->collect_used_classes( $widget_data['children'] );
 				$classes       = array_merge( $classes, $child_classes );
@@ -619,17 +576,14 @@ class Html_Converter {
 	private function check_undefined_variables( string $html, array $imported_variables ): array {
 		$warnings = [];
 
-		// Find all var() references in HTML.
-		preg_match_all( '/var\s*\(\s*(--[a-zA-Z0-9_-]+)/', $html, $matches );
+		preg_match_all( self::REGEX_CSS_VARIABLE_IN_HTML, $html, $matches );
 
 		if ( empty( $matches[1] ) ) {
 			return $warnings;
 		}
 
-		// Get active kit to check existing variables.
 		$active_kit = \Elementor\Plugin::$instance->kits_manager->get_active_id();
 		if ( ! $active_kit ) {
-			// Can't check existing variables, return empty warnings.
 			return $warnings;
 		}
 
@@ -650,13 +604,10 @@ class Html_Converter {
 				}
 			}
 		} catch ( \Exception $e ) {
-			// If we can't load existing variables, just check imported ones.
 		}
 
-		// Combine imported and existing variables.
 		$all_defined_variables = array_merge( $imported_variables, $existing_variable_names );
 
-		// Check each unique var() reference.
 		foreach ( array_unique( $matches[1] ) as $var_name ) {
 			if ( ! in_array( $var_name, $all_defined_variables, true ) ) {
 				$warnings[] = "Variable '{$var_name}' used but not defined";
@@ -682,7 +633,6 @@ class Html_Converter {
 	 * @return array Status info with reason if not available.
 	 */
 	public function get_atomic_widgets_status(): array {
-		// Check if Elementor is loaded.
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return [
 				'available' => false,
@@ -690,7 +640,6 @@ class Html_Converter {
 			];
 		}
 
-		// Check if Elementor instance exists.
 		if ( ! isset( \Elementor\Plugin::$instance ) || ! \Elementor\Plugin::$instance ) {
 			return [
 				'available' => false,
@@ -698,7 +647,6 @@ class Html_Converter {
 			];
 		}
 
-		// Check if experiments system exists.
 		if ( ! isset( \Elementor\Plugin::$instance->experiments ) ) {
 			return [
 				'available' => false,
@@ -706,7 +654,6 @@ class Html_Converter {
 			];
 		}
 
-		// Check if atomic elements experiment is active.
 		$experiment_active = \Elementor\Plugin::$instance->experiments->is_feature_active( 'e_atomic_elements' );
 		if ( ! $experiment_active ) {
 			return [
@@ -715,7 +662,6 @@ class Html_Converter {
 			];
 		}
 
-		// Check if the required classes exist.
 		if ( ! class_exists( 'Elementor\\Modules\\AtomicWidgets\\Elements\\Base\\Widget_Builder' ) ) {
 			return [
 				'available' => false,
@@ -770,3 +716,4 @@ class Html_Converter {
 		];
 	}
 }
+

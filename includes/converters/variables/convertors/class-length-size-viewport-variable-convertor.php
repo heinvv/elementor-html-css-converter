@@ -70,7 +70,6 @@ class Length_Size_Viewport_Variable_Convertor extends Abstract_Variable_Converto
 			$number = $matches[1];
 			$unit   = strtolower( $matches[2] );
 
-			// Normalize the number to avoid unnecessary decimal places
 			$normalized_number = $this->normalize_number( $number );
 
 			return $normalized_number . $unit;
@@ -90,12 +89,11 @@ class Length_Size_Viewport_Variable_Convertor extends Abstract_Variable_Converto
 	private function normalize_number( string $number ): string {
 		$float = (float) $number;
 
-		// If it's a whole number, return as integer
 		if ( $float === (int) $float ) {
 			return (string) (int) $float;
 		}
 
-		// Otherwise return the float with reasonable precision
 		return (string) $float;
 	}
 }
+

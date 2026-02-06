@@ -21,6 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Id_Style_Extractor {
 
+	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
+	private const REGEX_ID_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
+	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
+
 	/**
 	 * Parsed ID rules cache.
 	 *
@@ -62,11 +66,9 @@ class Id_Style_Extractor {
 			return $this->id_rules;
 		}
 
-		$css = preg_replace( '/\/\*.*?\*\//s', '', $css );
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		$pattern = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
-
-		if ( preg_match_all( $pattern, $css, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_ID_SELECTOR_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$id           = $match[1];
 				$declarations = $match[2];
@@ -114,7 +116,7 @@ class Id_Style_Extractor {
 			$value    = trim( substr( $part, $colon_pos + 1 ) );
 
 			if ( ! empty( $property ) && '' !== $value ) {
-				$value = preg_replace( '/\s*!important\s*$/i', '', $value );
+				$value = preg_replace( self::REGEX_IMPORTANT_FLAG_REMOVAL, '', $value );
 				$value = trim( $value );
 
 				$styles[ $property ] = $value;
@@ -152,3 +154,4 @@ class Id_Style_Extractor {
 		return $this->parse_id_rules( $css );
 	}
 }
+

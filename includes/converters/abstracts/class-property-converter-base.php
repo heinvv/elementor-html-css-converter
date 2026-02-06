@@ -11,7 +11,7 @@ use ElementorHtmlCssConverter\Converters\Interfaces\Property_Converter_Interface
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -64,7 +64,6 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 			return null;
 		}
 
-		// Check for CSS variable and resolve if applicable
 		if ( Variable_Resolver::is_css_variable( $value ) ) {
 			$variable_type = $this->get_variable_type();
 
@@ -76,7 +75,6 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 				}
 			}
 
-			// Variable not found - return null (skip this property)
 			return null;
 		}
 
@@ -127,3 +125,4 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 		return $property;
 	}
 }
+

@@ -33,6 +33,18 @@ class Class_Extractor {
 	 * @var int
 	 */
 	private const MAX_CLASS_NAME_LENGTH = 50;
+	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
+	private const REGEX_MEDIA_QUERY_REMOVAL = '/@media[^{]+\{([^{}]*\{[^}]*\})*[^}]*\}/s';
+	private const REGEX_AT_RULE_REMOVAL = '/@[a-z-]+[^{]*\{([^{}]*\{[^}]*\})*[^}]*\}/s';
+	private const REGEX_CSS_RULE_PATTERN = '/([^{]+)\{([^}]+)\}/s';
+	private const REGEX_CLASS_SELECTOR_START = '/^\.([a-zA-Z_-][a-zA-Z0-9_-]*)/';
+	private const REGEX_COMPOUND_CLASS_SELECTOR = '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\./';
+	private const REGEX_DESCENDANT_SELECTOR = '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\s+/';
+	private const REGEX_SIBLING_SELECTOR = '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\s*[>+~]/';
+	private const REGEX_SINGLE_CLASS_SELECTOR = '/^\.([a-zA-Z_-][a-zA-Z0-9_-]*)$/';
+	private const REGEX_ELEMENT_SELECTOR_START = '/^[a-zA-Z]/';
+	private const REGEX_CSS_PROPERTY_PATTERN = '/([a-zA-Z-]+)\s*:\s*([^;]+);?/';
+	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
 
 	/**
 	 * Extract class definitions from CSS.
@@ -43,38 +55,29 @@ class Class_Extractor {
 	public function extract_from_css( string $css ): array {
 		$classes = [];
 
-		// Remove CSS comments.
-		$css = preg_replace( '/\/\*.*?\*\//s', '', $css );
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		// Remove @media queries (MVP: desktop only).
-		$css = preg_replace( '/@media[^{]+\{([^{}]*\{[^}]*\})*[^}]*\}/s', '', $css );
+		$css = preg_replace( self::REGEX_MEDIA_QUERY_REMOVAL, '', $css );
 
-		// Remove @keyframes, @font-face, and other at-rules.
-		$css = preg_replace( '/@[a-z-]+[^{]*\{([^{}]*\{[^}]*\})*[^}]*\}/s', '', $css );
+		$css = preg_replace( self::REGEX_AT_RULE_REMOVAL, '', $css );
 
-		// Pattern to match CSS rules: selector { properties }
-		$pattern = '/([^{]+)\{([^}]+)\}/s';
-
-		if ( preg_match_all( $pattern, $css, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_CSS_RULE_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$selector   = trim( $match[1] );
 				$properties = trim( $match[2] );
 
-				// Process selector to extract class names.
 				$class_name = $this->extract_class_name( $selector );
 
 				if ( null === $class_name ) {
 					continue;
 				}
 
-				// Parse properties.
 				$parsed_properties = $this->parse_properties( $properties );
 
 				if ( empty( $parsed_properties ) ) {
 					continue;
 				}
 
-				// Merge if class already exists (same class in multiple rules).
 				if ( isset( $classes[ $class_name ] ) ) {
 					$classes[ $class_name ]['properties'] = array_merge(
 						$classes[ $class_name ]['properties'],
@@ -101,54 +104,44 @@ class Class_Extractor {
 	private function extract_class_name( string $selector ): ?string {
 		$selector = trim( $selector );
 
-		// Skip empty selectors.
 		if ( empty( $selector ) ) {
 			return null;
 		}
 
-		// Skip pseudo-classes like .btn:hover (MVP).
 		if ( strpos( $selector, ':' ) !== false ) {
 			return null;
 		}
 
-		// Skip ID selectors.
 		if ( strpos( $selector, '#' ) !== false ) {
 			return null;
 		}
 
-		// Skip attribute selectors.
 		if ( strpos( $selector, '[' ) !== false ) {
 			return null;
 		}
 
-		// Check if selector starts with a class.
-		if ( ! preg_match( '/^\.([a-zA-Z_-][a-zA-Z0-9_-]*)/', $selector, $match ) ) {
+		if ( ! preg_match( self::REGEX_CLASS_SELECTOR_START, $selector, $match ) ) {
 			return null;
 		}
 
 		$class_name = $match[1];
 
-		// Skip compound selectors (.class1.class2).
-		if ( preg_match( '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\./', $selector ) ) {
+		if ( preg_match( self::REGEX_COMPOUND_CLASS_SELECTOR, $selector ) ) {
 			return null;
 		}
 
-		// Skip descendant/child selectors (.parent .child).
-		if ( preg_match( '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\s+/', $selector ) ) {
+		if ( preg_match( self::REGEX_DESCENDANT_SELECTOR, $selector ) ) {
 			return null;
 		}
 
-		// Skip sibling selectors.
-		if ( preg_match( '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\s*[>+~]/', $selector ) ) {
+		if ( preg_match( self::REGEX_SIBLING_SELECTOR, $selector ) ) {
 			return null;
 		}
 
-		// Skip Elementor internal classes.
 		if ( $this->is_elementor_class( $class_name ) ) {
 			return null;
 		}
 
-		// Skip class names that are too long.
 		if ( strlen( $class_name ) > self::MAX_CLASS_NAME_LENGTH ) {
 			return null;
 		}
@@ -181,19 +174,14 @@ class Class_Extractor {
 	private function parse_properties( string $block ): array {
 		$properties = [];
 
-		// Pattern: property: value;
-		$pattern = '/([a-zA-Z-]+)\s*:\s*([^;]+);?/';
-
-		if ( preg_match_all( $pattern, $block, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_CSS_PROPERTY_PATTERN, $block, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$property = trim( $match[1] );
 				$value    = trim( $match[2] );
 
-				// Strip !important flag.
-				$value = preg_replace( '/\s*!important\s*$/i', '', $value );
+				$value = preg_replace( self::REGEX_IMPORTANT_FLAG_REMOVAL, '', $value );
 
 				if ( ! empty( $property ) && ! empty( $value ) ) {
-					// Later declarations override earlier ones.
 					$properties[ $property ] = $value;
 				}
 			}
@@ -220,15 +208,11 @@ class Class_Extractor {
 			'extracted'       => 0,
 		];
 
-		// Remove comments.
-		$css = preg_replace( '/\/\*.*?\*\//s', '', $css );
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		// Remove @rules.
-		$css = preg_replace( '/@[a-z-]+[^{]*\{([^{}]*\{[^}]*\})*[^}]*\}/s', '', $css );
+		$css = preg_replace( self::REGEX_AT_RULE_REMOVAL, '', $css );
 
-		$pattern = '/([^{]+)\{([^}]+)\}/s';
-
-		if ( preg_match_all( $pattern, $css, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_CSS_RULE_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$selector = trim( $match[1] );
 				++$stats['total_rules'];
@@ -237,16 +221,16 @@ class Class_Extractor {
 					++$stats['id_selectors'];
 				} elseif ( strpos( $selector, ':' ) !== false ) {
 					++$stats['pseudo_selectors'];
-				} elseif ( preg_match( '/^\.[a-zA-Z_-][a-zA-Z0-9_-]*\./', $selector ) ) {
+				} elseif ( preg_match( self::REGEX_COMPOUND_CLASS_SELECTOR, $selector ) ) {
 					++$stats['compound_selectors'];
-				} elseif ( preg_match( '/^\.([a-zA-Z_-][a-zA-Z0-9_-]*)$/', $selector, $m ) ) {
+				} elseif ( preg_match( self::REGEX_SINGLE_CLASS_SELECTOR, $selector, $m ) ) {
 					++$stats['class_selectors'];
 					if ( $this->is_elementor_class( $m[1] ) ) {
 						++$stats['elementor_classes'];
 					} else {
 						++$stats['extracted'];
 					}
-				} elseif ( preg_match( '/^[a-zA-Z]/', $selector ) ) {
+				} elseif ( preg_match( self::REGEX_ELEMENT_SELECTOR_START, $selector ) ) {
 					++$stats['element_selectors'];
 				}
 			}
@@ -255,3 +239,4 @@ class Class_Extractor {
 		return $stats;
 	}
 }
+

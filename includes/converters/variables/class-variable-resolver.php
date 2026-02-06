@@ -23,6 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Variable_Resolver {
 
+	private const REGEX_CSS_VARIABLE_EXTRACTION = '/^var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,.*?)?\)$/';
+
 	/**
 	 * Cached variables from repository.
 	 *
@@ -49,9 +51,7 @@ class Variable_Resolver {
 	public static function extract_variable_name( string $value ): ?string {
 		$value = trim( $value );
 
-		// Match var(--variable-name) or var(--variable-name, fallback)
-		if ( preg_match( '/^var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,.*?)?\)$/', $value, $matches ) ) {
-			// Return without the -- prefix
+		if ( preg_match( self::REGEX_CSS_VARIABLE_EXTRACTION, $value, $matches ) ) {
 			return ltrim( $matches[1], '-' );
 		}
 
@@ -82,7 +82,6 @@ class Variable_Resolver {
 			return null;
 		}
 
-		// Determine the correct $$type based on the variable's type
 		$prop_type = self::get_prop_type_for_variable( $variable, $type );
 
 		if ( null === $prop_type ) {
@@ -107,7 +106,6 @@ class Variable_Resolver {
 		$label_lower = strtolower( $label );
 
 		foreach ( $variables as $id => $variable ) {
-			// Skip deleted variables
 			if ( isset( $variable['deleted'] ) && $variable['deleted'] ) {
 				continue;
 			}
@@ -160,13 +158,11 @@ class Variable_Resolver {
 	private static function get_prop_type_for_variable( array $variable, string $expected_type ): ?string {
 		$variable_type = $variable['type'] ?? '';
 
-		// Map Elementor variable types to prop types
 		$type_map = [
 			'global-color-variable' => 'global-color-variable',
 			'global-size-variable'  => 'global-size-variable',
 		];
 
-		// Check if the variable type matches what we expect
 		if ( 'color' === $expected_type ) {
 			if ( 'global-color-variable' === $variable_type ) {
 				return 'global-color-variable';
@@ -177,7 +173,6 @@ class Variable_Resolver {
 			}
 		}
 
-		// If we have a type in the map, use it regardless of expected type
 		return $type_map[ $variable_type ] ?? null;
 	}
 
@@ -192,3 +187,4 @@ class Variable_Resolver {
 		self::$cached_variables = null;
 	}
 }
+

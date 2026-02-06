@@ -70,18 +70,16 @@ class Color_Hex_Variable_Convertor extends Abstract_Variable_Convertor {
 	private function normalize_hex( string $hex ): string {
 		$lower = strtolower( $hex );
 
-		// HEXA format (8 chars) - return as-is
 		if ( 1 === preg_match( self::HEXA_PATTERN, $lower ) ) {
 			return $lower;
 		}
 
-		// HEX6 format (6 chars) - return as-is
 		if ( 1 === preg_match( self::HEX6_PATTERN, $lower ) ) {
 			return $lower;
 		}
 
-		// HEX3 format (3 chars) - expand to 6 chars
 		$digits = substr( $lower, 1 );
 		return '#' . $digits[0] . $digits[0] . $digits[1] . $digits[1] . $digits[2] . $digits[2];
 	}
 }
+

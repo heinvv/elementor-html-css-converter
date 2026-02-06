@@ -76,3 +76,4 @@ class Color_Rgba_Variable_Convertor extends Abstract_Variable_Convertor {
 		return $rgba;
 	}
 }
+

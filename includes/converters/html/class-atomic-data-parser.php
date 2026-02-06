@@ -47,6 +47,9 @@ class Atomic_Data_Parser {
 	 */
 	private Id_Style_Extractor $id_style_extractor;
 
+	private const REGEX_WHITESPACE_SPLIT = '/\s+/';
+	private const REGEX_ELEMENTOR_CLASS_PREFIX = '/^(elementor-|e-con-|e-)/';
+
 	/**
 	 * Parsed ID rules for current document.
 	 *
@@ -98,7 +101,6 @@ class Atomic_Data_Parser {
 
 		$dom = $this->create_dom( $html );
 
-		// Extract ID-based CSS rules from <style> tags.
 		$this->id_rules = $this->id_style_extractor->extract_all_id_styles( $dom );
 
 		$dom_elements = $this->parse_dom_structure_from_dom( $dom );
@@ -189,12 +191,10 @@ class Atomic_Data_Parser {
 			return null;
 		}
 
-		// Get styles from ID-based CSS rules (not inline styles).
 		$element_id   = $element->getAttribute( 'id' );
 		$id_styles    = $this->id_style_extractor->get_styles_for_id( $element_id, $this->id_rules );
 		$atomic_props = $this->convert_styles_to_atomic_props( $id_styles );
 
-		// Extract class names from the class attribute.
 		$element_classes = $this->extract_class_names( $element );
 
 		$content    = $this->extract_text_content( $element );
@@ -244,19 +244,16 @@ class Atomic_Data_Parser {
 			return [];
 		}
 
-		// Split by whitespace and filter empty strings.
-		$classes = preg_split( '/\s+/', trim( $class_attr ), -1, PREG_SPLIT_NO_EMPTY );
+		$classes = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $class_attr ), -1, PREG_SPLIT_NO_EMPTY );
 
 		if ( empty( $classes ) ) {
 			return [];
 		}
 
-		// Filter out Elementor internal classes.
 		$filtered = array_filter(
 			$classes,
 			function ( $class_name ) {
-				// Skip Elementor internal classes.
-				if ( preg_match( '/^(elementor-|e-con-|e-)/', $class_name ) ) {
+				if ( preg_match( self::REGEX_ELEMENTOR_CLASS_PREFIX, $class_name ) ) {
 					return false;
 				}
 				return true;
@@ -324,7 +321,6 @@ class Atomic_Data_Parser {
 		$attributes = [];
 
 		foreach ( $element->attributes as $attr ) {
-			// Exclude style attribute - inline styles are not supported.
 			if ( 'style' !== $attr->name ) {
 				$attributes[ $attr->name ] = $attr->value;
 			}
@@ -433,3 +429,4 @@ class Atomic_Data_Parser {
 		return $this->id_style_extractor;
 	}
 }
+

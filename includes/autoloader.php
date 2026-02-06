@@ -48,8 +48,8 @@ class Autoloader {
 		'ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service' => 'includes/converters/variables/class-variable-conversion-service.php',
 
 		// Most-used converters
-		'ElementorHtmlCssConverter\Converters\Css\Color_Converter' => 'includes/converters/css/class-color-converter.php',
-		'ElementorHtmlCssConverter\Converters\Css\Background_Color_Converter' => 'includes/converters/css/class-background-color-converter.php',
+		'ElementorHtmlCssConverter\Converters\Css\Properties\Color_Converter' => 'includes/converters/css/properties/class-color-converter.php',
+		'ElementorHtmlCssConverter\Converters\Css\Properties\Background_Color_Converter' => 'includes/converters/css/properties/class-background-color-converter.php',
 	];
 
 	/**

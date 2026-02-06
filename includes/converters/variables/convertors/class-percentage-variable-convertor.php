@@ -58,15 +58,14 @@ class Percentage_Variable_Convertor extends Abstract_Variable_Convertor {
 			$number = $matches[1];
 			$float  = (float) $number;
 
-			// If it's a whole number, return as integer
 			if ( $float === (int) $float ) {
 				return (string) (int) $float . '%';
 			}
 
-			// Otherwise return the float
 			return $float . '%';
 		}
 
 		return $trimmed;
 	}
 }
+

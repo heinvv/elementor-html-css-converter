@@ -25,6 +25,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Variables_Rest_API {
 
+	private const REGEX_LABEL_WITH_SUFFIX = '/^%s-\d+$/';
+
 	/**
 	 * Constructor.
 	 *
@@ -112,7 +114,6 @@ class Variables_Rest_API {
 			$css = $fetch_result;
 		}
 
-		// Validate CSS is not empty
 		if ( empty( $css ) ) {
 			return new WP_REST_Response(
 				[
@@ -140,7 +141,6 @@ class Variables_Rest_API {
 			);
 		}
 
-		// Convert to Elementor format
 		$converted = Variable_Conversion_Service::convert_to_editor_variables( $raw_variables );
 
 		if ( empty( $converted ) ) {
@@ -153,7 +153,6 @@ class Variables_Rest_API {
 			);
 		}
 
-		// Store in Elementor variables system
 		try {
 			$storage_result = $this->store_variables( $converted, $update_mode );
 		} catch ( \Exception $e ) {
@@ -167,7 +166,6 @@ class Variables_Rest_API {
 			);
 		}
 
-		// Build response
 		$response_variables = $this->format_response_variables( $converted );
 
 		return new WP_REST_Response(
@@ -241,7 +239,6 @@ class Variables_Rest_API {
 	 * @throws \Exception If Elementor is not active or storage fails.
 	 */
 	public function store_variables( array $variables, string $update_mode ): array {
-		// Check if Elementor is available
 		if ( ! class_exists( '\Elementor\Plugin' ) ) {
 			throw new \Exception( 'Elementor plugin is not active' );
 		}
@@ -264,10 +261,8 @@ class Variables_Rest_API {
 				continue;
 			}
 
-			// Format label (remove -- prefix)
 			$label = ltrim( $name, '-' );
 
-			// Map convertor type to Elementor variable type
 			$elementor_type = $this->map_type_to_elementor( $type );
 
 			if ( null === $elementor_type ) {
@@ -275,7 +270,6 @@ class Variables_Rest_API {
 			}
 
 			if ( 'update' === $update_mode ) {
-				// Update mode: find existing or create new
 				$existing_id = $this->find_variable_by_label( $repository, $label );
 
 				if ( $existing_id ) {
@@ -298,23 +292,18 @@ class Variables_Rest_API {
 					++$created;
 				}
 			} else {
-				// create_new mode: check if value already exists, reuse if found
 				$existing_match = $this->find_variable_by_base_label_and_value( $repository, $label, $value );
 
 				if ( $existing_match ) {
-					// Value already exists, don't create duplicate
 					++$reused;
 
-					// Track if we're reusing a suffixed version (e.g., primary-color-1)
 					$existing_label = $existing_match['label'];
 					if ( strtolower( $existing_label ) !== strtolower( $label ) ) {
-						// Original label was "primary-color", reusing "primary-color-1"
 						$renames[ '--' . $label ] = '--' . $existing_label;
 					}
 					continue;
 				}
 
-				// Value doesn't exist, create new with unique label
 				$final_label = $this->get_unique_label( $repository, $label );
 
 				$repository->create(
@@ -326,14 +315,12 @@ class Variables_Rest_API {
 				);
 				++$created;
 
-				// Track rename if label was changed (suffix added)
 				if ( $final_label !== $label ) {
 					$renames[ '--' . $label ] = '--' . $final_label;
 				}
 			}
 		}
 
-		// Clear Elementor cache
 		if ( isset( Plugin::$instance->files_manager ) ) {
 			Plugin::$instance->files_manager->clear_cache();
 		}
@@ -417,9 +404,8 @@ class Variables_Rest_API {
 
 			$item_label_lower = strtolower( $item['label'] );
 
-			// Check if label matches base label or base label with suffix (e.g., "primary-color-1")
 			$matches_base = $item_label_lower === $base_label_lower;
-			$matches_with_suffix = preg_match( '/^' . preg_quote( $base_label_lower, '/' ) . '-\d+$/', $item_label_lower );
+			$matches_with_suffix = preg_match( sprintf( self::REGEX_LABEL_WITH_SUFFIX, preg_quote( $base_label_lower, '/' ) ), $item_label_lower );
 
 			if ( ( $matches_base || $matches_with_suffix ) && $item['value'] === $value ) {
 				return [
@@ -456,12 +442,10 @@ class Variables_Rest_API {
 
 		$label_lower = strtolower( $base_label );
 
-		// If label doesn't exist, use it as-is
 		if ( ! in_array( $label_lower, $labels, true ) ) {
 			return $base_label;
 		}
 
-		// Find next available suffix
 		$suffix = 1;
 		while ( in_array( $label_lower . '-' . $suffix, $labels, true ) ) {
 			++$suffix;
@@ -486,7 +470,6 @@ class Variables_Rest_API {
 				continue;
 			}
 
-			// Use name without -- as key
 			$key = ltrim( $name, '-' );
 
 			$formatted[ $key ] = [
@@ -499,3 +482,4 @@ class Variables_Rest_API {
 		return $formatted;
 	}
 }
+

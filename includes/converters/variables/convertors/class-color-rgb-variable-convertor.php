@@ -75,3 +75,4 @@ class Color_Rgb_Variable_Convertor extends Abstract_Variable_Convertor {
 		return $rgb;
 	}
 }
+

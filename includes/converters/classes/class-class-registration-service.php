@@ -29,6 +29,7 @@ class Class_Registration_Service {
 	 * @var int
 	 */
 	private const MAX_CLASSES_LIMIT = 100;
+	private const REGEX_LABEL_WITH_SUFFIX = '/^%s-\d+$/';
 
 	/**
 	 * Maximum label length.
@@ -114,11 +115,9 @@ class Class_Registration_Service {
 						'status'       => 'updated',
 					];
 				} else {
-					// create_new mode: check if styles are identical.
 					$existing_props = $this->extract_props_from_class( $existing_items[ $existing_id ] );
 
 					if ( $this->are_styles_identical( $atomic_props, $existing_props ) ) {
-						// Identical, silently reuse.
 						++$skipped;
 
 						$classes[ $class_name ] = [
@@ -130,11 +129,9 @@ class Class_Registration_Service {
 							'status'       => 'reused',
 						];
 					} else {
-						// Different styles - check if any suffixed version has matching styles.
 						$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
 
 						if ( $existing_match ) {
-							// Found a suffixed version with matching styles, reuse it.
 							++$skipped;
 
 							$classes[ $class_name ] = [
@@ -146,7 +143,6 @@ class Class_Registration_Service {
 								'status'       => 'reused',
 							];
 						} else {
-							// No matching styles found, create with suffix.
 							if ( $available_slots <= 0 ) {
 								$overflow[] = $class_name;
 								continue;
@@ -179,11 +175,9 @@ class Class_Registration_Service {
 					}
 				}
 			} else {
-				// No exact label match - check if any suffixed version has matching styles.
 				$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
 
 				if ( $existing_match ) {
-					// Found a suffixed version with matching styles, reuse it.
 					++$skipped;
 
 					$classes[ $class_name ] = [

@@ -55,10 +55,8 @@ class Class_Conversion_Service {
 				continue;
 			}
 
-			// Build CSS string from properties for the Css_Converter.
 			$css_string = $this->build_css_string( $properties );
 
-			// Use existing Css_Converter.
 			$result = $this->css_converter->convert( [ 'cssString' => $css_string ] );
 
 			$converted[ $class_name ] = [
@@ -124,3 +122,4 @@ class Class_Conversion_Service {
 		return $stats;
 	}
 }
+
