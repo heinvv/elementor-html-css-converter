@@ -21,6 +21,7 @@ use ElementorHtmlCssConverter\Converters\Classes\Class_Conversion_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Registration_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+use ElementorHtmlCssConverter\Converters\Images\Image_Import_Service;
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -100,11 +101,13 @@ class Html_Converter {
 		$warnings            = [];
 		$imported_variables  = [];
 		$imported_classes    = [];
+		$imported_images     = [];
 		$global_class_map    = [];
 		$variable_renames    = [];
 		$css_variables       = $options['css_variables'] ?? '';
 		$import_variables    = $options['import_variables'] ?? true;
 		$import_classes      = $options['import_classes'] ?? true;
+		$import_images       = $options['import_images'] ?? true;
 		$update_mode         = $options['update_mode'] ?? 'create_new';
 
 		$css = $this->extract_css_from_html( $html );
@@ -159,6 +162,17 @@ class Html_Converter {
 
 		$widgets_with_styles = $this->integrate_styles( $widgets, $widget_data_array, $global_class_map );
 
+		$import_warnings = [];
+		if ( $import_images ) {
+			$image_import_service = new Image_Import_Service();
+			$import_result = $image_import_service->import_images_in_widgets( $widgets_with_styles );
+			$widgets_with_styles = $import_result['widgets'];
+			$imported_images = $import_result['imported'] ?? [];
+			$import_warnings = $import_result['warnings'] ?? [];
+		} else {
+			$imported_images = [];
+		}
+
 		$wrapped_widgets = $this->wrap_non_container_widgets( $widgets_with_styles );
 
 		$result = $this->build_success_result( $wrapped_widgets );
@@ -169,6 +183,13 @@ class Html_Converter {
 
 		if ( $import_classes ) {
 			$result['imported_classes'] = $imported_classes;
+		}
+
+		if ( $import_images ) {
+			$result['imported_images'] = $imported_images;
+			if ( ! empty( $import_warnings ) ) {
+				$result['warnings'] = $import_warnings;
+			}
 		}
 
 		if ( ! empty( $warnings ) ) {

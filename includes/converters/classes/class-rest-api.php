@@ -413,6 +413,13 @@ class Rest_Api {
 						'sanitize_callback' => 'rest_sanitize_boolean',
 						'description'       => 'Create global classes from .class selectors in <style> tags',
 					],
+					'import_images'    => [
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'description'       => 'Import external images from <img> tags and background-image CSS into WordPress media library',
+					],
 					'update_mode'      => [
 						'type'              => 'string',
 						'required'          => false,
@@ -463,6 +470,7 @@ class Rest_Api {
 		$css_variables    = $request->get_param( 'css_variables' ) ?? '';
 		$import_variables = $request->get_param( 'import_variables' ) ?? true;
 		$import_classes   = $request->get_param( 'import_classes' ) ?? true;
+		$import_images    = $request->get_param( 'import_images' ) ?? true;
 		$update_mode      = $request->get_param( 'update_mode' ) ?? 'create_new';
 		$post_id          = (int) ( $request->get_param( 'postId' ) ?? 0 );
 		$widget_id        = $request->get_param( 'widgetId' ) ?? '';
@@ -472,6 +480,7 @@ class Rest_Api {
 		$options['css_variables']    = $css_variables;
 		$options['import_variables'] = $import_variables;
 		$options['import_classes']   = $import_classes;
+		$options['import_images']    = $import_images;
 		$options['update_mode']      = $update_mode;
 
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );

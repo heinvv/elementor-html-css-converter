@@ -11,6 +11,7 @@ use Elementor\Modules\AtomicWidgets\PropTypes\Color_Stop_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Image_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Image_Overlay_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Image_Attachment_Id_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Number_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type;
 
@@ -375,16 +376,26 @@ class Background_Color_Converter extends Property_Converter_Base {
 			return null;
 		}
 
+		$image_src_value = [
+			'id'  => null,
+			'url' => $url,
+		];
+
+		if ( function_exists( 'attachment_url_to_postid' ) ) {
+			$local_id = attachment_url_to_postid( $url );
+			if ( $local_id > 0 ) {
+				$image_src_value['id'] = Image_Attachment_Id_Prop_Type::generate( $local_id );
+				$image_src_value['url'] = null;
+			}
+		}
+
 		return Background_Prop_Type::generate( [
 			'background-overlay' => Background_Overlay_Prop_Type::generate( [
 				Background_Image_Overlay_Prop_Type::generate( [
 					'image' => Image_Prop_Type::generate( [
 						'src' => [
 							'$$type' => 'image-src',
-							'value'  => [
-								'id'  => null,
-								'url' => $url,
-							],
+							'value'  => $image_src_value,
 						],
 					] ),
 				] ),

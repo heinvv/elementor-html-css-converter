@@ -25,6 +25,7 @@ See the [Endpoints](#endpoints) section below for all available endpoints.
 | `html`             | string  | required           | HTML content with `<style>` tags                            |
 | `import_variables` | boolean | `true`             | Extract variables from `:root` in `<style>` tags            |
 | `import_classes`   | boolean | `true`             | Create global classes from `.class` selectors               |
+| `import_images`    | boolean | `true`             | Import external images from `<img>` tags and `background-image` CSS into WordPress media library |
 | `update_mode`      | string  | `"create_new"`     | `"create_new"` or `"update"` for existing variables/classes |
 | `postId`           | integer | -                  | Insert widgets into existing post                           |
 | `postTitle`        | string  | `"Converted HTML"` | Title for auto-created post                                 |
@@ -100,6 +101,32 @@ See the [Endpoints](#endpoints) section below for all available endpoints.
   "html": "<style>\n:root {\n  --card-bg: #ffffff;\n  --card-shadow: rgba(0,0,0,0.1);\n  --card-radius: 12px;\n  --card-padding: 24px;\n  --title-color: #1a1a1a;\n  --text-color: #666666;\n}\n.card {\n  background-color: var(--card-bg);\n  border-radius: var(--card-radius);\n  padding: var(--card-padding);\n}\n.card-title {\n  color: var(--title-color);\n  font-size: 24px;\n}\n.card-text {\n  color: var(--text-color);\n  font-size: 16px;\n}\n</style>\n<div class=\"card\">\n  <h2 class=\"card-title\">Card Title</h2>\n  <p class=\"card-text\">Card description text goes here.</p>\n</div>"
 }
 ```
+
+### Image Import Example
+
+```json
+{
+  "html": "<img src=\"https://example.com/logo.svg\" alt=\"Logo\">",
+  "import_images": true
+}
+```
+
+This will:
+- Download the SVG from the external URL
+- Import it into WordPress media library
+- Replace the external URL with the attachment ID in the widget
+- Return the imported image info in `imported_images` array
+
+### Background Image Import Example
+
+```json
+{
+  "html": "<style>\n.hero {\n  background-image: url('https://example.com/hero.jpg');\n  width: 100%;\n  height: 500px;\n}\n</style>\n<div class=\"hero\">Hero Section</div>",
+  "import_images": true
+}
+```
+
+Background images from CSS are also automatically imported and linked to the widget styles.
 
 ### Flexbox Layout
 
@@ -422,6 +449,12 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/convert-html"
       "status": "created"
     }
   },
+  "imported_images": [
+    {
+      "url": "https://example.com/image.jpg",
+      "id": 123
+    }
+  ],
   "post_id": 456,
   "edit_url": "http://elementor.local/wp-admin/post.php?post=456&action=elementor"
 }
@@ -438,13 +471,22 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/convert-html"
 
 ### Warnings
 
+The response may include a `warnings` array when there are non-critical issues:
+
 ```json
 {
   "success": true,
   "widgets": [...],
-  "warnings": ["Variable '--undefined-var' used but not defined"]
+  "warnings": [
+    "Variable '--undefined-var' used but not defined",
+    "SVG import requires \"Enable Unfiltered File Uploads\" to be enabled in Elementor > Settings > Advanced"
+  ]
 }
 ```
+
+Common warnings:
+- **Undefined variables**: CSS variables referenced but not defined
+- **SVG import permissions**: When SVG images are detected but required permissions are missing (see [Image Import Requirements](#image-import-requirements) below)
 
 ---
 
@@ -853,6 +895,57 @@ elementor-html-css-converter/
 - **From HTML:** `import_variables: true` (default) extracts variables from `:root` (and other selectors) in `<style>` tags.
 - **From request:** pass raw declarations in `css_variables`, e.g. `"--primary: #ff0000; --spacing: 16px;"`.
 - Both can be combined; value-aware deduplication applies. Undefined `var()` references produce warnings only.
+
+### Image Import
+
+When `import_images: true` (default), external images from `<img>` tags and `background-image` CSS properties are automatically imported into the WordPress media library.
+
+#### Image Import Features
+
+- **Automatic import**: External images are downloaded and added to the media library
+- **Duplicate detection**: Checks for existing images by:
+  - URL (if already a local attachment)
+  - Elementor source hash (SHA1 of source URL)
+  - Filename + file size match
+- **Widget data update**: Image URLs are replaced with WordPress attachment IDs in widget settings
+- **Response data**: Returns `imported_images` array with imported image URLs and attachment IDs
+
+#### Image Import Requirements
+
+**Regular images (JPG, PNG, GIF, WebP, etc.):**
+- No special requirements - WordPress handles these by default
+
+**SVG images:**
+- **Elementor setting**: "Enable Unfiltered File Uploads" must be enabled in Elementor > Settings > Advanced
+- **PHP classes**: `DOMDocument` and `SimpleXMLElement` must be available (usually included)
+- **User capability**: User must have `manage_options` capability OR Elementor role manager must allow JSON uploads
+- **Mime type**: SVG mime type (`image/svg+xml`) must be registered in WordPress `upload_mimes` filter
+
+If SVG import requirements are not met, warnings will be included in the API response. Regular images will still import successfully.
+
+#### Example: Image Import
+
+```json
+{
+  "html": "<img src=\"https://example.com/image.jpg\" alt=\"Example\">",
+  "import_images": true
+}
+```
+
+Response includes imported images:
+
+```json
+{
+  "success": true,
+  "widgets": [...],
+  "imported_images": [
+    {
+      "url": "https://example.com/image.jpg",
+      "id": 123
+    }
+  ]
+}
+```
 
 ### Elementor parity
 

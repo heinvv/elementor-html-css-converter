@@ -9,6 +9,12 @@
 
 namespace ElementorHtmlCssConverter\Converters\Html;
 
+use ElementorHtmlCssConverter\Converters\Images\Image_Import_Service;
+use ElementorHtmlCssConverter\Converters\Images\Image_Url_Helper;
+use Elementor\Modules\AtomicWidgets\PropTypes\Image_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Image_Attachment_Id_Prop_Type;
+use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -28,10 +34,31 @@ class Atomic_Widget_Settings_Preparer {
 	private HTML_To_Atomic_Widget_Mapper $widget_mapper;
 
 	/**
-	 * Constructor.
+	 * Image import service instance.
+	 *
+	 * @var Image_Import_Service|null
 	 */
-	public function __construct() {
+	private ?Image_Import_Service $image_import_service = null;
+
+	/**
+	 * Whether to import images during settings preparation.
+	 *
+	 * @var bool
+	 */
+	private bool $import_images = false;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param bool $import_images Whether to import external images during preparation.
+	 */
+	public function __construct( bool $import_images = false ) {
 		$this->widget_mapper = new HTML_To_Atomic_Widget_Mapper();
+		$this->import_images = $import_images;
+
+		if ( $import_images ) {
+			$this->image_import_service = new Image_Import_Service();
+		}
 	}
 
 	/**
@@ -94,14 +121,12 @@ class Atomic_Widget_Settings_Preparer {
 				break;
 
 			case 'e-image':
-				$settings['src'] = $this->create_image_src_prop( $attributes['src'] ?? '' );
+				$image_src_prop = $this->create_image_src_prop( $attributes['src'] ?? '' );
+				$settings['image'] = Image_Prop_Type::generate( [
+					'src'  => $image_src_prop,
+					'size' => String_Prop_Type::generate( 'full' ),
+				] );
 				$settings['alt'] = $this->create_atomic_prop( 'string', $attributes['alt'] ?? '' );
-				if ( isset( $attributes['width'] ) ) {
-					$settings['width'] = $this->create_atomic_prop( 'string', $attributes['width'] );
-				}
-				if ( isset( $attributes['height'] ) ) {
-					$settings['height'] = $this->create_atomic_prop( 'string', $attributes['height'] );
-				}
 				break;
 
 			case 'e-flexbox':
@@ -175,11 +200,46 @@ class Atomic_Widget_Settings_Preparer {
 	 * @return array Image src prop structure.
 	 */
 	private function create_image_src_prop( string $src ): array {
+		if ( empty( $src ) ) {
+			return [
+				'$$type' => 'image-src',
+				'value'  => [
+					'url' => '',
+					'id'  => null,
+				],
+			];
+		}
+
+		$local_id = $this->extract_attachment_id_from_src( $src );
+
+		if ( $local_id ) {
+			return [
+				'$$type' => 'image-src',
+				'value'  => [
+					'id'  => Image_Attachment_Id_Prop_Type::generate( $local_id ),
+					'url' => null,
+				],
+			];
+		}
+
+		if ( $this->import_images && $this->image_import_service && Image_Url_Helper::is_external_url( $src ) ) {
+			$imported = $this->image_import_service->import_image_url( $src );
+			if ( $imported && isset( $imported['id'] ) ) {
+				return [
+					'$$type' => 'image-src',
+					'value'  => [
+						'id'  => Image_Attachment_Id_Prop_Type::generate( $imported['id'] ),
+						'url' => null,
+					],
+				];
+			}
+		}
+
 		return [
 			'$$type' => 'image-src',
 			'value'  => [
 				'url' => $src,
-				'id'  => $this->extract_attachment_id_from_src( $src ),
+				'id'  => null,
 			],
 		];
 	}

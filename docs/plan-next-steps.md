@@ -12,6 +12,8 @@
 - [x] Support css variables.
 - [x] Support css classes.
 - [x] Test custom css.
+- [x] Study images support.
+- [ ] Study svg support.
 - [ ] Support v4 inline editor > strong / bold / italic etc.
 - [x] Support for Google font-family styles.
 - [x] Study responsive support.
@@ -25,6 +27,7 @@
 - [ ] Support v3 > v4 conversions.
 - [ ] Support for non-Google font-family styles.
 - [ ] Implement non-max-width responsive support.
+- [ ] Study video support.
 
 ## Playwright Scraper
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
