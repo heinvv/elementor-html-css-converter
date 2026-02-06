@@ -231,12 +231,14 @@ The converter supports CSS `font-family` properties with Google Fonts, system fo
 
 ### Responsive Breakpoints with Media Queries
 
-The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values are automatically matched to Elementor's breakpoint system (tablet: 1024px, mobile: 767px, etc.). Styles are created with multiple variants for different breakpoints.
+The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values are automatically matched to Elementor's breakpoint system using **dynamic values from Elementor's settings** (not hardcoded). The converter reads breakpoint configurations via `Plugin::$instance->breakpoints->get_breakpoints_config()`, so it respects any custom breakpoint values you've configured in Elementor.
 
 **Supported breakpoint formats:**
-- `@media (max-width: 1024px)` → maps to Elementor `tablet` breakpoint
-- `@media (max-width: 767px)` → maps to Elementor `mobile` breakpoint
-- `@media screen and (max-width: 880px)` → maps to closest Elementor breakpoint
+- `@media (max-width: 1024px)` → maps to Elementor `tablet` breakpoint (if tablet is set to 1024px)
+- `@media (max-width: 767px)` → maps to Elementor `mobile` breakpoint (if mobile is set to 767px)
+- `@media screen and (max-width: 880px)` → maps to closest Elementor breakpoint within tolerance
+
+**Note:** The actual pixel values depend on your Elementor breakpoint settings. Default values are typically tablet: 1024px, mobile: 767px, but these can be customized in Elementor → Settings → Style → Responsive Breakpoints.
 
 **Example: Responsive Header with ID Selectors**
 
@@ -270,9 +272,17 @@ The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values 
 - Styles are applied automatically based on screen size
 
 **Breakpoint matching:**
-- Exact matches: `1024px` → `tablet`, `767px` → `mobile`
-- Closest match within 200px tolerance: `880px` → `mobile` (closest to 767px)
-- Unmatched breakpoints (e.g., `1366px`) are skipped if no Elementor breakpoint is close enough
+- **Exact matches**: CSS breakpoint value exactly matches an Elementor breakpoint value → returns that breakpoint name
+- **Closest match**: Within 200px tolerance → returns the closest Elementor breakpoint name
+- **Unmatched**: Breakpoints that don't match any Elementor breakpoint within tolerance are skipped
+
+**Example:** If your Elementor tablet breakpoint is set to 1024px and mobile to 767px:
+- `@media (max-width: 1024px)` → exact match → `tablet`
+- `@media (max-width: 767px)` → exact match → `mobile`
+- `@media (max-width: 880px)` → closest to mobile (113px difference) → `mobile`
+- `@media (max-width: 1366px)` → no match within 200px tolerance → skipped
+
+If you change Elementor breakpoints to tablet: 1200px and mobile: 768px, the matching will automatically use those new values.
 
 ### Unsupported Properties / Values → custom_css
 
