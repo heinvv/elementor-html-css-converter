@@ -67,15 +67,17 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 		if ( Variable_Resolver::is_css_variable( $value ) ) {
 			$variable_type = $this->get_variable_type();
 
-			if ( null !== $variable_type ) {
-				$resolved = Variable_Resolver::resolve( $value, $variable_type );
-
-				if ( null !== $resolved ) {
-					return $this->wrap_resolved_variable( $resolved, $property );
-				}
+			if ( null === $variable_type ) {
+				return null;
 			}
 
-			return null;
+			$resolved = Variable_Resolver::resolve( $value, $variable_type );
+
+			if ( null === $resolved ) {
+				return null;
+			}
+
+			return $this->wrap_resolved_variable( $resolved, $property );
 		}
 
 		return $this->convert_value( $property, $value );

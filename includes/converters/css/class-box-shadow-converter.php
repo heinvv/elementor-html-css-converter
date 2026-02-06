@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Converters\Css\Properties;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
@@ -16,11 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Box_Shadow_Converter extends Property_Converter_Base {
 
-	private const REGEX_INSET_REMOVAL = '/\binset\b/i';
-	private const REGEX_MULTIPLE_WHITESPACE_NORMALIZATION = '/\s+/';
-	private const REGEX_SIZE_VALUE_VALIDATION = '/^-?(?:\d+(?:\.\d+)?|\.\d+)(px|em|rem|%|vw|vh)$/';
 	private const SUPPORTED_PROPERTIES = [ 'box-shadow' ];
-	private const DEFAULT_SHADOW_COLOR = 'rgba(0, 0, 0, 0.5)';
 
 	private const NAMED_COLORS = [
 		'transparent', 'black', 'white', 'red', 'green', 'blue', 'yellow',
@@ -33,6 +29,9 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
+	/**
+	 * Override convert to handle complex shadow parsing with CSS variables.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
@@ -52,9 +51,13 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	}
 
 	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for this property.
 		return null;
 	}
 
+	/**
+	 * Resolve a color value, handling CSS variables.
+	 */
 	private function resolve_color_value( string $value ): ?array {
 		$value = trim( $value );
 
@@ -71,6 +74,9 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		return Color_Prop_Type::generate( $parsed );
 	}
 
+	/**
+	 * Resolve a size value, handling CSS variables.
+	 */
 	private function resolve_size_value( string $value ): ?array {
 		$value = trim( $value );
 
@@ -183,8 +189,8 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	}
 
 	private function remove_inset_keyword( string $shadow ): string {
-		$shadow = preg_replace( self::REGEX_INSET_REMOVAL, '', $shadow );
-		return trim( preg_replace( self::REGEX_MULTIPLE_WHITESPACE_NORMALIZATION, ' ', $shadow ) );
+		$shadow = preg_replace( '/\binset\b/i', '', $shadow );
+		return trim( preg_replace( '/\s+/', ' ', $shadow ) );
 	}
 
 	private function tokenize_shadow_parts( string $shadow ): array {
@@ -220,6 +226,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_color_value( string $value ): bool {
 		$value = trim( $value );
 
+		// CSS variable could be a color
 		if ( Variable_Resolver::is_css_variable( $value ) ) {
 			return true;
 		}
@@ -238,6 +245,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_size_value( string $value ): bool {
 		$value = trim( $value );
 
+		// CSS variable could be a size
 		if ( Variable_Resolver::is_css_variable( $value ) ) {
 			return true;
 		}
@@ -246,7 +254,8 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 			return true;
 		}
 
-		return (bool) preg_match( self::REGEX_SIZE_VALUE_VALIDATION, $value );
+		$pattern = '/^-?(?:\d+(?:\.\d+)?|\.\d+)(px|em|rem|%|vw|vh)$/';
+		return (bool) preg_match( $pattern, $value );
 	}
 
 	private function build_shadow_prop_type( array $size_values, ?string $color_value, bool $is_inset ): array {
@@ -260,12 +269,13 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		$blur = isset( $size_values[2] ) ? $this->resolve_size_value( $size_values[2] ) : Size_Prop_Type::generate( $this->create_zero_size() );
 		$spread = isset( $size_values[3] ) ? $this->resolve_size_value( $size_values[3] ) : Size_Prop_Type::generate( $this->create_zero_size() );
 
+		// Resolve color (could be a CSS variable)
 		$color = null;
 		if ( null !== $color_value ) {
 			$color = $this->resolve_color_value( $color_value );
 		}
 		if ( null === $color ) {
-			$color = Color_Prop_Type::generate( self::DEFAULT_SHADOW_COLOR );
+			$color = Color_Prop_Type::generate( 'rgba(0, 0, 0, 0.5)' );
 		}
 
 		$shadow_data = [
@@ -290,4 +300,3 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		];
 	}
 }
-

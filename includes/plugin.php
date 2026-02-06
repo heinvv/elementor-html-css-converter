@@ -47,6 +47,7 @@ use ElementorHtmlCssConverter\Converters\Css\Properties\Letter_Spacing_Converter
 use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Decoration_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Transform_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Style_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Family_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Properties\Word_Spacing_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Shadow_Converter;
 use ElementorHtmlCssConverter\Converters\Css\Properties\Positioning_Converter;
@@ -196,6 +197,7 @@ final class Plugin {
 		$this->registry->register( new Text_Decoration_Converter() );
 		$this->registry->register( new Text_Transform_Converter() );
 		$this->registry->register( new Font_Style_Converter() );
+		$this->registry->register( new Font_Family_Converter() );
 		$this->registry->register( new Word_Spacing_Converter() );
 		$this->registry->register( new Text_Shadow_Converter() );
 		$this->registry->register( new Positioning_Converter() );

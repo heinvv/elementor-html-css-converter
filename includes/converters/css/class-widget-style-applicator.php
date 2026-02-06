@@ -102,15 +102,7 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			}
 
 			if ( null !== $existing_local_style ) {
-				$style_id = $existing_local_style['id'];
-
-				if ( isset( $widget_data['styles'][ $style_id ]['variants'][0]['props'] ) ) {
-					$existing_props = $widget_data['styles'][ $style_id ]['variants'][0]['props'];
-					$merged_props   = array_merge( $existing_props, $styles_applied );
-					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
-				} else {
-					$widget_data['styles'][ $style_id ]['variants'][0]['props'] = $styles_applied;
-				}
+				$widget_data = $this->merge_existing_style( $widget_data, $existing_local_style['id'], $styles_applied );
 			} else {
 				$style_definition = $style_builder->build( $styles_applied, $widget_id );
 				$style_id         = $style_definition['id'];
@@ -379,15 +371,7 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 		$existing_local_style = $this->find_existing_local_style( $widget );
 
 		if ( null !== $existing_local_style ) {
-			$style_id = $existing_local_style['id'];
-
-			if ( isset( $widget['styles'][ $style_id ]['variants'][0]['props'] ) ) {
-				$existing_props = $widget['styles'][ $style_id ]['variants'][0]['props'];
-				$merged_props   = array_merge( $existing_props, $atomic_props );
-				$widget['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
-			} else {
-				$widget['styles'][ $style_id ]['variants'][0]['props'] = $atomic_props;
-			}
+			$widget = $this->merge_existing_style( $widget, $existing_local_style['id'], $atomic_props );
 		} else {
 			$widget_id        = $this->get_widget_id( $widget );
 			$style_definition = $this->style_builder->build( $atomic_props, $widget_id );
@@ -477,6 +461,18 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 	 * @param string $custom_css Any unsupported CSS.
 	 * @return array The result array.
 	 */
+	private function merge_existing_style( array $widget, string $style_id, array $styles_applied ): array {
+		if ( isset( $widget['styles'][ $style_id ]['variants'][0]['props'] ) ) {
+			$existing_props = $widget['styles'][ $style_id ]['variants'][0]['props'];
+			$merged_props   = array_merge( $existing_props, $styles_applied );
+			$widget['styles'][ $style_id ]['variants'][0]['props'] = $merged_props;
+		} else {
+			$widget['styles'][ $style_id ]['variants'][0]['props'] = $styles_applied;
+		}
+
+		return $widget;
+	}
+
 	private function create_success_result( array $widget, string $custom_css ): array {
 		return [
 			'success'   => true,

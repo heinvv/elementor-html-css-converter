@@ -46,9 +46,9 @@ class Class_Registration_Service {
 	private const SOURCE_CSS_CONVERTER = 'html-css-converter';
 
 	/**
-	 * Register converted classes with Elementor's Global Classes.
+	 * Register breakpoint-aware classes with Elementor's Global Classes.
 	 *
-	 * @param array  $converted_classes Converted classes from Class_Conversion_Service.
+	 * @param array  $converted_classes Breakpoint-aware converted classes.
 	 * @param string $update_mode       Mode: 'create_new' or 'update'.
 	 * @param string $context           Context: 'frontend' or 'preview'.
 	 * @return array Result with 'registered', 'skipped', 'updated', 'overflow', 'classes'.
@@ -83,11 +83,22 @@ class Class_Registration_Service {
 		$available_slots = self::MAX_CLASSES_LIMIT - count( $existing_items );
 
 		foreach ( $converted_classes as $class_name => $class_data ) {
-			$atomic_props = $class_data['atomic_props'] ?? [];
-			$custom_css   = $class_data['custom_css'] ?? null;
+			$breakpoint_props = $class_data['breakpoint_props'] ?? [];
 
-			// Skip empty conversions.
-			if ( empty( $atomic_props ) && empty( $custom_css ) ) {
+			if ( empty( $breakpoint_props ) ) {
+				++$skipped;
+				continue;
+			}
+
+			$has_content = false;
+			foreach ( $breakpoint_props as $breakpoint_data ) {
+				if ( ! empty( $breakpoint_data['atomic_props'] ) || ! empty( $breakpoint_data['custom_css'] ) ) {
+					$has_content = true;
+					break;
+				}
+			}
+
+			if ( ! $has_content ) {
 				++$skipped;
 				continue;
 			}
@@ -97,99 +108,94 @@ class Class_Registration_Service {
 
 			if ( $existing_id ) {
 				if ( 'update' === $update_mode ) {
-					// Update existing class.
-					$existing_items[ $existing_id ] = $this->create_class_config(
+					$existing_items[ $existing_id ] = $this->create_class_config_with_breakpoints(
 						$existing_id,
 						$class_name,
-						$atomic_props,
-						$custom_css
+						$breakpoint_props
 					);
 					++$updated;
 
 					$classes[ $class_name ] = [
-						'id'           => $class_name,
-						'label'        => $class_name,
-						'elementor_id' => $existing_id,
-						'props'        => $atomic_props,
-						'custom_css'   => $custom_css,
-						'status'       => 'updated',
+						'id'             => $class_name,
+						'label'          => $class_name,
+						'elementor_id'   => $existing_id,
+						'breakpoint_props' => $breakpoint_props,
+						'status'         => 'updated',
 					];
 				} else {
 					$existing_props = $this->extract_props_from_class( $existing_items[ $existing_id ] );
+					$desktop_props  = $breakpoint_props['desktop']['atomic_props'] ?? [];
 
-					if ( $this->are_styles_identical( $atomic_props, $existing_props ) ) {
+					if ( $this->are_styles_identical( $desktop_props, $existing_props ) ) {
 						++$skipped;
 
 						$classes[ $class_name ] = [
-							'id'           => $class_name,
-							'label'        => $class_name,
-							'elementor_id' => $existing_id,
-							'props'        => $atomic_props,
-							'custom_css'   => $custom_css,
-							'status'       => 'reused',
+							'id'             => $class_name,
+							'label'          => $class_name,
+							'elementor_id'   => $existing_id,
+							'breakpoint_props' => $breakpoint_props,
+							'status'         => 'reused',
+						];
+						continue;
+					}
+
+					$desktop_props = $breakpoint_props['desktop']['atomic_props'] ?? [];
+					$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $desktop_props );
+
+					if ( $existing_match ) {
+						++$skipped;
+
+						$classes[ $class_name ] = [
+							'id'             => $class_name,
+							'label'          => $existing_match['label'],
+							'elementor_id'   => $existing_match['id'],
+							'breakpoint_props' => $breakpoint_props,
+							'status'         => 'reused',
 						];
 					} else {
-						$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
-
-						if ( $existing_match ) {
-							++$skipped;
-
-							$classes[ $class_name ] = [
-								'id'           => $class_name,
-								'label'        => $existing_match['label'],
-								'elementor_id' => $existing_match['id'],
-								'props'        => $atomic_props,
-								'custom_css'   => $custom_css,
-								'status'       => 'reused',
-							];
-						} else {
-							if ( $available_slots <= 0 ) {
-								$overflow[] = $class_name;
-								continue;
-							}
-
-							$unique_label = $this->get_unique_label( $class_name, $existing_labels );
-							$new_id       = $this->generate_class_id( $unique_label );
-
-							$existing_items[ $new_id ] = $this->create_class_config(
-								$new_id,
-								$unique_label,
-								$atomic_props,
-								$custom_css
-							);
-							$existing_order[]   = $new_id;
-							$existing_labels[]  = strtolower( $unique_label );
-
-							++$registered;
-							--$available_slots;
-
-							$classes[ $class_name ] = [
-								'id'           => $class_name,
-								'label'        => $unique_label,
-								'elementor_id' => $new_id,
-								'props'        => $atomic_props,
-								'custom_css'   => $custom_css,
-								'status'       => 'created_with_suffix',
-							];
+						if ( $available_slots <= 0 ) {
+							$overflow[] = $class_name;
+							continue;
 						}
+
+						$unique_label = $this->get_unique_label( $class_name, $existing_labels );
+						$new_id       = $this->generate_class_id( $unique_label );
+
+						$existing_items[ $new_id ] = $this->create_class_config_with_breakpoints(
+							$new_id,
+							$unique_label,
+							$breakpoint_props
+						);
+						$existing_order[]   = $new_id;
+						$existing_labels[]  = strtolower( $unique_label );
+
+						++$registered;
+						--$available_slots;
+
+						$classes[ $class_name ] = [
+							'id'             => $class_name,
+							'label'          => $unique_label,
+							'elementor_id'   => $new_id,
+							'breakpoint_props' => $breakpoint_props,
+							'status'         => 'created_with_suffix',
+						];
 					}
 				}
 			} else {
-				$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $atomic_props );
+				$desktop_props = $breakpoint_props['desktop']['atomic_props'] ?? [];
+				$existing_match = $this->find_class_by_base_label_and_styles( $existing_items, $class_name, $desktop_props );
 
 				if ( $existing_match ) {
 					++$skipped;
 
 					$classes[ $class_name ] = [
-						'id'           => $class_name,
-						'label'        => $existing_match['label'],
-						'elementor_id' => $existing_match['id'],
-						'props'        => $atomic_props,
-						'custom_css'   => $custom_css,
-						'status'       => 'reused',
+						'id'             => $class_name,
+						'label'          => $existing_match['label'],
+						'elementor_id'   => $existing_match['id'],
+						'breakpoint_props' => $breakpoint_props,
+						'status'         => 'reused',
 					];
 				} else {
-					// New class - no matching styles found anywhere.
 					if ( $available_slots <= 0 ) {
 						$overflow[] = $class_name;
 						continue;
@@ -198,18 +204,16 @@ class Class_Registration_Service {
 					$label  = $this->truncate_label( $class_name );
 					$new_id = $this->generate_class_id( $label );
 
-					// Ensure ID is unique.
 					$counter = 1;
 					while ( isset( $existing_items[ $new_id ] ) ) {
 						$new_id = $this->generate_class_id( $label ) . '-' . $counter;
 						++$counter;
 					}
 
-					$existing_items[ $new_id ] = $this->create_class_config(
+					$existing_items[ $new_id ] = $this->create_class_config_with_breakpoints(
 						$new_id,
 						$label,
-						$atomic_props,
-						$custom_css
+						$breakpoint_props
 					);
 					$existing_order[]   = $new_id;
 					$existing_labels[]  = strtolower( $label );
@@ -218,12 +222,11 @@ class Class_Registration_Service {
 					--$available_slots;
 
 					$classes[ $class_name ] = [
-						'id'           => $class_name,
-						'label'        => $label,
-						'elementor_id' => $new_id,
-						'props'        => $atomic_props,
-						'custom_css'   => $custom_css,
-						'status'       => 'created',
+						'id'             => $class_name,
+						'label'          => $label,
+						'elementor_id'   => $new_id,
+						'breakpoint_props' => $breakpoint_props,
+						'status'         => 'created',
 					];
 				}
 			}
@@ -438,43 +441,91 @@ class Class_Registration_Service {
 	}
 
 	/**
-	 * Create class configuration.
+	 * Create class configuration with breakpoints.
 	 *
-	 * @param string      $id          Class ID.
-	 * @param string      $label       Class label.
-	 * @param array       $atomic_props Atomic props.
-	 * @param string|null $custom_css  Custom CSS.
-	 * @return array Class configuration.
+	 * @param string $id               Class ID.
+	 * @param string $label            Class label.
+	 * @param array  $breakpoint_props Breakpoint-aware atomic props.
+	 *                                 Format: ['desktop' => ['atomic_props' => [...], 'custom_css' => ...], ...]
+	 * @return array Class configuration with multiple variants.
 	 */
-	private function create_class_config( string $id, string $label, array $atomic_props, ?string $custom_css = null ): array {
-		$config = [
+	private function create_class_config_with_breakpoints( string $id, string $label, array $breakpoint_props ): array {
+		$variants = [];
+
+		if ( isset( $breakpoint_props['desktop'] ) ) {
+			$desktop_data = $breakpoint_props['desktop'];
+			$desktop_props = $desktop_data['atomic_props'] ?? [];
+			$desktop_css   = $desktop_data['custom_css'] ?? null;
+
+			$variant = [
+				'meta'  => [
+					'breakpoint' => 'desktop',
+					'state'      => null,
+				],
+				'props' => $desktop_props,
+			];
+
+			if ( ! empty( $desktop_css ) ) {
+				$variant['custom_css'] = [
+					'raw' => class_exists( '\Elementor\Utils' )
+						? \Elementor\Utils::encode_string( $desktop_css )
+						: base64_encode( $desktop_css ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				];
+			}
+
+			$variants[] = $variant;
+		}
+
+		$breakpoint_order = [ 'tablet', 'mobile', 'mobile_extra', 'tablet_extra', 'laptop', 'widescreen' ];
+
+		foreach ( $breakpoint_order as $breakpoint ) {
+			if ( isset( $breakpoint_props[ $breakpoint ] ) ) {
+				$breakpoint_data = $breakpoint_props[ $breakpoint ];
+				$breakpoint_props_data = $breakpoint_data['atomic_props'] ?? [];
+				$breakpoint_css        = $breakpoint_data['custom_css'] ?? null;
+
+				if ( ! empty( $breakpoint_props_data ) || ! empty( $breakpoint_css ) ) {
+					$variant = [
+						'meta'  => [
+							'breakpoint' => $breakpoint,
+							'state'      => null,
+						],
+						'props' => $breakpoint_props_data,
+					];
+
+					if ( ! empty( $breakpoint_css ) ) {
+						$variant['custom_css'] = [
+							'raw' => class_exists( '\Elementor\Utils' )
+								? \Elementor\Utils::encode_string( $breakpoint_css )
+								: base64_encode( $breakpoint_css ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+						];
+					}
+
+					$variants[] = $variant;
+				}
+			}
+		}
+
+		if ( empty( $variants ) ) {
+			$variants[] = [
+				'meta'  => [
+					'breakpoint' => 'desktop',
+					'state'      => null,
+				],
+				'props' => [],
+			];
+		}
+
+		return [
 			'id'       => $id,
 			'label'    => $label,
 			'type'     => 'class',
-			'variants' => [
-				[
-					'meta'  => [
-						'breakpoint' => 'desktop',
-						'state'      => null,
-					],
-					'props' => $atomic_props,
-				],
-			],
+			'variants' => $variants,
 			'meta'     => [
 				'source'      => self::SOURCE_CSS_CONVERTER,
 				'imported_at' => time(),
 			],
 		];
-
-		if ( ! empty( $custom_css ) ) {
-			$config['variants'][0]['custom_css'] = [
-				'raw' => class_exists( '\Elementor\Utils' )
-					? \Elementor\Utils::encode_string( $custom_css )
-					: base64_encode( $custom_css ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
-			];
-		}
-
-		return $config;
 	}
 
 	/**

@@ -110,10 +110,8 @@ class Variable_Resolver {
 				continue;
 			}
 
-			if ( isset( $variable['label'] ) ) {
-				if ( strtolower( $variable['label'] ) === $label_lower ) {
-					return array_merge( [ 'id' => $id ], $variable );
-				}
+			if ( isset( $variable['label'] ) && strtolower( $variable['label'] ) === $label_lower ) {
+				return array_merge( [ 'id' => $id ], $variable );
 			}
 		}
 
@@ -163,14 +161,12 @@ class Variable_Resolver {
 			'global-size-variable'  => 'global-size-variable',
 		];
 
-		if ( 'color' === $expected_type ) {
-			if ( 'global-color-variable' === $variable_type ) {
-				return 'global-color-variable';
-			}
-		} elseif ( 'size' === $expected_type ) {
-			if ( 'global-size-variable' === $variable_type ) {
-				return 'global-size-variable';
-			}
+		if ( 'color' === $expected_type && 'global-color-variable' === $variable_type ) {
+			return 'global-color-variable';
+		}
+
+		if ( 'size' === $expected_type && 'global-size-variable' === $variable_type ) {
+			return 'global-size-variable';
 		}
 
 		return $type_map[ $variable_type ] ?? null;

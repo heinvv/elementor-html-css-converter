@@ -9,6 +9,9 @@
 
 namespace ElementorHtmlCssConverter\Converters\Html;
 
+use ElementorHtmlCssConverter\Converters\Css\Media_Query_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -24,13 +27,6 @@ class Id_Style_Extractor {
 	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
 	private const REGEX_ID_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
 	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
-
-	/**
-	 * Parsed ID rules cache.
-	 *
-	 * @var array
-	 */
-	private array $id_rules = [];
 
 	/**
 	 * Extract CSS content from all <style> tags in the DOM.
@@ -50,25 +46,21 @@ class Id_Style_Extractor {
 	}
 
 	/**
-	 * Parse CSS and return ID selector rules only.
+	 * Parse ID rules from CSS block (helper for breakpoint parsing).
 	 *
-	 * Only processes #id { ... } selectors, ignores all others
-	 * (class selectors, tag selectors, attribute selectors, etc.).
-	 *
-	 * @param string $css Raw CSS content.
+	 * @param string $css_block CSS block content.
 	 * @return array Map of element IDs to their CSS declarations.
-	 *               Example: ['container' => ['display' => 'flex', 'gap' => '20px']]
 	 */
-	public function parse_id_rules( string $css ): array {
-		$this->id_rules = [];
+	private function parse_id_rules_from_block( string $css_block ): array {
+		$id_rules = [];
 
-		if ( empty( trim( $css ) ) ) {
-			return $this->id_rules;
+		if ( empty( trim( $css_block ) ) ) {
+			return $id_rules;
 		}
 
-		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
+		$css_block = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css_block );
 
-		if ( preg_match_all( self::REGEX_ID_SELECTOR_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
+		if ( preg_match_all( self::REGEX_ID_SELECTOR_PATTERN, $css_block, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$id           = $match[1];
 				$declarations = $match[2];
@@ -76,19 +68,19 @@ class Id_Style_Extractor {
 				$parsed_declarations = $this->parse_declarations( $declarations );
 
 				if ( ! empty( $parsed_declarations ) ) {
-					if ( isset( $this->id_rules[ $id ] ) ) {
-						$this->id_rules[ $id ] = array_merge(
-							$this->id_rules[ $id ],
+					if ( isset( $id_rules[ $id ] ) ) {
+						$id_rules[ $id ] = array_merge(
+							$id_rules[ $id ],
 							$parsed_declarations
 						);
 					} else {
-						$this->id_rules[ $id ] = $parsed_declarations;
+						$id_rules[ $id ] = $parsed_declarations;
 					}
 				}
 			}
 		}
 
-		return $this->id_rules;
+		return $id_rules;
 	}
 
 	/**
@@ -127,31 +119,71 @@ class Id_Style_Extractor {
 	}
 
 	/**
-	 * Get styles for a specific element ID.
+	 * Parse ID rules with breakpoint support.
 	 *
-	 * @param string $id       The element ID (without the # prefix).
-	 * @param array  $id_rules The parsed ID rules from parse_id_rules().
-	 * @return array CSS property-value pairs for the element, or empty array if not found.
+	 * Extracts ID rules per breakpoint from CSS with media queries.
+	 *
+	 * @param string            $css    Raw CSS content.
+	 * @param Breakpoint_Matcher $matcher Breakpoint matcher instance.
+	 * @return array Map of element IDs to breakpoint-specific CSS declarations.
+	 *               Format: ['id' => ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]]
 	 */
-	public function get_styles_for_id( string $id, array $id_rules ): array {
-		if ( empty( $id ) ) {
-			return [];
+	public function parse_id_rules( string $css, Breakpoint_Matcher $matcher ): array {
+		$breakpoint_rules = [];
+
+		if ( empty( trim( $css ) ) ) {
+			return $breakpoint_rules;
 		}
 
-		return $id_rules[ $id ] ?? [];
-	}
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-	/**
-	 * Extract and parse all ID styles from a DOM document.
-	 *
-	 * Convenience method that combines extract_style_tags() and parse_id_rules().
-	 *
-	 * @param \DOMDocument $dom The DOM document.
-	 * @return array Map of element IDs to their CSS declarations.
-	 */
-	public function extract_all_id_styles( \DOMDocument $dom ): array {
-		$css = $this->extract_style_tags( $dom );
-		return $this->parse_id_rules( $css );
+		$media_parser = new Media_Query_Parser();
+		$media_queries = $media_parser->parse_media_queries( $css );
+		$desktop_css = $media_parser->extract_desktop_css( $css );
+
+		$desktop_rules = $this->parse_id_rules_from_block( $desktop_css );
+
+		foreach ( $desktop_rules as $id => $styles ) {
+			if ( ! isset( $breakpoint_rules[ $id ] ) ) {
+				$breakpoint_rules[ $id ] = [];
+			}
+			$breakpoint_rules[ $id ]['desktop'] = $styles;
+		}
+
+		foreach ( $media_queries as $media_query ) {
+			$width     = $media_query['width'];
+			$direction = $media_query['direction'];
+			$css_block = $media_query['css'];
+
+			$elementor_breakpoint = $matcher->match_css_to_elementor_breakpoint( $width, $direction );
+
+			if ( null === $elementor_breakpoint ) {
+				continue;
+			}
+
+			$responsive_rules = $this->parse_id_rules_from_block( $css_block );
+
+			foreach ( $responsive_rules as $id => $styles ) {
+				if ( ! isset( $breakpoint_rules[ $id ] ) ) {
+					$breakpoint_rules[ $id ] = [];
+				}
+
+				if ( ! isset( $breakpoint_rules[ $id ]['desktop'] ) ) {
+					$breakpoint_rules[ $id ]['desktop'] = [];
+				}
+
+				if ( ! isset( $breakpoint_rules[ $id ][ $elementor_breakpoint ] ) ) {
+					$breakpoint_rules[ $id ][ $elementor_breakpoint ] = [];
+				}
+
+				$breakpoint_rules[ $id ][ $elementor_breakpoint ] = array_merge(
+					$breakpoint_rules[ $id ][ $elementor_breakpoint ],
+					$styles
+				);
+			}
+		}
+
+		return $breakpoint_rules;
 	}
 }
 

@@ -103,22 +103,24 @@ class Css_Converter {
 
 		foreach ( $properties as $property => $value ) {
 			$converter = $this->get_converter_for_property( $property );
-			if ( null !== $converter ) {
-				$converted = $converter->convert( $property, $value );
-				if ( null !== $converted ) {
-					if ( $this->is_multi_property_result( $converted ) ) {
-						foreach ( $converted as $expanded_property => $expanded_value ) {
-							$props[ $expanded_property ] = $this->merge_props( $props[ $expanded_property ] ?? null, $expanded_value );
-						}
-					} else {
-						$output_property = $converter->get_output_property( $property );
-						$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
-					}
-				} else {
-					$unsupported[ $property ] = $value;
+			if ( null === $converter ) {
+				$unsupported[ $property ] = $value;
+				continue;
+			}
+
+			$converted = $converter->convert( $property, $value );
+			if ( null === $converted ) {
+				$unsupported[ $property ] = $value;
+				continue;
+			}
+
+			if ( $this->is_multi_property_result( $converted ) ) {
+				foreach ( $converted as $expanded_property => $expanded_value ) {
+					$props[ $expanded_property ] = $this->merge_props( $props[ $expanded_property ] ?? null, $expanded_value );
 				}
 			} else {
-				$unsupported[ $property ] = $value;
+				$output_property = $converter->get_output_property( $property );
+				$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
 			}
 		}
 

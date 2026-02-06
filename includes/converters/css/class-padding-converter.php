@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Converters\Css\Properties;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
@@ -11,24 +11,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Margin_Converter extends Property_Converter_Base {
+class Padding_Converter extends Property_Converter_Base {
 
-	private const REGEX_WHITESPACE_SPLIT = '/\s+/';
 	private const SUPPORTED_PROPERTIES = [
-		'margin',
-		'margin-top',
-		'margin-right',
-		'margin-bottom',
-		'margin-left',
-		'margin-block-start',
-		'margin-block-end',
-		'margin-inline-start',
-		'margin-inline-end',
-		'margin-block',
-		'margin-inline',
+		'padding',
+		'padding-top',
+		'padding-right',
+		'padding-bottom',
+		'padding-left',
+		'padding-block-start',
+		'padding-block-end',
+		'padding-inline-start',
+		'padding-inline-end',
+		'padding-block',
+		'padding-inline',
 	];
 
-	private const OUTPUT_PROPERTY = 'margin';
+	private const OUTPUT_PROPERTY = 'padding';
 
 	protected function get_supported_properties_list(): array {
 		return self::SUPPORTED_PROPERTIES;
@@ -38,6 +37,10 @@ class Margin_Converter extends Property_Converter_Base {
 		return self::OUTPUT_PROPERTY;
 	}
 
+	/**
+	 * Override convert to handle shorthand properties with multiple values.
+	 * Each value needs individual variable resolution.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
@@ -47,7 +50,7 @@ class Margin_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		$dimensions_data = $this->parse_margin_property( $property, (string) $value );
+		$dimensions_data = $this->parse_padding_property( $property, (string) $value );
 
 		if ( null === $dimensions_data ) {
 			return null;
@@ -57,9 +60,13 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
 		return null;
 	}
 
+	/**
+	 * Resolve a single size value, handling CSS variables.
+	 */
 	private function resolve_size_value( string $value ): ?array {
 		$value = trim( $value );
 
@@ -76,31 +83,31 @@ class Margin_Converter extends Property_Converter_Base {
 		return Size_Prop_Type::generate( $parsed );
 	}
 
-	private function parse_margin_property( string $property, string $value ): ?array {
+	private function parse_padding_property( string $property, string $value ): ?array {
 		switch ( $property ) {
-			case 'margin':
+			case 'padding':
 				return $this->parse_shorthand_to_logical_properties( $value );
 
-			case 'margin-top':
-			case 'margin-block-start':
+			case 'padding-top':
+			case 'padding-block-start':
 				return $this->create_single_dimension( 'block-start', $value );
 
-			case 'margin-right':
-			case 'margin-inline-end':
+			case 'padding-right':
+			case 'padding-inline-end':
 				return $this->create_single_dimension( 'inline-end', $value );
 
-			case 'margin-bottom':
-			case 'margin-block-end':
+			case 'padding-bottom':
+			case 'padding-block-end':
 				return $this->create_single_dimension( 'block-end', $value );
 
-			case 'margin-left':
-			case 'margin-inline-start':
+			case 'padding-left':
+			case 'padding-inline-start':
 				return $this->create_single_dimension( 'inline-start', $value );
 
-			case 'margin-block':
+			case 'padding-block':
 				return $this->parse_logical_shorthand( $value, 'block' );
 
-			case 'margin-inline':
+			case 'padding-inline':
 				return $this->parse_logical_shorthand( $value, 'inline' );
 
 			default:
@@ -121,7 +128,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_shorthand_to_logical_properties( string $value ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = preg_split( '/\s+/', trim( $value ) );
 		$count  = count( $values );
 
 		switch ( $count ) {
@@ -185,7 +192,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_logical_shorthand( string $value, string $axis ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = preg_split( '/\s+/', trim( $value ) );
 		$count  = count( $values );
 
 		if ( 1 === $count ) {
@@ -214,4 +221,3 @@ class Margin_Converter extends Property_Converter_Base {
 		return null;
 	}
 }
-

@@ -9,6 +9,9 @@
 
 namespace ElementorHtmlCssConverter\Converters\Classes;
 
+use ElementorHtmlCssConverter\Converters\Css\Media_Query_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -47,21 +50,89 @@ class Class_Extractor {
 	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
 
 	/**
-	 * Extract class definitions from CSS.
+	 * Extract class definitions from CSS with breakpoint support.
 	 *
-	 * @param string $css Raw CSS containing class definitions.
-	 * @return array Array of class definitions with 'selector' and 'properties' keys.
+	 * @param string            $css     Raw CSS containing class definitions.
+	 * @param Breakpoint_Matcher $matcher Breakpoint matcher instance.
+	 * @return array Array of class definitions per breakpoint.
+	 *               Format: ['class-name' => ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]]
 	 */
-	public function extract_from_css( string $css ): array {
-		$classes = [];
+	public function extract_from_css( string $css, Breakpoint_Matcher $matcher ): array {
+		$breakpoint_classes = [];
+
+		if ( empty( trim( $css ) ) ) {
+			return $breakpoint_classes;
+		}
 
 		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		$css = preg_replace( self::REGEX_MEDIA_QUERY_REMOVAL, '', $css );
+		$media_parser = new Media_Query_Parser();
+		$media_queries = $media_parser->parse_media_queries( $css );
+		$desktop_css = $media_parser->extract_desktop_css( $css );
 
-		$css = preg_replace( self::REGEX_AT_RULE_REMOVAL, '', $css );
+		$desktop_css = preg_replace( self::REGEX_AT_RULE_REMOVAL, '', $desktop_css );
 
-		if ( preg_match_all( self::REGEX_CSS_RULE_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
+		$desktop_classes = $this->extract_classes_from_css_block( $desktop_css );
+
+		foreach ( $desktop_classes as $class_name => $class_data ) {
+			if ( ! isset( $breakpoint_classes[ $class_name ] ) ) {
+				$breakpoint_classes[ $class_name ] = [];
+			}
+			$breakpoint_classes[ $class_name ]['desktop'] = $class_data;
+		}
+
+		foreach ( $media_queries as $media_query ) {
+			$width     = $media_query['width'];
+			$direction = $media_query['direction'];
+			$css_block = $media_query['css'];
+
+			$elementor_breakpoint = $matcher->match_css_to_elementor_breakpoint( $width, $direction );
+
+			if ( null === $elementor_breakpoint ) {
+				continue;
+			}
+
+			$responsive_classes = $this->extract_classes_from_css_block( $css_block );
+
+			foreach ( $responsive_classes as $class_name => $class_data ) {
+				if ( ! isset( $breakpoint_classes[ $class_name ] ) ) {
+					$breakpoint_classes[ $class_name ] = [];
+				}
+
+				if ( ! isset( $breakpoint_classes[ $class_name ]['desktop'] ) ) {
+					$breakpoint_classes[ $class_name ]['desktop'] = [
+						'selector'   => '.' . $class_name,
+						'properties' => [],
+					];
+				}
+
+				if ( ! isset( $breakpoint_classes[ $class_name ][ $elementor_breakpoint ] ) ) {
+					$breakpoint_classes[ $class_name ][ $elementor_breakpoint ] = [
+						'selector'   => '.' . $class_name,
+						'properties' => [],
+					];
+				}
+
+				$breakpoint_classes[ $class_name ][ $elementor_breakpoint ]['properties'] = array_merge(
+					$breakpoint_classes[ $class_name ][ $elementor_breakpoint ]['properties'],
+					$class_data['properties']
+				);
+			}
+		}
+
+		return $breakpoint_classes;
+	}
+
+	/**
+	 * Extract classes from a CSS block (without media queries).
+	 *
+	 * @param string $css_block CSS block content.
+	 * @return array Extracted classes.
+	 */
+	private function extract_classes_from_css_block( string $css_block ): array {
+		$classes = [];
+
+		if ( preg_match_all( self::REGEX_CSS_RULE_PATTERN, $css_block, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$selector   = trim( $match[1] );
 				$properties = trim( $match[2] );

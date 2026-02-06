@@ -20,6 +20,7 @@ use ElementorHtmlCssConverter\Converters\Classes\Class_Extractor;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Conversion_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Registration_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -68,11 +69,13 @@ class Html_Converter {
 	/**
 	 * Constructor.
 	 *
-	 * @param Converter_Registry $converter_registry CSS converter registry.
+	 * @param Converter_Registry      $converter_registry CSS converter registry.
+	 * @param Breakpoint_Matcher|null $breakpoint_matcher Optional breakpoint matcher instance.
 	 */
-	public function __construct( Converter_Registry $converter_registry ) {
+	public function __construct( Converter_Registry $converter_registry, ?Breakpoint_Matcher $breakpoint_matcher = null ) {
 		$this->converter_registry = $converter_registry;
-		$this->data_parser        = new Atomic_Data_Parser( $converter_registry );
+		$matcher                   = $breakpoint_matcher ?? new Breakpoint_Matcher();
+		$this->data_parser        = new Atomic_Data_Parser( $converter_registry, $matcher );
 		$this->json_creator       = new Atomic_Widget_JSON_Creator();
 		$this->styles_integrator  = new Widget_Styles_Integrator();
 	}
@@ -224,8 +227,8 @@ class Html_Converter {
 	 * @return array Widget with integrated styles.
 	 */
 	private function integrate_styles_recursive( array $widget, array $widget_data, array $global_class_map = [] ): array {
-		$atomic_props    = $widget_data['atomic_props'] ?? [];
-		$element_classes = $widget_data['element_classes'] ?? [];
+		$breakpoint_props = $widget_data['breakpoint_props'] ?? [];
+		$element_classes  = $widget_data['element_classes'] ?? [];
 
 		$global_class_ids = [];
 		foreach ( $element_classes as $class_name ) {
@@ -246,8 +249,8 @@ class Html_Converter {
 			$widget['settings']['classes']['value'] = array_merge( $existing_classes, $global_class_ids );
 		}
 
-		if ( ! empty( $atomic_props ) ) {
-			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $atomic_props );
+		if ( ! empty( $breakpoint_props ) ) {
+			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $breakpoint_props );
 		}
 
 		if ( ! empty( $widget['elements'] ) && ! empty( $widget_data['children'] ) ) {
@@ -482,17 +485,18 @@ class Html_Converter {
 			return $result;
 		}
 
-		$extractor         = new Class_Extractor();
-		$extracted_classes = $extractor->extract_from_css( $css );
+		$extractor = new Class_Extractor();
+		$breakpoint_matcher = new Breakpoint_Matcher();
+		$extracted_classes = $extractor->extract_from_css( $css, $breakpoint_matcher );
 
 		if ( empty( $extracted_classes ) ) {
 			return $result;
 		}
 
 		$classes_to_import = [];
-		foreach ( $extracted_classes as $class_name => $class_data ) {
+		foreach ( $extracted_classes as $class_name => $breakpoint_data ) {
 			if ( in_array( $class_name, $used_classes, true ) ) {
-				$classes_to_import[ $class_name ] = $class_data;
+				$classes_to_import[ $class_name ] = $breakpoint_data;
 			} else {
 				$result['skipped'][] = [
 					'selector' => '.' . $class_name,

@@ -9,6 +9,8 @@
 
 namespace ElementorHtmlCssConverter\Converters\Html;
 
+use ElementorHtmlCssConverter\Converters\Css\Style_Definition_Builder;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -28,32 +30,41 @@ class Widget_Styles_Integrator {
 	private Atomic_Widget_Class_Generator $class_generator;
 
 	/**
+	 * Style definition builder instance.
+	 *
+	 * @var Style_Definition_Builder
+	 */
+	private Style_Definition_Builder $style_builder;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
 		$this->class_generator = new Atomic_Widget_Class_Generator();
+		$this->style_builder   = new Style_Definition_Builder();
 	}
 
 	/**
-	 * Integrate styles into a widget.
+	 * Integrate styles with breakpoints into a widget.
 	 *
-	 * @param array $widget       Widget JSON structure.
-	 * @param array $atomic_props Atomic properties to integrate.
+	 * @param array $widget          Widget JSON structure.
+	 * @param array $breakpoint_props Breakpoint-aware atomic properties.
 	 * @return array Widget with integrated styles.
 	 */
-	public function integrate_styles_into_widget( array $widget, array $atomic_props ): array {
-		if ( empty( $atomic_props ) ) {
+	public function integrate_styles_into_widget( array $widget, array $breakpoint_props ): array {
+		if ( empty( $breakpoint_props ) ) {
 			return $widget;
 		}
 
 		$widget_type = $widget['widgetType'] ?? $widget['elType'] ?? '';
 		$class_id    = $this->class_generator->generate_class_id( $widget_type );
 
-		$styles = $this->create_styles_structure( $class_id, $atomic_props );
+		$styles = $this->create_styles_structure_with_breakpoints( $class_id, $breakpoint_props );
 
-		$widget['styles'] = $styles;
-
-		$widget = $this->add_class_reference_to_widget( $widget, $class_id );
+		if ( ! empty( $styles ) ) {
+			$widget['styles'] = $styles;
+			$widget           = $this->add_class_reference_to_widget( $widget, $class_id );
+		}
 
 		return $widget;
 	}
@@ -61,16 +72,16 @@ class Widget_Styles_Integrator {
 	/**
 	 * Integrate styles into multiple widgets.
 	 *
-	 * @param array $widgets              Array of widgets.
-	 * @param array $widgets_atomic_props Array of atomic props per widget.
+	 * @param array $widgets                Array of widgets.
+	 * @param array $widgets_breakpoint_props Array of breakpoint props per widget.
 	 * @return array Widgets with integrated styles.
 	 */
-	public function integrate_styles_into_multiple_widgets( array $widgets, array $widgets_atomic_props ): array {
+	public function integrate_styles_into_multiple_widgets( array $widgets, array $widgets_breakpoint_props ): array {
 		$processed_widgets = [];
 
 		foreach ( $widgets as $index => $widget ) {
-			$atomic_props        = $widgets_atomic_props[ $index ] ?? [];
-			$processed_widgets[] = $this->integrate_styles_into_widget( $widget, $atomic_props );
+			$breakpoint_props   = $widgets_breakpoint_props[ $index ] ?? [];
+			$processed_widgets[] = $this->integrate_styles_into_widget( $widget, $breakpoint_props );
 		}
 
 		return $processed_widgets;
@@ -101,29 +112,26 @@ class Widget_Styles_Integrator {
 	}
 
 	/**
-	 * Create styles structure for a widget.
+	 * Create styles structure with breakpoints for a widget.
 	 *
-	 * @param string $class_id     Class ID.
-	 * @param array  $atomic_props Atomic properties.
+	 * @param string $class_id         Class ID.
+	 * @param array  $breakpoint_props Breakpoint-aware atomic properties.
+	 *                                  Format: ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]
 	 * @return array Styles structure.
 	 */
-	private function create_styles_structure( string $class_id, array $atomic_props ): array {
+	private function create_styles_structure_with_breakpoints( string $class_id, array $breakpoint_props ): array {
+		if ( empty( $breakpoint_props ) ) {
+			return [];
+		}
+
+		$style_definition = $this->style_builder->build_with_breakpoints( $breakpoint_props, $class_id );
+
+		if ( empty( $style_definition ) ) {
+			return [];
+		}
+
 		return [
-			$class_id => [
-				'id'       => $class_id,
-				'label'    => 'local',
-				'type'     => 'class',
-				'variants' => [
-					[
-						'meta'       => [
-							'breakpoint' => 'desktop',
-							'state'      => null,
-						],
-						'props'      => $atomic_props,
-						'custom_css' => null,
-					],
-				],
-			],
+			$class_id => $style_definition,
 		];
 	}
 
@@ -154,13 +162,13 @@ class Widget_Styles_Integrator {
 	}
 
 	/**
-	 * Extract atomic props from widget data.
+	 * Extract breakpoint props from widget data.
 	 *
 	 * @param array $widget_data Widget data array.
-	 * @return array Atomic props.
+	 * @return array Breakpoint props.
 	 */
-	public function extract_atomic_props_from_widget_data( array $widget_data ): array {
-		return $widget_data['atomic_props'] ?? [];
+	public function extract_breakpoint_props_from_widget_data( array $widget_data ): array {
+		return $widget_data['breakpoint_props'] ?? [];
 	}
 
 	/**

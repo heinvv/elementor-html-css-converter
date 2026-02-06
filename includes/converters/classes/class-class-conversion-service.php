@@ -40,31 +40,45 @@ class Class_Conversion_Service {
 	}
 
 	/**
-	 * Convert extracted classes to atomic format.
+	 * Convert breakpoint-aware classes to atomic format.
 	 *
-	 * @param array $extracted_classes Array of extracted class definitions from Class_Extractor.
-	 * @return array Converted classes with atomic props.
+	 * @param array $breakpoint_classes Array of breakpoint-aware class definitions.
+	 *                                  Format: ['class-name' => ['desktop' => [...], 'tablet' => [...]]]
+	 * @return array Converted classes with atomic props per breakpoint.
 	 */
-	public function convert_to_atomic( array $extracted_classes ): array {
+	public function convert_to_atomic( array $breakpoint_classes ): array {
 		$converted = [];
 
-		foreach ( $extracted_classes as $class_name => $class_data ) {
-			$properties = $class_data['properties'] ?? [];
+		foreach ( $breakpoint_classes as $class_name => $breakpoint_data ) {
+			$breakpoint_props = [];
 
-			if ( empty( $properties ) ) {
-				continue;
+			foreach ( $breakpoint_data as $breakpoint => $class_data ) {
+				if ( 'desktop' === $breakpoint || 'tablet' === $breakpoint || 'mobile' === $breakpoint || 
+					 'mobile_extra' === $breakpoint || 'tablet_extra' === $breakpoint || 
+					 'laptop' === $breakpoint || 'widescreen' === $breakpoint ) {
+					$properties = $class_data['properties'] ?? [];
+
+					if ( empty( $properties ) ) {
+						continue;
+					}
+
+					$css_string = $this->build_css_string( $properties );
+					$result     = $this->css_converter->convert( [ 'cssString' => $css_string ] );
+
+					$breakpoint_props[ $breakpoint ] = [
+						'atomic_props' => $result['props'] ?? [],
+						'custom_css'   => $result['customCss'] ?? null,
+					];
+				}
 			}
 
-			$css_string = $this->build_css_string( $properties );
-
-			$result = $this->css_converter->convert( [ 'cssString' => $css_string ] );
-
-			$converted[ $class_name ] = [
-				'label'             => $class_name,
-				'atomic_props'      => $result['props'] ?? [],
-				'custom_css'        => $result['customCss'] ?? null,
-				'original_selector' => $class_data['selector'] ?? '.' . $class_name,
-			];
+			if ( ! empty( $breakpoint_props ) ) {
+				$converted[ $class_name ] = [
+					'label'             => $class_name,
+					'breakpoint_props'   => $breakpoint_props,
+					'original_selector' => '.' . $class_name,
+				];
+			}
 		}
 
 		return $converted;

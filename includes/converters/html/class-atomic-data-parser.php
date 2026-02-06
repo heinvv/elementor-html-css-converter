@@ -13,6 +13,7 @@ namespace ElementorHtmlCssConverter\Converters\Html;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use ElementorHtmlCssConverter\Converters\Css\Css_Converter;
 use ElementorHtmlCssConverter\Converters\Html\Id_Style_Extractor;
+use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -47,15 +48,22 @@ class Atomic_Data_Parser {
 	 */
 	private Id_Style_Extractor $id_style_extractor;
 
+	/**
+	 * Breakpoint matcher instance.
+	 *
+	 * @var Breakpoint_Matcher|null
+	 */
+	private ?Breakpoint_Matcher $breakpoint_matcher = null;
+
 	private const REGEX_WHITESPACE_SPLIT = '/\s+/';
 	private const REGEX_ELEMENTOR_CLASS_PREFIX = '/^(elementor-|e-con-|e-)/';
 
 	/**
-	 * Parsed ID rules for current document.
+	 * Parsed ID rules with breakpoints for current document.
 	 *
 	 * @var array
 	 */
-	private array $id_rules = [];
+	private array $id_rules_with_breakpoints = [];
 
 	/**
 	 * Tags that should have their text content wrapped in paragraphs.
@@ -78,11 +86,13 @@ class Atomic_Data_Parser {
 	 * Constructor.
 	 *
 	 * @param Converter_Registry $converter_registry The CSS converter registry.
+	 * @param Breakpoint_Matcher  $breakpoint_matcher Breakpoint matcher instance.
 	 */
-	public function __construct( Converter_Registry $converter_registry ) {
+	public function __construct( Converter_Registry $converter_registry, Breakpoint_Matcher $breakpoint_matcher ) {
 		$this->widget_mapper      = new HTML_To_Atomic_Widget_Mapper();
 		$this->css_converter      = new Css_Converter( $converter_registry );
 		$this->id_style_extractor = new Id_Style_Extractor();
+		$this->breakpoint_matcher = $breakpoint_matcher;
 	}
 
 	/**
@@ -101,7 +111,9 @@ class Atomic_Data_Parser {
 
 		$dom = $this->create_dom( $html );
 
-		$this->id_rules = $this->id_style_extractor->extract_all_id_styles( $dom );
+		$css = $this->id_style_extractor->extract_style_tags( $dom );
+
+		$this->id_rules_with_breakpoints = $this->id_style_extractor->parse_id_rules( $css, $this->breakpoint_matcher );
 
 		$dom_elements = $this->parse_dom_structure_from_dom( $dom );
 		if ( empty( $dom_elements ) ) {
@@ -191,9 +203,22 @@ class Atomic_Data_Parser {
 			return null;
 		}
 
-		$element_id   = $element->getAttribute( 'id' );
-		$id_styles    = $this->id_style_extractor->get_styles_for_id( $element_id, $this->id_rules );
-		$atomic_props = $this->convert_styles_to_atomic_props( $id_styles );
+		$element_id = $element->getAttribute( 'id' );
+
+		$breakpoint_props = [];
+		if ( ! empty( $element_id ) && isset( $this->id_rules_with_breakpoints[ $element_id ] ) ) {
+			$breakpoint_styles = $this->id_rules_with_breakpoints[ $element_id ];
+
+			foreach ( $breakpoint_styles as $breakpoint => $styles ) {
+				if ( ! empty( $styles ) ) {
+					$breakpoint_props[ $breakpoint ] = $this->convert_styles_to_atomic_props( $styles );
+				}
+			}
+		}
+
+		if ( empty( $breakpoint_props ) ) {
+			$breakpoint_props['desktop'] = [];
+		}
 
 		$element_classes = $this->extract_class_names( $element );
 
@@ -204,14 +229,14 @@ class Atomic_Data_Parser {
 		$attributes['original_tag'] = $tag_name;
 
 		return [
-			'tag'             => $tag_name,
-			'widget_type'     => $widget_config['type'],
-			'widget_config'   => $widget_config,
-			'atomic_props'    => $atomic_props,
-			'element_classes' => $element_classes,
-			'content'         => $content,
-			'attributes'      => $attributes,
-			'children'        => $children,
+			'tag'              => $tag_name,
+			'widget_type'      => $widget_config['type'],
+			'widget_config'    => $widget_config,
+			'breakpoint_props' => $breakpoint_props,
+			'element_classes'  => $element_classes,
+			'content'          => $content,
+			'attributes'       => $attributes,
+			'children'         => $children,
 		];
 	}
 
@@ -341,7 +366,7 @@ class Atomic_Data_Parser {
 		foreach ( $element->childNodes as $child ) {
 			if ( XML_ELEMENT_NODE === $child->nodeType ) {
 				$child_data = $this->extract_element_data( $child );
-				if ( $child_data ) {
+				if ( null !== $child_data ) {
 					$children[] = $child_data;
 				}
 			}
@@ -404,7 +429,9 @@ class Atomic_Data_Parser {
 			}
 
 			$element['content'] = '';
-		} elseif ( $has_children ) {
+		}
+
+		if ( $has_children && ! $has_direct_text ) {
 			$element['children'] = $this->preprocess_elements_for_text_wrapping( $element['children'] );
 		}
 

@@ -204,6 +204,76 @@ Expected: `display`, `gap` atomic; `grid-template-columns: repeat(auto-fill, min
 }
 ```
 
+### Font Family Examples
+
+The converter supports CSS `font-family` properties with Google Fonts, system fonts, fallback chains, and generic font families. CSS keywords (`inherit`, `initial`, `unset`, `revert`) are automatically skipped.
+
+**Example: Multiple Font Family Scenarios**
+
+```json
+{
+  "html": "<style>\n#google-font { font-family: \"Roboto\", Arial, sans-serif; font-size: 24px; color: #333; }\n#quoted-single { font-family: 'Open Sans'; font-size: 18px; }\n#system-font { font-family: Arial; font-size: 16px; }\n#multiple-fallbacks { font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 20px; }\n#generic-serif { font-family: serif; font-size: 16px; }\n#generic-sans { font-family: sans-serif; font-size: 16px; }\n#generic-mono { font-family: monospace; font-size: 14px; }\n#with-other-props { font-family: \"Roboto\", sans-serif; font-size: 18px; font-weight: 600; color: #0066cc; line-height: 1.5; }\n#css-keyword { font-family: inherit; font-size: 16px; }\n#unquoted-multiword { font-family: Times New Roman, serif; font-size: 16px; }\n</style>\n<h1 id=\"google-font\">Google Font with Fallback</h1>\n<p id=\"quoted-single\">Single Quoted Font</p>\n<div id=\"system-font\">System Font (Arial)</div>\n<p id=\"multiple-fallbacks\">Multiple Fallback Fonts</p>\n<p id=\"generic-serif\">Generic Serif Font</p>\n<p id=\"generic-sans\">Generic Sans-Serif Font</p>\n<code id=\"generic-mono\">Generic Monospace Font</code>\n<div id=\"with-other-props\">Font Family with Other CSS Properties</div>\n<p id=\"css-keyword\">CSS Keyword (should skip font-family)</p>\n<p id=\"unquoted-multiword\">Unquoted Multi-word Font</p>"
+}
+```
+
+**Supported formats:**
+- Quoted fonts: `"Roboto"`, `'Open Sans'`
+- Unquoted fonts: `Arial`, `Times New Roman`
+- Fallback chains: `"Roboto", Arial, sans-serif`
+- Generic families: `serif`, `sans-serif`, `monospace`, `cursive`, `fantasy`
+- CSS keywords are skipped: `inherit`, `initial`, `unset`, `revert`
+
+**Expected behavior:**
+- Font-family values are converted to Elementor atomic `font-family` property using `String_Prop_Type`
+- Full fallback chains are preserved (e.g., `"Roboto", Arial, sans-serif`)
+- Font enqueuing is handled automatically by Elementor v4's `useStylePropResolver` hook
+- CSS keywords like `inherit` are skipped (no font-family property is added)
+
+### Responsive Breakpoints with Media Queries
+
+The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values are automatically matched to Elementor's breakpoint system (tablet: 1024px, mobile: 767px, etc.). Styles are created with multiple variants for different breakpoints.
+
+**Supported breakpoint formats:**
+- `@media (max-width: 1024px)` → maps to Elementor `tablet` breakpoint
+- `@media (max-width: 767px)` → maps to Elementor `mobile` breakpoint
+- `@media screen and (max-width: 880px)` → maps to closest Elementor breakpoint
+
+**Example: Responsive Header with ID Selectors**
+
+```json
+{
+  "html": "<style>\n#header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 20px 40px;\n  background-color: #ffffff;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n}\n#logo {\n  font-size: 24px;\n  font-weight: bold;\n  color: #333333;\n}\n@media (max-width: 1024px) {\n  #header {\n    padding: 15px 30px;\n  }\n}\n@media (max-width: 767px) {\n  #header {\n    flex-direction: column;\n    gap: 20px;\n    padding: 15px 25px;\n  }\n  #logo {\n    font-size: 20px;\n  }\n}\n</style>\n<header id=\"header\">\n  <div id=\"logo\">MyBrand</div>\n  <nav>Navigation</nav>\n</header>"
+}
+```
+
+**Example: Responsive Hero Section**
+
+```json
+{
+  "html": "<style>\n#hero {\n  padding: 80px 20px;\n  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  color: #ffffff;\n  text-align: center;\n}\n#hero-title {\n  font-size: 48px;\n  font-weight: 700;\n  margin-bottom: 20px;\n  line-height: 1.2em;\n}\n#hero-subtitle {\n  font-size: 20px;\n  margin-bottom: 30px;\n  opacity: 90%;\n}\n#hero-button {\n  padding: 15px 40px;\n  font-size: 18px;\n  font-weight: 600;\n  background-color: #ffffff;\n  color: #667eea;\n  border-radius: 5px;\n}\n@media (max-width: 1024px) {\n  #hero {\n    padding: 60px 20px;\n  }\n  #hero-title {\n    font-size: 36px;\n  }\n  #hero-subtitle {\n    font-size: 18px;\n  }\n}\n@media (max-width: 767px) {\n  #hero {\n    padding: 40px 15px;\n  }\n  #hero-title {\n    font-size: 32px;\n    margin-bottom: 15px;\n  }\n  #hero-subtitle {\n    font-size: 16px;\n    margin-bottom: 25px;\n  }\n  #hero-button {\n    width: 100%;\n    max-width: 300px;\n    font-size: 16px;\n    padding: 12px 30px;\n  }\n}\n</style>\n<div id=\"hero\">\n  <h1 id=\"hero-title\">Welcome to Our Platform</h1>\n  <p id=\"hero-subtitle\">Building amazing experiences for the modern web</p>\n  <button id=\"hero-button\">Get Started</button>\n</div>"
+}
+```
+
+**Example: Responsive Grid Layout with Classes**
+
+```json
+{
+  "html": "<style>\n:root {\n  --card-bg: #ffffff;\n  --card-padding: 40px;\n  --card-gap: 40px;\n}\n.features {\n  display: grid;\n  gap: var(--card-gap);\n  padding: 80px 40px;\n  background-color: #f8f9fa;\n}\n.feature-card {\n  background-color: var(--card-bg);\n  padding: var(--card-padding);\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n  text-align: center;\n}\n.feature-icon {\n  font-size: 48px;\n  margin-bottom: 20px;\n}\n.feature-title {\n  font-size: 24px;\n  font-weight: 600;\n  color: #333333;\n  margin-bottom: 15px;\n}\n.feature-description {\n  font-size: 16px;\n  color: #666666;\n  line-height: 1.6em;\n}\n@media (max-width: 1024px) {\n  .features {\n    gap: 35px;\n    padding: 60px 30px;\n  }\n}\n@media (max-width: 767px) {\n  .features {\n    gap: 25px;\n    padding: 40px 20px;\n  }\n  .feature-card {\n    padding: 30px 20px;\n  }\n  .feature-icon {\n    font-size: 36px;\n  }\n  .feature-title {\n    font-size: 20px;\n  }\n  .feature-description {\n    font-size: 14px;\n  }\n}\n</style>\n<div class=\"features\">\n  <div class=\"feature-card\">\n    <div class=\"feature-icon\">🚀</div>\n    <h3 class=\"feature-title\">Fast Performance</h3>\n    <p class=\"feature-description\">Optimized for speed and efficiency.</p>\n  </div>\n  <div class=\"feature-card\">\n    <div class=\"feature-icon\">🔒</div>\n    <h3 class=\"feature-title\">Secure & Safe</h3>\n    <p class=\"feature-description\">Enterprise-grade security.</p>\n  </div>\n</div>"
+}
+```
+
+**How it works:**
+- Desktop styles (outside `@media` queries) become the base `desktop` variant
+- `@media (max-width: 1024px)` styles map to `tablet` variant
+- `@media (max-width: 767px)` styles map to `mobile` variant
+- Elementor generates separate CSS files per breakpoint with proper media queries
+- Styles are applied automatically based on screen size
+
+**Breakpoint matching:**
+- Exact matches: `1024px` → `tablet`, `767px` → `mobile`
+- Closest match within 200px tolerance: `880px` → `mobile` (closest to 767px)
+- Unmatched breakpoints (e.g., `1366px`) are skipped if no Elementor breakpoint is close enough
+
 ### Unsupported Properties / Values → custom_css
 
 Properties that have no converter, or values that a converter rejects, are stored in the style’s `custom_css` field and rendered as-is.

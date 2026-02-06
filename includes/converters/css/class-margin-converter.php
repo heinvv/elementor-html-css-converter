@@ -1,5 +1,5 @@
 <?php
-namespace ElementorHtmlCssConverter\Converters\Css\Properties;
+namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
@@ -13,7 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Margin_Converter extends Property_Converter_Base {
 
-	private const REGEX_WHITESPACE_SPLIT = '/\s+/';
 	private const SUPPORTED_PROPERTIES = [
 		'margin',
 		'margin-top',
@@ -38,6 +37,10 @@ class Margin_Converter extends Property_Converter_Base {
 		return self::OUTPUT_PROPERTY;
 	}
 
+	/**
+	 * Override convert to handle shorthand properties with multiple values.
+	 * Each value needs individual variable resolution.
+	 */
 	public function convert( string $property, $value ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
@@ -57,9 +60,13 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	protected function convert_value( string $property, $value ): ?array {
+		// Not used - convert() handles everything for shorthand properties.
 		return null;
 	}
 
+	/**
+	 * Resolve a single size value, handling CSS variables.
+	 */
 	private function resolve_size_value( string $value ): ?array {
 		$value = trim( $value );
 
@@ -121,7 +128,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_shorthand_to_logical_properties( string $value ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = preg_split( '/\s+/', trim( $value ) );
 		$count  = count( $values );
 
 		switch ( $count ) {
@@ -185,7 +192,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_logical_shorthand( string $value, string $axis ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = preg_split( '/\s+/', trim( $value ) );
 		$count  = count( $values );
 
 		if ( 1 === $count ) {
@@ -214,4 +221,3 @@ class Margin_Converter extends Property_Converter_Base {
 		return null;
 	}
 }
-

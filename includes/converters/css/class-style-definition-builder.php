@@ -137,6 +137,49 @@ class Style_Definition_Builder {
 	}
 
 	/**
+	 * Build style definition with multiple breakpoints.
+	 *
+	 * @param array  $breakpoint_props Breakpoint-aware atomic properties.
+	 *                                  Format: ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]
+	 * @param string $class_id         Class ID to use as style ID (should match widget settings.classes value).
+	 * @return array Style definition with multiple variants.
+	 */
+	public function build_with_breakpoints( array $breakpoint_props, string $class_id ): array {
+		$style_id = $class_id;
+
+		$variants = [];
+
+		if ( isset( $breakpoint_props['desktop'] ) ) {
+			$desktop_props = $breakpoint_props['desktop'];
+			if ( ! empty( $desktop_props ) ) {
+				$variants[] = $this->create_variant( $desktop_props, null, 'desktop' );
+			}
+		}
+
+		$breakpoint_order = [ 'tablet', 'mobile', 'mobile_extra', 'tablet_extra', 'laptop', 'widescreen' ];
+
+		foreach ( $breakpoint_order as $breakpoint ) {
+			if ( isset( $breakpoint_props[ $breakpoint ] ) ) {
+				$breakpoint_props_data = $breakpoint_props[ $breakpoint ];
+				if ( ! empty( $breakpoint_props_data ) ) {
+					$variants[] = $this->create_variant( $breakpoint_props_data, null, $breakpoint );
+				}
+			}
+		}
+
+		if ( empty( $variants ) ) {
+			$variants[] = $this->create_variant( [], null, 'desktop' );
+		}
+
+		return [
+			'id'       => $style_id,
+			'type'     => self::STYLE_TYPE,
+			'label'    => self::DEFAULT_LABEL,
+			'variants' => $variants,
+		];
+	}
+
+	/**
 	 * Get the label, using default if empty.
 	 *
 	 * @param string $label The provided label.

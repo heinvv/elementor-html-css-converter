@@ -190,25 +190,25 @@ class Padding_Converter extends Property_Converter_Base {
 
 		if ( 1 === $count ) {
 			$size_prop = $this->resolve_size_value( $values[0] );
-			if ( null === $size_prop ) {
-				return null;
+			if ( null !== $size_prop ) {
+				return [
+					$axis . '-start' => $size_prop,
+					$axis . '-end'   => $size_prop,
+				];
 			}
-			return [
-				$axis . '-start' => $size_prop,
-				$axis . '-end'   => $size_prop,
-			];
+			return null;
 		}
 
 		if ( 2 === $count ) {
 			$start = $this->resolve_size_value( $values[0] );
 			$end   = $this->resolve_size_value( $values[1] );
-			if ( null === $start || null === $end ) {
-				return null;
+			if ( null !== $start && null !== $end ) {
+				return [
+					$axis . '-start' => $start,
+					$axis . '-end'   => $end,
+				];
 			}
-			return [
-				$axis . '-start' => $start,
-				$axis . '-end'   => $end,
-			];
+			return null;
 		}
 
 		return null;

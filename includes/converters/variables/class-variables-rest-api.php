@@ -270,53 +270,15 @@ class Variables_Rest_API {
 			}
 
 			if ( 'update' === $update_mode ) {
-				$existing_id = $this->find_variable_by_label( $repository, $label );
-
-				if ( $existing_id ) {
-					$repository->update(
-						$existing_id,
-						[
-							'label' => $label,
-							'value' => $value,
-						]
-					);
-					++$updated;
-				} else {
-					$repository->create(
-						[
-							'type'  => $elementor_type,
-							'label' => $label,
-							'value' => $value,
-						]
-					);
-					++$created;
-				}
+				$result = $this->handle_update_mode( $repository, $label, $value, $elementor_type );
+				$created += $result['created'];
+				$updated += $result['updated'];
 			} else {
-				$existing_match = $this->find_variable_by_base_label_and_value( $repository, $label, $value );
-
-				if ( $existing_match ) {
-					++$reused;
-
-					$existing_label = $existing_match['label'];
-					if ( strtolower( $existing_label ) !== strtolower( $label ) ) {
-						$renames[ '--' . $label ] = '--' . $existing_label;
-					}
-					continue;
-				}
-
-				$final_label = $this->get_unique_label( $repository, $label );
-
-				$repository->create(
-					[
-						'type'  => $elementor_type,
-						'label' => $final_label,
-						'value' => $value,
-					]
-				);
-				++$created;
-
-				if ( $final_label !== $label ) {
-					$renames[ '--' . $label ] = '--' . $final_label;
+				$result = $this->handle_create_mode( $repository, $label, $value, $elementor_type );
+				$created += $result['created'];
+				$reused += $result['reused'];
+				if ( ! empty( $result['rename'] ) ) {
+					$renames[ $result['rename']['from'] ] = $result['rename']['to'];
 				}
 			}
 		}
@@ -330,6 +292,92 @@ class Variables_Rest_API {
 			'reused'  => $reused,
 			'updated' => $updated,
 			'renames' => $renames,
+		];
+	}
+
+	/**
+	 * Handle update mode for a variable.
+	 *
+	 * @param Variables_Repository $repository Variables repository.
+	 * @param string               $label      Variable label.
+	 * @param string               $value      Variable value.
+	 * @param string               $elementor_type Elementor variable type.
+	 * @return array Result with 'created' and 'updated' counts.
+	 */
+	private function handle_update_mode( Variables_Repository $repository, string $label, string $value, string $elementor_type ): array {
+		$existing_id = $this->find_variable_by_label( $repository, $label );
+
+		if ( $existing_id ) {
+			$repository->update(
+				$existing_id,
+				[
+					'label' => $label,
+					'value' => $value,
+				]
+			);
+			return [ 'created' => 0, 'updated' => 1 ];
+		}
+
+		$repository->create(
+			[
+				'type'  => $elementor_type,
+				'label' => $label,
+				'value' => $value,
+			]
+		);
+		return [ 'created' => 1, 'updated' => 0 ];
+	}
+
+	/**
+	 * Handle create mode for a variable.
+	 *
+	 * @param Variables_Repository $repository Variables repository.
+	 * @param string               $label      Variable label.
+	 * @param string               $value      Variable value.
+	 * @param string               $elementor_type Elementor variable type.
+	 * @return array Result with 'created', 'reused' counts and optional 'rename' array.
+	 */
+	private function handle_create_mode( Variables_Repository $repository, string $label, string $value, string $elementor_type ): array {
+		$existing_match = $this->find_variable_by_base_label_and_value( $repository, $label, $value );
+
+		if ( $existing_match ) {
+			$existing_label = $existing_match['label'];
+			$rename = null;
+			if ( strtolower( $existing_label ) !== strtolower( $label ) ) {
+				$rename = [
+					'from' => '--' . $label,
+					'to'   => '--' . $existing_label,
+				];
+			}
+			return [
+				'created' => 0,
+				'reused'  => 1,
+				'rename'  => $rename,
+			];
+		}
+
+		$final_label = $this->get_unique_label( $repository, $label );
+
+		$repository->create(
+			[
+				'type'  => $elementor_type,
+				'label' => $final_label,
+				'value' => $value,
+			]
+		);
+
+		$rename = null;
+		if ( $final_label !== $label ) {
+			$rename = [
+				'from' => '--' . $label,
+				'to'   => '--' . $final_label,
+			];
+		}
+
+		return [
+			'created' => 1,
+			'reused'  => 0,
+			'rename'  => $rename,
 		];
 	}
 
