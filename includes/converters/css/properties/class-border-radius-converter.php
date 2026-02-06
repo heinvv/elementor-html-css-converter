@@ -1,7 +1,7 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 
-use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Border_Radius_Prop_Type;

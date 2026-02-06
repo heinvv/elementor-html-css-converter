@@ -137,6 +137,13 @@ class Autoloader {
 		$parts    = explode( '/', $class_name );
 		$filename = array_pop( $parts );
 
+		// Check if this is an interface by class name (ends with _Interface)
+		$is_interface = substr( $filename, -10 ) === '_Interface';
+
+		if ( $is_interface ) {
+			$filename = substr( $filename, 0, -10 );
+		}
+
 		// Convert class name to kebab-case
 		// Color_Converter → color-converter
 		// ColorConverter → color-converter
@@ -148,8 +155,8 @@ class Autoloader {
 			|| in_array( 'Interfaces', $parts, true );
 
 		// Determine file prefix based on location and type
-		if ( $in_interfaces_dir ) {
-			// Files in interfaces/ directory use 'interface-' prefix and strip '-interface' suffix
+		if ( $is_interface || $in_interfaces_dir ) {
+			// Interface files use 'interface-' prefix
 			if ( strpos( $filename, '-interface' ) !== false ) {
 				$filename = str_replace( '-interface', '', $filename );
 			}

@@ -1,7 +1,7 @@
 <?php
 namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 
-use ElementorHtmlCssConverter\Converters\Abstracts\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
 use Elementor\Modules\AtomicWidgets\PropTypes\Flex_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;

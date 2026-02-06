@@ -7,7 +7,7 @@
 
 namespace ElementorHtmlCssConverter\Converters\Classes;
 
-use ElementorHtmlCssConverter\Converters\Interfaces\Property_Converter_Interface;
+use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

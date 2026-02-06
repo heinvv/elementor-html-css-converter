@@ -9,7 +9,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Css\Css_Converter;
 use ElementorHtmlCssConverter\Converters\Classes\Elementor_Document_Service;
-use ElementorHtmlCssConverter\Converters\Interfaces\Widget_Style_Applicator_Interface;
+use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

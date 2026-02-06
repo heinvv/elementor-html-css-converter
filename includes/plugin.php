@@ -16,46 +16,7 @@ use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api;
 use ElementorHtmlCssConverter\Converters\Classes\Classes_Rest_API;
 use ElementorHtmlCssConverter\Converters\Css\Style_Definition_Builder;
 use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Color_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Background_Color_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Size_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Width_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Height_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Padding_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Margin_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Display_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Position_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Direction_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Justify_Content_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Align_Items_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Gap_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Align_Content_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Align_Self_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Wrap_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Grow_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Shrink_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Flex_Basis_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Order_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Border_Radius_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Box_Shadow_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Opacity_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Weight_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Align_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Line_Height_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Letter_Spacing_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Decoration_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Transform_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Style_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Font_Family_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Word_Spacing_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Text_Shadow_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Positioning_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Border_Width_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Border_Style_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Border_Color_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Border_Converter;
-use ElementorHtmlCssConverter\Converters\Css\Properties\Transform_Converter;
+use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -163,49 +124,78 @@ final class Plugin {
 	/**
 	 * Register all available converters.
 	 *
+	 * Automatically discovers and registers all converter classes from the css/properties directory.
+	 *
 	 * @return void
 	 */
 	private function register_converters(): void {
-		$this->registry->register( new Color_Converter() );
-		$this->registry->register( new Background_Color_Converter() );
-		$this->registry->register( new Font_Size_Converter() );
-		$this->registry->register( new Width_Converter() );
-		$this->registry->register( new Height_Converter() );
-		$this->registry->register( new Padding_Converter() );
-		$this->registry->register( new Margin_Converter() );
-		$this->registry->register( new Display_Converter() );
-		$this->registry->register( new Position_Converter() );
-		$this->registry->register( new Flex_Direction_Converter() );
-		$this->registry->register( new Justify_Content_Converter() );
-		$this->registry->register( new Align_Items_Converter() );
-		$this->registry->register( new Gap_Converter() );
-		$this->registry->register( new Align_Content_Converter() );
-		$this->registry->register( new Align_Self_Converter() );
-		$this->registry->register( new Flex_Wrap_Converter() );
-		$this->registry->register( new Flex_Converter() );
-		$this->registry->register( new Flex_Grow_Converter() );
-		$this->registry->register( new Flex_Shrink_Converter() );
-		$this->registry->register( new Flex_Basis_Converter() );
-		$this->registry->register( new Order_Converter() );
-		$this->registry->register( new Border_Radius_Converter() );
-		$this->registry->register( new Box_Shadow_Converter() );
-		$this->registry->register( new Opacity_Converter() );
-		$this->registry->register( new Font_Weight_Converter() );
-		$this->registry->register( new Text_Align_Converter() );
-		$this->registry->register( new Line_Height_Converter() );
-		$this->registry->register( new Letter_Spacing_Converter() );
-		$this->registry->register( new Text_Decoration_Converter() );
-		$this->registry->register( new Text_Transform_Converter() );
-		$this->registry->register( new Font_Style_Converter() );
-		$this->registry->register( new Font_Family_Converter() );
-		$this->registry->register( new Word_Spacing_Converter() );
-		$this->registry->register( new Text_Shadow_Converter() );
-		$this->registry->register( new Positioning_Converter() );
-		$this->registry->register( new Border_Width_Converter() );
-		$this->registry->register( new Border_Style_Converter() );
-		$this->registry->register( new Border_Color_Converter() );
-		$this->registry->register( new Border_Converter() );
-		$this->registry->register( new Transform_Converter() );
+		$properties_dir = EHCC_PATH . 'includes/converters/css/properties/';
+
+		if ( ! is_dir( $properties_dir ) ) {
+			return;
+		}
+
+		$files = glob( $properties_dir . 'class-*-converter.php' );
+
+		foreach ( $files as $file ) {
+			$class_name = $this->get_class_name_from_file( $file );
+
+			if ( null === $class_name ) {
+				continue;
+			}
+
+			$full_class_name = 'ElementorHtmlCssConverter\\Converters\\Css\\Properties\\' . $class_name;
+
+			if ( ! class_exists( $full_class_name ) ) {
+				continue;
+			}
+
+			$reflection = new \ReflectionClass( $full_class_name );
+
+			if ( $reflection->isAbstract() || $reflection->isInterface() ) {
+				continue;
+			}
+
+			if ( ! $reflection->implementsInterface( Property_Converter_Interface::class ) ) {
+				continue;
+			}
+
+			if ( ! $reflection->isInstantiable() ) {
+				continue;
+			}
+
+			$converter = new $full_class_name();
+			$this->registry->register( $converter );
+		}
+	}
+
+	/**
+	 * Extract class name from file path.
+	 *
+	 * Converts file name like "class-color-converter.php" to "Color_Converter".
+	 *
+	 * @param string $file_path The file path.
+	 * @return string|null The class name or null if invalid.
+	 */
+	private function get_class_name_from_file( string $file_path ): ?string {
+		$filename = basename( $file_path, '.php' );
+
+		if ( strpos( $filename, 'class-' ) !== 0 ) {
+			return null;
+		}
+
+		$filename = substr( $filename, 6 );
+
+		if ( strpos( $filename, '-converter' ) === false ) {
+			return null;
+		}
+
+		$filename = str_replace( '-converter', '', $filename );
+
+		$parts = explode( '-', $filename );
+		$parts = array_map( 'ucfirst', $parts );
+
+		return implode( '_', $parts );
 	}
 
 	/**
