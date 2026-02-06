@@ -2,29 +2,34 @@
 
 Converts HTML with CSS to Elementor atomic widgets.
 
-## Endpoint
+## Main Endpoint
 
 ```
 POST /wp-json/html-css-converter/v1/convert-html
 ```
 
+See the [Endpoints](#endpoints) section below for all available endpoints.
+
 ## Important: Styling Approach
 
 **Inline styles (`style="..."`) are NOT supported.** Styles must be defined in `<style>` tags using:
+
 - ID selectors: `#element-id { ... }`
 - Class selectors: `.class-name { ... }`
 
 ## Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `html` | string | required | HTML content with `<style>` tags |
-| `import_variables` | boolean | `true` | Extract variables from `:root` in `<style>` tags |
-| `import_classes` | boolean | `true` | Create global classes from `.class` selectors |
-| `update_mode` | string | `"create_new"` | `"create_new"` or `"update"` for existing variables/classes |
-| `postId` | integer | - | Insert widgets into existing post |
-| `postTitle` | string | `"Converted HTML"` | Title for auto-created post |
-| `postStatus` | string | `"draft"` | Status for auto-created post |
+
+| Parameter          | Type    | Default            | Description                                                 |
+| ------------------ | ------- | ------------------ | ----------------------------------------------------------- |
+| `html`             | string  | required           | HTML content with `<style>` tags                            |
+| `import_variables` | boolean | `true`             | Extract variables from `:root` in `<style>` tags            |
+| `import_classes`   | boolean | `true`             | Create global classes from `.class` selectors               |
+| `update_mode`      | string  | `"create_new"`     | `"create_new"` or `"update"` for existing variables/classes |
+| `postId`           | integer | -                  | Insert widgets into existing post                           |
+| `postTitle`        | string  | `"Converted HTML"` | Title for auto-created post                                 |
+| `postStatus`       | string  | `"draft"`          | Status for auto-created post                                |
+
 
 ---
 
@@ -73,6 +78,7 @@ POST /wp-json/html-css-converter/v1/convert-html
 ### Variable Rename Test (Run in Sequence)
 
 **First request** - creates `--accent`:
+
 ```json
 {
   "html": "<style>\n:root {\n  --accent: #ff0000;\n}\n.red-box {\n  background-color: var(--accent);\n}\n</style>\n<div class=\"red-box\">Red</div>"
@@ -80,6 +86,7 @@ POST /wp-json/html-css-converter/v1/convert-html
 ```
 
 **Second request** - creates `--accent-1` and applies it correctly:
+
 ```json
 {
   "html": "<style>\n:root {\n  --accent: #00ff00;\n}\n.green-box {\n  background-color: var(--accent);\n}\n</style>\n<div class=\"green-box\">Green</div>"
@@ -217,6 +224,7 @@ The converter supports CSS `font-family` properties with Google Fonts, system fo
 ```
 
 **Supported formats:**
+
 - Quoted fonts: `"Roboto"`, `'Open Sans'`
 - Unquoted fonts: `Arial`, `Times New Roman`
 - Fallback chains: `"Roboto", Arial, sans-serif`
@@ -224,6 +232,7 @@ The converter supports CSS `font-family` properties with Google Fonts, system fo
 - CSS keywords are skipped: `inherit`, `initial`, `unset`, `revert`
 
 **Expected behavior:**
+
 - Font-family values are converted to Elementor atomic `font-family` property using `String_Prop_Type`
 - Full fallback chains are preserved (e.g., `"Roboto", Arial, sans-serif`)
 - Font enqueuing is handled automatically by Elementor v4's `useStylePropResolver` hook
@@ -234,6 +243,7 @@ The converter supports CSS `font-family` properties with Google Fonts, system fo
 The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values are automatically matched to Elementor's breakpoint system using **dynamic values from Elementor's settings** (not hardcoded). The converter reads breakpoint configurations via `Plugin::$instance->breakpoints->get_breakpoints_config()`, so it respects any custom breakpoint values you've configured in Elementor.
 
 **Supported breakpoint formats:**
+
 - `@media (max-width: 1024px)` → maps to Elementor `tablet` breakpoint (if tablet is set to 1024px)
 - `@media (max-width: 767px)` → maps to Elementor `mobile` breakpoint (if mobile is set to 767px)
 - `@media screen and (max-width: 880px)` → maps to closest Elementor breakpoint within tolerance
@@ -265,6 +275,7 @@ The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values 
 ```
 
 **How it works:**
+
 - Desktop styles (outside `@media` queries) become the base `desktop` variant
 - `@media (max-width: 1024px)` styles map to `tablet` variant
 - `@media (max-width: 767px)` styles map to `mobile` variant
@@ -272,11 +283,13 @@ The converter supports `@media (max-width: Xpx)` queries. CSS breakpoint values 
 - Styles are applied automatically based on screen size
 
 **Breakpoint matching:**
+
 - **Exact matches**: CSS breakpoint value exactly matches an Elementor breakpoint value → returns that breakpoint name
 - **Closest match**: Within 200px tolerance → returns the closest Elementor breakpoint name
 - **Unmatched**: Breakpoints that don't match any Elementor breakpoint within tolerance are skipped
 
 **Example:** If your Elementor tablet breakpoint is set to 1024px and mobile to 767px:
+
 - `@media (max-width: 1024px)` → exact match → `tablet`
 - `@media (max-width: 767px)` → exact match → `mobile`
 - `@media (max-width: 880px)` → closest to mobile (113px difference) → `mobile`
@@ -303,6 +316,7 @@ Single payload covering all scenarios: aligned-box (vertical-align), clickable (
 ```
 
 Expected per class:
+
 - **aligned-box:** atomic `color`, `padding`; `custom_css`: `vertical-align: middle;`
 - **clickable:** atomic `background-color`, `padding`; `custom_css`: `cursor: pointer; outline: 2px solid blue;`
 - **table-cell:** atomic `padding`; `custom_css`: `display: table-cell;`
@@ -434,6 +448,360 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/convert-html"
 
 ---
 
+## Additional Endpoints
+
+### Apply Styles to Widget
+
+```
+POST /wp-json/html-css-converter/v1/apply-styles-to-widget
+```
+
+Applies CSS styles to an existing widget in an Elementor post by converting CSS to atomic format and merging with existing widget styles.
+
+#### Parameters
+
+| Parameter   | Type    | Required | Description                                    |
+| ----------- | ------- | -------- | ---------------------------------------------- |
+| `postId`    | integer | yes      | The Elementor post/page ID                     |
+| `widgetId`  | string  | yes      | The widget ID to apply styles to               |
+| `cssString` | string  | yes      | CSS styles to convert and apply                |
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "postId": 123,
+  "widgetId": "abc123",
+  "stylesApplied": {
+    "color": "#ff0000",
+    "padding": "16px"
+  },
+  "customCss": "vertical-align: middle;"
+}
+```
+
+#### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Widget not found"
+}
+```
+
+#### Example Request
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/apply-styles-to-widget" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postId": 123,
+    "widgetId": "abc123",
+    "cssString": "#my-widget { color: #ff0000; padding: 20px; background-color: #f0f0f0; }"
+  }'
+```
+
+---
+
+### Create Post with Widget
+
+```
+POST /wp-json/html-css-converter/v1/create-post-with-widget
+```
+
+Creates a new Elementor post/page with a single styled widget.
+
+#### Parameters
+
+| Parameter       | Type    | Required | Default      | Description                                    |
+| --------------- | ------- | -------- | ------------ | ---------------------------------------------- |
+| `postTitle`     | string  | yes      | -            | Title for the new post                         |
+| `postStatus`    | string  | no       | `"draft"`    | Post status (`"draft"`, `"publish"`, etc.)     |
+| `widgetType`    | string  | yes      | -            | Elementor widget type (e.g., `"e-heading"`)    |
+| `widgetSettings` | object  | no       | `{}`         | Widget settings/configuration                   |
+| `cssString`     | string  | no       | `""`         | CSS styles to convert and apply to the widget  |
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "postId": 456,
+  "widgetId": "def456",
+  "editUrl": "http://elementor.local/wp-admin/post.php?post=456&action=elementor"
+}
+```
+
+#### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Failed to create post"
+}
+```
+
+#### Example Request
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/create-post-with-widget" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postTitle": "Styled Heading Page",
+    "postStatus": "draft",
+    "widgetType": "e-heading",
+    "widgetSettings": {
+      "title": "Hello World",
+      "size": "large"
+    },
+    "cssString": ".e-heading { color: #0066cc; font-size: 32px; margin-bottom: 20px; }"
+  }'
+```
+
+---
+
+### Add Widget to Post
+
+```
+POST /wp-json/html-css-converter/v1/add-widget-to-post
+```
+
+Adds a styled widget to an existing Elementor post/page.
+
+#### Parameters
+
+| Parameter       | Type    | Required | Default  | Description                                    |
+| --------------- | ------- | -------- | -------- | ---------------------------------------------- |
+| `postId`        | integer | yes      | -        | The Elementor post/page ID                     |
+| `widgetType`    | string  | yes      | -        | Elementor widget type (e.g., `"e-heading"`)   |
+| `widgetSettings` | object  | no       | `{}`     | Widget settings/configuration                   |
+| `cssString`     | string  | no       | `""`     | CSS styles to convert and apply to the widget  |
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "postId": 123,
+  "widgetId": "ghi789"
+}
+```
+
+#### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Failed to add widget to post"
+}
+```
+
+#### Example Request
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/add-widget-to-post" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postId": 123,
+    "widgetType": "e-button",
+    "widgetSettings": {
+      "text": "Click Me",
+      "link": {
+        "url": "https://example.com"
+      }
+    },
+    "cssString": ".e-button { background-color: #3498db; color: #ffffff; padding: 12px 24px; border-radius: 6px; }"
+  }'
+```
+
+---
+
+### CSS to Atomic
+
+```
+POST /wp-json/html-css-converter/v1/css-to-atomic
+```
+
+Converts CSS string to atomic widget properties without creating or modifying any documents.
+
+#### Parameters
+
+| Parameter  | Type   | Required | Description                    |
+| ---------- | ------ | -------- | ------------------------------ |
+| `cssString` | string | yes      | CSS styles to convert          |
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "props": {
+    "color": "#ff0000",
+    "padding": "16px"
+  },
+  "customCss": "vertical-align: middle;"
+}
+```
+
+#### Example Request
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/css-to-atomic" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cssString": ".my-class { color: #ff0000; padding: 16px 24px; background-color: #f0f0f0; vertical-align: middle; }"
+  }'
+```
+
+---
+
+### Import Variables
+
+```
+POST /wp-json/html-css-converter/v1/import-variables
+```
+
+Imports CSS variables from CSS string or URL into Elementor global variables.
+
+#### Parameters
+
+| Parameter    | Type   | Required | Default        | Description                                                      |
+| ------------ | ------ | -------- | -------------- | ---------------------------------------------------------------- |
+| `css`        | string | no*      | -              | CSS string containing variable definitions                       |
+| `url`        | string | no*      | -              | URL to fetch CSS from                                            |
+| `update_mode` | string | no       | `"create_new"` | `"create_new"` or `"update"` for existing variables             |
+
+\* Either `css` or `url` must be provided.
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "variables": {
+    "primary-color": {
+      "name": "--primary-color",
+      "value": "#ff0000",
+      "type": "color-hex"
+    }
+  },
+  "created": 5,
+  "reused": 2,
+  "updated": 0
+}
+```
+
+#### Error Response
+
+```json
+{
+  "error": "No variables found in CSS",
+  "code": "no_variables"
+}
+```
+
+#### Example Request (CSS String)
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "css": ":root { --primary-color: #ff5733; --spacing-md: 16px; --spacing-lg: 32px; --font-size-base: 16px; }",
+    "update_mode": "create_new"
+  }'
+```
+
+#### Example Request (URL)
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-variables" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/styles.css",
+    "update_mode": "update"
+  }'
+```
+
+---
+
+### Import Classes
+
+```
+POST /wp-json/html-css-converter/v1/import-classes
+```
+
+Imports CSS class definitions from CSS string or URL into Elementor Global Classes.
+
+#### Parameters
+
+| Parameter    | Type   | Required | Default        | Description                                                      |
+| ------------ | ------ | -------- | -------------- | ---------------------------------------------------------------- |
+| `css`        | string | no*      | -              | CSS string containing class definitions                          |
+| `url`        | string | no*      | -              | URL to fetch CSS from                                            |
+| `update_mode` | string | no       | `"create_new"` | `"create_new"` or `"update"` for existing classes                |
+| `context`    | string | no       | `"frontend"`   | `"frontend"` or `"preview"`                                      |
+
+\* Either `css` or `url` must be provided.
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "classes": {
+    "card": {
+      "label": "card",
+      "elementor_id": "gc_abc123",
+      "status": "created"
+    }
+  },
+  "statistics": {
+    "detected": 10,
+    "converted": 8,
+    "registered": 8,
+    "skipped": 2,
+    "updated": 0
+  },
+  "overflow": []
+}
+```
+
+#### Error Response
+
+```json
+{
+  "error": "No classes found in CSS",
+  "code": "no_classes"
+}
+```
+
+#### Example Request (CSS String)
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-classes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "css": ".card { background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .btn-primary { background-color: #3498db; color: #ffffff; padding: 12px 24px; border-radius: 6px; }",
+    "update_mode": "create_new",
+    "context": "frontend"
+  }'
+```
+
+#### Example Request (URL)
+
+```bash
+curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-classes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/components.css",
+    "update_mode": "update",
+    "context": "preview"
+  }'
+```
+
+---
+
 ## Supported HTML Tags
 
 - `div` -> `e-div-block`
@@ -468,12 +836,17 @@ elementor-html-css-converter/
 
 ### Endpoints
 
-| Endpoint | Purpose |
-|----------|---------|
-| `POST .../convert-html` | HTML + `<style>` → atomic widgets; optional variable/class import |
-| `POST .../css-to-atomic` | CSS → atomic props (no document) |
-| `POST .../import-classes` | CSS class definitions → Elementor Global Classes (`css` or `url`, `update_mode`: `create_new` \| `update`) |
-| `POST .../import-variables` | CSS variable definitions → Elementor global variables |
+
+| Endpoint                    | Purpose                                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `POST .../convert-html`     | HTML + `<style>` → atomic widgets; optional variable/class import                                         |
+| `POST .../css-to-atomic`    | CSS → atomic props (no document)                                                                          |
+| `POST .../apply-styles-to-widget` | Apply CSS styles to an existing widget in a post                                                          |
+| `POST .../create-post-with-widget` | Create a new Elementor post with a styled widget                                                         |
+| `POST .../add-widget-to-post` | Add a styled widget to an existing Elementor post                                                         |
+| `POST .../import-classes`   | CSS class definitions → Elementor Global Classes (`css` or `url`, `update_mode`: `create_new` | `update`) |
+| `POST .../import-variables` | CSS variable definitions → Elementor global variables                                                     |
+
 
 ### CSS variables (convert-html)
 
@@ -493,3 +866,4 @@ elementor-html-css-converter/
 
 - [CLAUDE.md](CLAUDE.md) - Claude Code context file
 - [docs/](docs/) - Architecture overview ([ARCHITECTURE.md](docs/ARCHITECTURE.md)), plans ([docs/archive/planning/](docs/archive/planning/)), API details and Elementor parity references ([docs/archive/](docs/archive/))
+
