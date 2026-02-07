@@ -54,7 +54,6 @@ class Class_Registration_Service {
 	 * @return array Result with 'registered', 'skipped', 'updated', 'overflow', 'classes'.
 	 */
 	public function register_with_elementor( array $converted_classes, string $update_mode, string $context ): array {
-		// Check if Elementor and Global Classes are available.
 		if ( ! $this->is_global_classes_available() ) {
 			return [
 				'success'    => false,
@@ -103,7 +102,6 @@ class Class_Registration_Service {
 				continue;
 			}
 
-			// Find existing class by label.
 			$existing_id = $this->find_class_by_label( $existing_items, $class_name );
 
 			if ( $existing_id ) {
@@ -232,7 +230,54 @@ class Class_Registration_Service {
 			}
 		}
 
-		// Save to repository if there were any changes.
+		$save_error = $this->save_changes_to_repository_if_needed(
+			$repository,
+			$existing_items,
+			$existing_order,
+			$registered,
+			$updated,
+			$skipped,
+			$overflow,
+			$classes
+		);
+
+		if ( $save_error ) {
+			return $save_error;
+		}
+
+		return [
+			'success'    => true,
+			'registered' => $registered,
+			'skipped'    => $skipped,
+			'updated'    => $updated,
+			'overflow'   => $overflow,
+			'classes'    => $classes,
+		];
+	}
+
+	/**
+	 * Save changes to repository if there were any registered or updated classes.
+	 *
+	 * @param Global_Classes_Repository $repository     Repository instance.
+	 * @param array                      $existing_items Existing items to save.
+	 * @param array                      $existing_order Existing order to save.
+	 * @param int                        $registered     Number of registered classes.
+	 * @param int                        $updated        Number of updated classes.
+	 * @param int                        $skipped        Number of skipped classes.
+	 * @param array                      $overflow       Overflow classes.
+	 * @param array                      $classes        Classes array.
+	 * @return array|null Error array on failure, null on success.
+	 */
+	private function save_changes_to_repository_if_needed(
+		Global_Classes_Repository $repository,
+		array $existing_items,
+		array $existing_order,
+		int $registered,
+		int $updated,
+		int $skipped,
+		array $overflow,
+		array $classes
+	): ?array {
 		if ( $registered > 0 || $updated > 0 ) {
 			try {
 				$repository->put( $existing_items, $existing_order );
@@ -250,14 +295,7 @@ class Class_Registration_Service {
 			}
 		}
 
-		return [
-			'success'    => true,
-			'registered' => $registered,
-			'skipped'    => $skipped,
-			'updated'    => $updated,
-			'overflow'   => $overflow,
-			'classes'    => $classes,
-		];
+		return null;
 	}
 
 	/**
@@ -327,25 +365,43 @@ class Class_Registration_Service {
 				continue;
 			}
 
-			$item_label_lower = strtolower( $item['label'] );
-
-			// Check if label matches base label or base label with suffix (e.g., "btn-2").
-			$matches_base        = $item_label_lower === $base_label_lower;
-			$matches_with_suffix = preg_match( '/^' . preg_quote( $base_label_lower, '/' ) . '-\d+$/', $item_label_lower );
-
-			if ( $matches_base || $matches_with_suffix ) {
-				// Extract props and compare.
-				$existing_props = $this->extract_props_from_class( $item );
-				if ( $this->are_styles_identical( $atomic_props, $existing_props ) ) {
-					return [
-						'id'    => $id,
-						'label' => $item['label'],
-					];
-				}
+			$match = $this->find_matching_class_by_label_and_styles( $item, $id, $base_label_lower, $atomic_props );
+			if ( $match ) {
+				return $match;
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Find matching class by label pattern and identical styles.
+	 *
+	 * @param array  $item            Item to check.
+	 * @param string $id              Item ID.
+	 * @param string $base_label_lower Base label in lowercase.
+	 * @param array  $atomic_props    Atomic props to match.
+	 * @return array|null Class data with 'id' and 'label' keys, or null if no match.
+	 */
+	private function find_matching_class_by_label_and_styles( array $item, string $id, string $base_label_lower, array $atomic_props ): ?array {
+		$item_label_lower = strtolower( $item['label'] );
+
+		$matches_base        = $item_label_lower === $base_label_lower;
+		$matches_with_suffix = preg_match( '/^' . preg_quote( $base_label_lower, '/' ) . '-\d+$/', $item_label_lower );
+
+		if ( ! $matches_base && ! $matches_with_suffix ) {
+			return null;
+		}
+
+		$existing_props = $this->extract_props_from_class( $item );
+		if ( ! $this->are_styles_identical( $atomic_props, $existing_props ) ) {
+			return null;
+		}
+
+		return [
+			'id'    => $id,
+			'label' => $item['label'],
+		];
 	}
 
 	/**
@@ -361,7 +417,21 @@ class Class_Registration_Service {
 			return [];
 		}
 
-		// Get desktop variant (first variant or the one with desktop breakpoint).
+		$desktop_props = $this->get_desktop_variant_props_from_variants( $variants );
+		if ( $desktop_props !== null ) {
+			return $desktop_props;
+		}
+
+		return $this->get_first_variant_props( $variants );
+	}
+
+	/**
+	 * Get desktop variant props from variants array.
+	 *
+	 * @param array $variants Variants array.
+	 * @return array|null Props array if desktop variant found, null otherwise.
+	 */
+	private function get_desktop_variant_props_from_variants( array $variants ): ?array {
 		foreach ( $variants as $variant ) {
 			$meta = $variant['meta'] ?? [];
 			if ( ( $meta['breakpoint'] ?? '' ) === 'desktop' && ( $meta['state'] ?? null ) === null ) {
@@ -369,7 +439,16 @@ class Class_Registration_Service {
 			}
 		}
 
-		// Fallback to first variant.
+		return null;
+	}
+
+	/**
+	 * Get first variant props as fallback.
+	 *
+	 * @param array $variants Variants array.
+	 * @return array Props array from first variant.
+	 */
+	private function get_first_variant_props( array $variants ): array {
 		return $variants[0]['props'] ?? [];
 	}
 
@@ -381,7 +460,6 @@ class Class_Registration_Service {
 	 * @return bool True if identical.
 	 */
 	private function are_styles_identical( array $props1, array $props2 ): bool {
-		// Sort arrays for comparison.
 		ksort( $props1 );
 		ksort( $props2 );
 
@@ -399,20 +477,41 @@ class Class_Registration_Service {
 		$base_label = $this->truncate_label( $base_label );
 		$label_lower = strtolower( $base_label );
 
-		// If label doesn't exist, use it.
 		if ( ! in_array( $label_lower, $existing_labels, true ) ) {
 			return $base_label;
 		}
 
-		// Find next available suffix.
+		$suffix = $this->find_next_available_suffix( $label_lower, $existing_labels );
+
+		return $this->create_unique_label_with_suffix( $base_label, $suffix );
+	}
+
+	/**
+	 * Find next available suffix for label.
+	 *
+	 * @param string $label_lower     Label in lowercase.
+	 * @param array  $existing_labels Existing labels (lowercase).
+	 * @return int Next available suffix number.
+	 */
+	private function find_next_available_suffix( string $label_lower, array $existing_labels ): int {
 		$suffix = 2;
 		while ( in_array( $label_lower . '-' . $suffix, $existing_labels, true ) ) {
 			++$suffix;
 		}
 
+		return $suffix;
+	}
+
+	/**
+	 * Create unique label with suffix and ensure it's within length limit.
+	 *
+	 * @param string $base_label Base label.
+	 * @param int    $suffix     Suffix number.
+	 * @return string Unique label truncated to max length.
+	 */
+	private function create_unique_label_with_suffix( string $base_label, int $suffix ): string {
 		$unique = $base_label . '-' . $suffix;
 
-		// Ensure still within length limit.
 		return $this->truncate_label( $unique );
 	}
 

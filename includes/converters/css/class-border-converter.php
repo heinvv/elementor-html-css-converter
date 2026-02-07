@@ -136,7 +136,7 @@ class Border_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_border_shorthand( string $value ): ?array {
-		// Handle 'none' keyword
+
 		if ( 'none' === strtolower( $value ) ) {
 			return [
 				'width' => Size_Prop_Type::generate( [ 'size' => 0, 'unit' => 'px' ] ),
@@ -154,15 +154,7 @@ class Border_Converter extends Property_Converter_Base {
 		foreach ( $parts as $part ) {
 			$lower_part = strtolower( $part );
 
-			// Check for style
-			if ( in_array( $lower_part, self::VALID_STYLES, true ) ) {
-				$style = $lower_part;
-				continue;
-			}
-
-			// Check for width keyword
-			if ( isset( self::WIDTH_KEYWORDS[ $lower_part ] ) ) {
-				$width = Size_Prop_Type::generate( self::WIDTH_KEYWORDS[ $lower_part ] );
+			if ( $this->process_border_part_style_and_width_keyword( $lower_part, $style, $width ) ) {
 				continue;
 			}
 
@@ -185,27 +177,21 @@ class Border_Converter extends Property_Converter_Base {
 				continue;
 			}
 
-			// Check for size value (width)
-			$size_value = Size_Value_Parser::parse( $part );
-			if ( null !== $size_value && null === $width ) {
-				$width = Size_Prop_Type::generate( $size_value );
+			if ( $this->process_border_part_size_value( $part, $width ) ) {
 				continue;
 			}
 
-			// Check for color
-			if ( $this->is_color_value( $part ) ) {
-				$color = $this->resolve_color_value( $part );
+			if ( $this->process_border_part_color_value( $part, $color ) ) {
 				continue;
 			}
 		}
 
-		// Border shorthand requires at least a style to be valid
-		if ( null === $style ) {
+		if ( ! $this->validate_border_style_required( $style ) ) {
 			return null;
 		}
 
 		return [
-			'width' => $width ?? Size_Prop_Type::generate( [ 'size' => 3, 'unit' => 'px' ] ), // Default: medium
+			'width' => $this->get_border_width_with_default( $width ),
 			'style' => $style,
 			'color' => $color,
 		];
@@ -264,17 +250,120 @@ class Border_Converter extends Property_Converter_Base {
 	private function build_expanded_properties( array $parsed ): array {
 		$result = [];
 
-		// Add width
-		$result['border-width'] = $parsed['width'];
-
-		// Add style
-		$result['border-style'] = String_Prop_Type::generate( $parsed['style'] );
-
-		// Add color if present
-		if ( null !== $parsed['color'] ) {
-			$result['border-color'] = $parsed['color'];
-		}
+		$this->add_border_width_to_result( $result, $parsed['width'] );
+		$this->add_border_style_to_result( $result, $parsed['style'] );
+		$this->add_border_color_to_result_if_present( $result, $parsed['color'] );
 
 		return $result;
+	}
+
+	/**
+	 * Add border width to result array.
+	 *
+	 * @param array $result Result array (by reference).
+	 * @param array $width  Width value.
+	 * @return void
+	 */
+	private function add_border_width_to_result( array &$result, array $width ): void {
+		$result['border-width'] = $width;
+	}
+
+	/**
+	 * Add border style to result array.
+	 *
+	 * @param array  $result Result array (by reference).
+	 * @param string $style  Style value.
+	 * @return void
+	 */
+	private function add_border_style_to_result( array &$result, string $style ): void {
+		$result['border-style'] = String_Prop_Type::generate( $style );
+	}
+
+	/**
+	 * Add border color to result array if present.
+	 *
+	 * @param array      $result Result array (by reference).
+	 * @param array|null $color  Color value or null.
+	 * @return void
+	 */
+	private function add_border_color_to_result_if_present( array &$result, ?array $color ): void {
+		if ( null !== $color ) {
+			$result['border-color'] = $color;
+		}
+	}
+
+	/**
+	 * Process border part for style or width keyword.
+	 *
+	 * @param string   $lower_part Lowercase part to check.
+	 * @param string|null $style     Style variable to set if found (by reference).
+	 * @param array|null $width      Width variable to set if found (by reference).
+	 * @return bool True if part was processed (style or width keyword found), false otherwise.
+	 */
+	private function process_border_part_style_and_width_keyword( string $lower_part, ?string &$style, ?array &$width ): bool {
+		if ( in_array( $lower_part, self::VALID_STYLES, true ) ) {
+			$style = $lower_part;
+			return true;
+		}
+
+		if ( isset( self::WIDTH_KEYWORDS[ $lower_part ] ) ) {
+			$width = Size_Prop_Type::generate( self::WIDTH_KEYWORDS[ $lower_part ] );
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Process border part for size value (width).
+	 *
+	 * @param string     $part  Part to check.
+	 * @param array|null $width Width variable to set if found (by reference).
+	 * @return bool True if part was processed (size value found and width was null), false otherwise.
+	 */
+	private function process_border_part_size_value( string $part, ?array &$width ): bool {
+		$size_value = Size_Value_Parser::parse( $part );
+		if ( null !== $size_value && null === $width ) {
+			$width = Size_Prop_Type::generate( $size_value );
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Process border part for color value.
+	 *
+	 * @param string     $part  Part to check.
+	 * @param array|null $color Color variable to set if found (by reference).
+	 * @return bool True if part was processed (color value found), false otherwise.
+	 */
+	private function process_border_part_color_value( string $part, ?array &$color ): bool {
+		if ( $this->is_color_value( $part ) ) {
+			$color = $this->resolve_color_value( $part );
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Validate that border style is required and not null.
+	 *
+	 * @param string|null $style Style to validate.
+	 * @return bool True if style is valid (not null), false otherwise.
+	 */
+	private function validate_border_style_required( ?string $style ): bool {
+		return null !== $style;
+	}
+
+	/**
+	 * Get border width with default medium value if not set.
+	 *
+	 * @param array|null $width Width value or null.
+	 * @return array Width value or default medium width.
+	 */
+	private function get_border_width_with_default( ?array $width ): array {
+		return $width ?? Size_Prop_Type::generate( [ 'size' => 3, 'unit' => 'px' ] );
 	}
 }

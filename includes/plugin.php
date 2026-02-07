@@ -19,7 +19,7 @@ use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
@@ -102,10 +102,8 @@ final class Plugin {
 		);
 		$this->rest_api->register_hooks();
 
-		// Initialize Variables REST API
 		new Variables_Rest_API();
 
-		// Initialize Classes REST API
 		new Classes_Rest_API( $this->registry );
 	}
 

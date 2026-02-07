@@ -18,26 +18,24 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
-// Plugin version.
-define( 'EHCC_VERSION', '0.0.1' );
+/**
+ * Define plugin constants.
+ *
+ * @return void
+ */
+function ehcc_define_plugin_constants() {
+	define( 'EHCC_VERSION', '0.0.1' );
+	define( 'EHCC_FILE', __FILE__ );
+	define( 'EHCC_PATH', plugin_dir_path( __FILE__ ) );
+	define( 'EHCC_PLUGIN_BASE', plugin_basename( __FILE__ ) );
+	define( 'EHCC_MINIMUM_ELEMENTOR_VERSION', '3.34.0' );
+	define( 'EHCC_MINIMUM_PHP_VERSION', '7.4' );
+}
 
-// Plugin file.
-define( 'EHCC_FILE', __FILE__ );
-
-// Plugin path.
-define( 'EHCC_PATH', plugin_dir_path( __FILE__ ) );
-
-// Plugin base name.
-define( 'EHCC_PLUGIN_BASE', plugin_basename( __FILE__ ) );
-
-// Minimum Elementor version.
-define( 'EHCC_MINIMUM_ELEMENTOR_VERSION', '3.34.0' );
-
-// Minimum PHP version.
-define( 'EHCC_MINIMUM_PHP_VERSION', '7.4' );
+ehcc_define_plugin_constants();
 
 /**
  * PHP 7.4 polyfill for str_starts_with function.
@@ -71,9 +69,63 @@ if ( ! function_exists( 'str_contains' ) ) {
 	}
 }
 
-// Register PSR-4 autoloader.
-require_once EHCC_PATH . 'includes/autoloader.php';
-ElementorHtmlCssConverter\Autoloader::register();
+/**
+ * Register PSR-4 autoloader.
+ *
+ * @return void
+ */
+function ehcc_register_autoloader() {
+	require_once EHCC_PATH . 'includes/autoloader.php';
+	ElementorHtmlCssConverter\Autoloader::register();
+}
+
+ehcc_register_autoloader();
+
+/**
+ * Check if Elementor is loaded.
+ *
+ * @return bool True if Elementor is loaded, false otherwise.
+ */
+function ehcc_is_elementor_loaded(): bool {
+	return did_action( 'elementor/loaded' );
+}
+
+/**
+ * Handle missing Elementor plugin.
+ *
+ * @return void
+ */
+function ehcc_handle_missing_elementor() {
+	add_action( 'admin_notices', 'ehcc_admin_notice_missing_elementor' );
+	add_action( 'admin_init', 'ehcc_deactivate_self' );
+}
+
+/**
+ * Check if Elementor version is compatible.
+ *
+ * @return bool True if compatible, false otherwise.
+ */
+function ehcc_is_elementor_version_compatible(): bool {
+	return version_compare( ELEMENTOR_VERSION, EHCC_MINIMUM_ELEMENTOR_VERSION, '>=' );
+}
+
+/**
+ * Handle incompatible Elementor version.
+ *
+ * @return void
+ */
+function ehcc_handle_incompatible_elementor_version() {
+	add_action( 'admin_notices', 'ehcc_admin_notice_minimum_elementor_version' );
+}
+
+/**
+ * Initialize the plugin.
+ *
+ * @return void
+ */
+function ehcc_initialize_plugin() {
+	\ElementorHtmlCssConverter\Plugin::instance();
+}
 
 /**
  * Load the plugin after plugins are loaded.
@@ -81,21 +133,17 @@ ElementorHtmlCssConverter\Autoloader::register();
  * @return void
  */
 function ehcc_load() {
-	// Check for Elementor.
-	if ( ! did_action( 'elementor/loaded' ) ) {
-		add_action( 'admin_notices', 'ehcc_admin_notice_missing_elementor' );
-		add_action( 'admin_init', 'ehcc_deactivate_self' );
+	if ( ! ehcc_is_elementor_loaded() ) {
+		ehcc_handle_missing_elementor();
 		return;
 	}
 
-	// Check Elementor version.
-	if ( ! version_compare( ELEMENTOR_VERSION, EHCC_MINIMUM_ELEMENTOR_VERSION, '>=' ) ) {
-		add_action( 'admin_notices', 'ehcc_admin_notice_minimum_elementor_version' );
+	if ( ! ehcc_is_elementor_version_compatible() ) {
+		ehcc_handle_incompatible_elementor_version();
 		return;
 	}
 
-	// Initialize the plugin.
-	\ElementorHtmlCssConverter\Plugin::instance();
+	ehcc_initialize_plugin();
 }
 add_action( 'plugins_loaded', 'ehcc_load', 11 );
 

@@ -77,39 +77,83 @@ class Autoloader {
 	 * @return void
 	 */
 	public static function autoload( $class ) {
-		// Only handle our namespace
-		if ( strpos( $class, 'ElementorHtmlCssConverter\\' ) !== 0 ) {
+		if ( ! self::belongs_to_our_namespace( $class ) ) {
 			return;
 		}
 
-		// Strategy 1: Check performance map
-		if ( isset( self::$classes_map[ $class ] ) ) {
-			$file = EHCC_PATH . self::$classes_map[ $class ];
-			if ( file_exists( $file ) ) {
-				require $file;
-			}
+		if ( self::load_from_performance_map( $class ) ) {
 			return;
 		}
 
-		// Strategy 2: PSR-4 namespace mapping
+		if ( self::load_from_psr4_namespace_mapping( $class ) ) {
+			return;
+		}
+
+		self::load_from_root_namespace_fallback( $class );
+	}
+
+	/**
+	 * Check if class belongs to our namespace.
+	 *
+	 * @param string $class Full class name with namespace.
+	 * @return bool True if belongs to our namespace, false otherwise.
+	 */
+	private static function belongs_to_our_namespace( string $class ): bool {
+		return strpos( $class, 'ElementorHtmlCssConverter\\' ) === 0;
+	}
+
+	/**
+	 * Load class from performance map.
+	 *
+	 * @param string $class Full class name with namespace.
+	 * @return bool True if loaded, false otherwise.
+	 */
+	private static function load_from_performance_map( string $class ): bool {
+		if ( ! isset( self::$classes_map[ $class ] ) ) {
+			return false;
+		}
+
+		$file = EHCC_PATH . self::$classes_map[ $class ];
+		if ( file_exists( $file ) ) {
+			require $file;
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Load class from PSR-4 namespace mapping.
+	 *
+	 * @param string $class Full class name with namespace.
+	 * @return bool True if loaded, false otherwise.
+	 */
+	private static function load_from_psr4_namespace_mapping( string $class ): bool {
 		foreach ( self::$namespace_to_path as $namespace => $path ) {
 			if ( strpos( $class, $namespace ) === 0 ) {
-				$relative_class = str_replace( $namespace . '\\', '', $class );
+				$relative_class = self::remove_namespace_prefix( $class, $namespace );
 				$file           = self::get_file_path( $relative_class, $path );
 
 				if ( file_exists( $file ) ) {
 					require $file;
+					return true;
 				}
-				return;
 			}
 		}
 
-		// Strategy 3: Root namespace fallback
-		// For classes directly under ElementorHtmlCssConverter\ without subnamespace
-		$relative_class = str_replace( 'ElementorHtmlCssConverter\\', '', $class );
+		return false;
+	}
 
-		// If it still has backslashes, it's in a subnamespace we didn't handle
-		if ( strpos( $relative_class, '\\' ) !== false ) {
+	/**
+	 * Load class from root namespace fallback.
+	 *
+	 * @param string $class Full class name with namespace.
+	 * @return void
+	 */
+	private static function load_from_root_namespace_fallback( string $class ): void {
+		$relative_class = self::remove_namespace_prefix( $class, 'ElementorHtmlCssConverter' );
+
+		if ( self::has_unhandled_subnamespace( $relative_class ) ) {
 			return;
 		}
 
@@ -117,6 +161,27 @@ class Autoloader {
 		if ( file_exists( $file ) ) {
 			require $file;
 		}
+	}
+
+	/**
+	 * Remove namespace prefix from class name.
+	 *
+	 * @param string $class     Full class name with namespace.
+	 * @param string $namespace Namespace prefix to remove.
+	 * @return string Class name without namespace prefix.
+	 */
+	private static function remove_namespace_prefix( string $class, string $namespace ): string {
+		return str_replace( $namespace . '\\', '', $class );
+	}
+
+	/**
+	 * Check if class has unhandled subnamespace.
+	 *
+	 * @param string $relative_class Class name without main namespace.
+	 * @return bool True if has unhandled subnamespace, false otherwise.
+	 */
+	private static function has_unhandled_subnamespace( string $relative_class ): bool {
+		return strpos( $relative_class, '\\' ) !== false;
 	}
 
 	/**
@@ -130,51 +195,197 @@ class Autoloader {
 	 * @return string Full file path.
 	 */
 	private static function get_file_path( $class_name, $base_path ) {
-		// Replace namespace separators with directory separators
-		$class_name = str_replace( '\\', '/', $class_name );
+		$class_name = self::normalize_namespace_separators( $class_name );
+		$parts      = self::split_class_name_into_parts( $class_name );
+		$filename   = array_pop( $parts );
 
-		// Split by directory separator to handle nested namespaces
-		$parts    = explode( '/', $class_name );
-		$filename = array_pop( $parts );
-
-		// Check if this is an interface by class name (ends with _Interface)
-		$is_interface = substr( $filename, -10 ) === '_Interface';
-
+		$is_interface = self::is_interface_by_class_name( $filename );
 		if ( $is_interface ) {
-			$filename = substr( $filename, 0, -10 );
+			$filename = self::remove_interface_suffix_from_filename( $filename );
 		}
 
-		// Convert class name to kebab-case
-		// Color_Converter → color-converter
-		// ColorConverter → color-converter
+		$filename = self::convert_class_name_to_kebab_case( $filename );
+
+		$in_interfaces_dir = self::is_in_interfaces_directory( $base_path, $parts );
+
+		$filename = self::add_file_prefix_based_on_type( $filename, $is_interface, $in_interfaces_dir );
+
+		return self::build_full_file_path( $base_path, $parts, $filename );
+	}
+
+	/**
+	 * Normalize namespace separators to directory separators.
+	 *
+	 * @param string $class_name Class name with namespace.
+	 * @return string Class name with forward slashes.
+	 */
+	private static function normalize_namespace_separators( string $class_name ): string {
+		return str_replace( '\\', '/', $class_name );
+	}
+
+	/**
+	 * Split class name into directory parts.
+	 *
+	 * @param string $class_name Class name with forward slashes.
+	 * @return array Array of directory parts.
+	 */
+	private static function split_class_name_into_parts( string $class_name ): array {
+		return explode( '/', $class_name );
+	}
+
+	/**
+	 * Check if class name indicates an interface (ends with _Interface).
+	 *
+	 * @param string $filename Filename to check.
+	 * @return bool True if interface, false otherwise.
+	 */
+	private static function is_interface_by_class_name( string $filename ): bool {
+		return substr( $filename, -10 ) === '_Interface';
+	}
+
+	/**
+	 * Remove interface suffix from filename.
+	 *
+	 * @param string $filename Filename with _Interface suffix.
+	 * @return string Filename without suffix.
+	 */
+	private static function remove_interface_suffix_from_filename( string $filename ): string {
+		return substr( $filename, 0, -10 );
+	}
+
+	/**
+	 * Convert class name to kebab-case.
+	 *
+	 * @param string $filename Class name in PascalCase or Snake_Case.
+	 * @return string Filename in kebab-case.
+	 */
+	private static function convert_class_name_to_kebab_case( string $filename ): string {
 		$filename = strtolower( preg_replace( '/([a-z])([A-Z])/', '$1-$2', $filename ) );
-		$filename = str_replace( '_', '-', $filename );
+		return str_replace( '_', '-', $filename );
+	}
 
-		// Check if we're in an interfaces directory (either base path or subdirectory)
-		$in_interfaces_dir = strpos( $base_path, 'interfaces/' ) !== false
+	/**
+	 * Check if we're in an interfaces directory.
+	 *
+	 * @param string $base_path Base directory path.
+	 * @param array  $parts     Directory parts.
+	 * @return bool True if in interfaces directory, false otherwise.
+	 */
+	private static function is_in_interfaces_directory( string $base_path, array $parts ): bool {
+		return strpos( $base_path, 'interfaces/' ) !== false
 			|| in_array( 'Interfaces', $parts, true );
+	}
 
-		// Determine file prefix based on location and type
+	/**
+	 * Add file prefix based on type (interface or class).
+	 *
+	 * @param string $filename          Filename in kebab-case.
+	 * @param bool   $is_interface     Whether this is an interface.
+	 * @param bool   $in_interfaces_dir Whether in interfaces directory.
+	 * @return string Filename with appropriate prefix and extension.
+	 */
+	private static function add_file_prefix_based_on_type( string $filename, bool $is_interface, bool $in_interfaces_dir ): string {
 		if ( $is_interface || $in_interfaces_dir ) {
-			// Interface files use 'interface-' prefix
-			if ( strpos( $filename, '-interface' ) !== false ) {
-				$filename = str_replace( '-interface', '', $filename );
-			}
-			$filename = 'interface-' . $filename . '.php';
-		} elseif ( strpos( $filename, '-interface' ) !== false ) {
-			// Other interface files (like variable-convertor-interface) keep name as-is
-			$filename = $filename . '.php';
-		} else {
-			// Regular class files use 'class-' prefix
-			$filename = 'class-' . $filename . '.php';
+			return self::build_interface_filename( $filename );
 		}
 
-		// Rebuild path with directories
-		if ( ! empty( $parts ) ) {
-			$directory = implode( '/', array_map( 'strtolower', $parts ) );
-			return EHCC_PATH . $base_path . $directory . '/' . $filename;
+		if ( self::is_interface_filename( $filename ) ) {
+			return $filename . '.php';
 		}
 
+		return self::build_class_filename( $filename );
+	}
+
+	/**
+	 * Build interface filename with prefix.
+	 *
+	 * @param string $filename Filename in kebab-case.
+	 * @return string Interface filename with prefix and extension.
+	 */
+	private static function build_interface_filename( string $filename ): string {
+		if ( self::is_interface_filename( $filename ) ) {
+			$filename = self::remove_interface_from_filename( $filename );
+		}
+		return 'interface-' . $filename . '.php';
+	}
+
+	/**
+	 * Check if filename contains interface suffix.
+	 *
+	 * @param string $filename Filename to check.
+	 * @return bool True if contains interface suffix, false otherwise.
+	 */
+	private static function is_interface_filename( string $filename ): bool {
+		return strpos( $filename, '-interface' ) !== false;
+	}
+
+	/**
+	 * Remove interface suffix from filename.
+	 *
+	 * @param string $filename Filename with interface suffix.
+	 * @return string Filename without interface suffix.
+	 */
+	private static function remove_interface_from_filename( string $filename ): string {
+		return str_replace( '-interface', '', $filename );
+	}
+
+	/**
+	 * Build class filename with prefix.
+	 *
+	 * @param string $filename Filename in kebab-case.
+	 * @return string Class filename with prefix and extension.
+	 */
+	private static function build_class_filename( string $filename ): string {
+		return 'class-' . $filename . '.php';
+	}
+
+	/**
+	 * Build full file path with directories.
+	 *
+	 * @param string $base_path Base directory path.
+	 * @param array  $parts     Directory parts.
+	 * @param string $filename  Filename with prefix and extension.
+	 * @return string Full file path.
+	 */
+	private static function build_full_file_path( string $base_path, array $parts, string $filename ): string {
+		if ( empty( $parts ) ) {
+			return self::build_path_without_directories( $base_path, $filename );
+		}
+
+		return self::build_path_with_directories( $base_path, $parts, $filename );
+	}
+
+	/**
+	 * Build file path without directory parts.
+	 *
+	 * @param string $base_path Base directory path.
+	 * @param string $filename  Filename with prefix and extension.
+	 * @return string Full file path.
+	 */
+	private static function build_path_without_directories( string $base_path, string $filename ): string {
 		return EHCC_PATH . $base_path . $filename;
+	}
+
+	/**
+	 * Build file path with directory parts.
+	 *
+	 * @param string $base_path Base directory path.
+	 * @param array  $parts     Directory parts.
+	 * @param string $filename  Filename with prefix and extension.
+	 * @return string Full file path.
+	 */
+	private static function build_path_with_directories( string $base_path, array $parts, string $filename ): string {
+		$directory = self::build_directory_path_from_parts( $parts );
+		return EHCC_PATH . $base_path . $directory . '/' . $filename;
+	}
+
+	/**
+	 * Build directory path from parts.
+	 *
+	 * @param array $parts Directory parts.
+	 * @return string Directory path in lowercase.
+	 */
+	private static function build_directory_path_from_parts( array $parts ): string {
+		return implode( '/', array_map( 'strtolower', $parts ) );
 	}
 }

@@ -104,7 +104,35 @@ class Classes_Rest_API {
 		$update_mode = $request->get_param( 'update_mode' ) ?? 'create_new';
 		$context     = $request->get_param( 'context' ) ?? 'frontend';
 
-		// Validate that either css or url is provided.
+		$validation_error = $this->validate_css_or_url_provided( $css, $url );
+		if ( $validation_error ) {
+			return $validation_error;
+		}
+
+		$css_result = $this->fetch_css_from_url_if_provided( $url, $css );
+		if ( $css_result instanceof WP_REST_Response ) {
+			return $css_result;
+		}
+		$css = $css_result;
+
+		$empty_css_error = $this->validate_css_not_empty( $css );
+		if ( $empty_css_error ) {
+			return $empty_css_error;
+		}
+
+		$css = $this->remove_utf8_bom( $css );
+
+		return $this->process_and_register_classes( $css, $update_mode, $context );
+	}
+
+	/**
+	 * Validate that either css or url is provided.
+	 *
+	 * @param string|null $css CSS string.
+	 * @param string|null $url URL string.
+	 * @return WP_REST_Response|null Error response if validation fails, null otherwise.
+	 */
+	private function validate_css_or_url_provided( ?string $css, ?string $url ): ?WP_REST_Response {
 		if ( empty( $css ) && empty( $url ) ) {
 			return new WP_REST_Response(
 				[
@@ -115,18 +143,37 @@ class Classes_Rest_API {
 			);
 		}
 
-		// Fetch from URL if provided.
-		if ( ! empty( $url ) ) {
-			$fetch_result = $this->fetch_css_from_url( $url );
+		return null;
+	}
 
-			if ( $fetch_result instanceof WP_REST_Response ) {
-				return $fetch_result;
-			}
-
-			$css = $fetch_result;
+	/**
+	 * Fetch CSS from URL if provided.
+	 *
+	 * @param string|null $url URL to fetch from.
+	 * @param string|null $css Existing CSS string.
+	 * @return string|WP_REST_Response CSS content or error response.
+	 */
+	private function fetch_css_from_url_if_provided( ?string $url, ?string $css ) {
+		if ( empty( $url ) ) {
+			return $css;
 		}
 
-		// Validate CSS is not empty.
+		$fetch_result = $this->fetch_css_from_url( $url );
+
+		if ( $fetch_result instanceof WP_REST_Response ) {
+			return $fetch_result;
+		}
+
+		return $fetch_result;
+	}
+
+	/**
+	 * Validate CSS is not empty.
+	 *
+	 * @param string|null $css CSS string.
+	 * @return WP_REST_Response|null Error response if CSS is empty, null otherwise.
+	 */
+	private function validate_css_not_empty( ?string $css ): ?WP_REST_Response {
 		if ( empty( $css ) ) {
 			return new WP_REST_Response(
 				[
@@ -137,10 +184,18 @@ class Classes_Rest_API {
 			);
 		}
 
-		// Remove UTF-8 BOM if present.
-		$css = $this->remove_utf8_bom( $css );
+		return null;
+	}
 
-		// Step 1: Extract classes from CSS.
+	/**
+	 * Process CSS and register classes with Elementor.
+	 *
+	 * @param string $css         CSS content.
+	 * @param string $update_mode Update mode: 'create_new' or 'update'.
+	 * @param string $context     Context: 'frontend' or 'preview'.
+	 * @return WP_REST_Response Response with results.
+	 */
+	private function process_and_register_classes( string $css, string $update_mode, string $context ): WP_REST_Response {
 		$extractor         = new Class_Extractor();
 		$extracted_classes = $extractor->extract_from_css( $css );
 
@@ -154,7 +209,6 @@ class Classes_Rest_API {
 			);
 		}
 
-		// Step 2: Convert to atomic format.
 		$conversion_service = new Class_Conversion_Service( $this->registry );
 		$converted_classes  = $conversion_service->convert_to_atomic( $extracted_classes );
 
@@ -168,7 +222,6 @@ class Classes_Rest_API {
 			);
 		}
 
-		// Step 3: Register with Elementor Global Classes.
 		$registration_service = new Class_Registration_Service();
 
 		try {
@@ -199,7 +252,6 @@ class Classes_Rest_API {
 			);
 		}
 
-		// Build response.
 		return new WP_REST_Response(
 			[
 				'success'    => true,

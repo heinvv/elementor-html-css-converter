@@ -209,11 +209,7 @@ class Class_Extractor {
 			return null;
 		}
 
-		if ( $this->is_elementor_class( $class_name ) ) {
-			return null;
-		}
-
-		if ( strlen( $class_name ) > self::MAX_CLASS_NAME_LENGTH ) {
+		if ( $this->is_class_name_too_long( $class_name ) ) {
 			return null;
 		}
 
@@ -221,19 +217,13 @@ class Class_Extractor {
 	}
 
 	/**
-	 * Check if a class name is an Elementor internal class.
+	 * Check if a class name exceeds the maximum allowed length.
 	 *
 	 * @param string $class_name Class name to check.
-	 * @return bool True if it's an Elementor internal class.
+	 * @return bool True if the class name is too long.
 	 */
-	private function is_elementor_class( string $class_name ): bool {
-		foreach ( self::ELEMENTOR_PREFIXES as $prefix ) {
-			if ( 0 === strpos( $class_name, $prefix ) ) {
-				return true;
-			}
-		}
-
-		return false;
+	private function is_class_name_too_long( string $class_name ): bool {
+		return strlen( $class_name ) > self::MAX_CLASS_NAME_LENGTH;
 	}
 
 	/**
@@ -259,55 +249,6 @@ class Class_Extractor {
 		}
 
 		return $properties;
-	}
-
-	/**
-	 * Get extraction statistics.
-	 *
-	 * @param string $css Raw CSS.
-	 * @return array Statistics about what was found and skipped.
-	 */
-	public function get_extraction_stats( string $css ): array {
-		$stats = [
-			'total_rules'     => 0,
-			'class_selectors' => 0,
-			'id_selectors'    => 0,
-			'element_selectors' => 0,
-			'compound_selectors' => 0,
-			'pseudo_selectors' => 0,
-			'elementor_classes' => 0,
-			'extracted'       => 0,
-		];
-
-		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
-
-		$css = preg_replace( self::REGEX_AT_RULE_REMOVAL, '', $css );
-
-		if ( preg_match_all( self::REGEX_CSS_RULE_PATTERN, $css, $matches, PREG_SET_ORDER ) ) {
-			foreach ( $matches as $match ) {
-				$selector = trim( $match[1] );
-				++$stats['total_rules'];
-
-				if ( strpos( $selector, '#' ) !== false ) {
-					++$stats['id_selectors'];
-				} elseif ( strpos( $selector, ':' ) !== false ) {
-					++$stats['pseudo_selectors'];
-				} elseif ( preg_match( self::REGEX_COMPOUND_CLASS_SELECTOR, $selector ) ) {
-					++$stats['compound_selectors'];
-				} elseif ( preg_match( self::REGEX_SINGLE_CLASS_SELECTOR, $selector, $m ) ) {
-					++$stats['class_selectors'];
-					if ( $this->is_elementor_class( $m[1] ) ) {
-						++$stats['elementor_classes'];
-					} else {
-						++$stats['extracted'];
-					}
-				} elseif ( preg_match( self::REGEX_ELEMENT_SELECTOR_START, $selector ) ) {
-					++$stats['element_selectors'];
-				}
-			}
-		}
-
-		return $stats;
 	}
 }
 

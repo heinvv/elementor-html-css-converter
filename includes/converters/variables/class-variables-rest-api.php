@@ -92,56 +92,30 @@ class Variables_Rest_API {
 		$css         = $request->get_param( 'css' );
 		$update_mode = $request->get_param( 'update_mode' ) ?? 'create_new';
 
-		// Validate that either css or url is provided
-		if ( empty( $css ) && empty( $url ) ) {
-			return new WP_REST_Response(
-				[
-					'error' => 'Missing css or url',
-					'code'  => 'invalid_request',
-				],
-				400
-			);
+		$validation_error = $this->validate_css_or_url_provided( $css, $url );
+		if ( $validation_error ) {
+			return $validation_error;
 		}
 
-		// Fetch from URL if provided
-		if ( ! empty( $url ) ) {
-			$fetch_result = $this->fetch_css_from_url( $url );
+		$css_result = $this->fetch_css_from_url_if_provided( $url, $css );
+		if ( $css_result instanceof WP_REST_Response || is_wp_error( $css_result ) ) {
+			return $css_result;
+		}
+		$css = $css_result;
 
-			if ( is_wp_error( $fetch_result ) || $fetch_result instanceof WP_REST_Response ) {
-				return $fetch_result;
-			}
-
-			$css = $fetch_result;
+		$empty_css_error = $this->validate_css_not_empty( $css );
+		if ( $empty_css_error ) {
+			return $empty_css_error;
 		}
 
-		if ( empty( $css ) ) {
-			return new WP_REST_Response(
-				[
-					'error' => 'Empty CSS',
-					'code'  => 'empty_css',
-				],
-				422
-			);
-		}
-
-		// Remove UTF-8 BOM if present
 		$css = $this->remove_utf8_bom( $css );
 
-		// Extract variables
-		$extractor     = new Variable_Extractor();
-		$raw_variables = $extractor->extract_from_css( $css );
-
-		if ( empty( $raw_variables ) ) {
-			return new WP_REST_Response(
-				[
-					'error' => 'No variables found in CSS',
-					'code'  => 'no_variables',
-				],
-				422
-			);
+		$extract_result = $this->extract_and_convert_variables_from_css( $css );
+		if ( $extract_result instanceof WP_REST_Response ) {
+			return $extract_result;
 		}
 
-		$converted = Variable_Conversion_Service::convert_to_editor_variables( $raw_variables );
+		$converted = $extract_result;
 
 		if ( empty( $converted ) ) {
 			return new WP_REST_Response(
@@ -178,6 +152,85 @@ class Variables_Rest_API {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Validate that either css or url is provided.
+	 *
+	 * @param string|null $css CSS string.
+	 * @param string|null $url URL string.
+	 * @return WP_REST_Response|null Error response if validation fails, null otherwise.
+	 */
+	private function validate_css_or_url_provided( ?string $css, ?string $url ): ?WP_REST_Response {
+		if ( empty( $css ) && empty( $url ) ) {
+			return new WP_REST_Response(
+				[
+					'error' => 'Missing css or url',
+					'code'  => 'invalid_request',
+				],
+				400
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Fetch CSS from URL if provided.
+	 *
+	 * @param string|null $url URL to fetch from.
+	 * @param string|null $css Existing CSS string.
+	 * @return string|WP_REST_Response|\WP_Error CSS content or error response.
+	 */
+	private function fetch_css_from_url_if_provided( ?string $url, ?string $css ) {
+		if ( empty( $url ) ) {
+			return $css;
+		}
+
+		return $this->fetch_css_from_url( $url );
+	}
+
+	/**
+	 * Validate CSS is not empty.
+	 *
+	 * @param string|null $css CSS string.
+	 * @return WP_REST_Response|null Error response if CSS is empty, null otherwise.
+	 */
+	private function validate_css_not_empty( ?string $css ): ?WP_REST_Response {
+		if ( empty( $css ) ) {
+			return new WP_REST_Response(
+				[
+					'error' => 'Empty CSS',
+					'code'  => 'empty_css',
+				],
+				422
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Extract and convert variables from CSS.
+	 *
+	 * @param string $css CSS content.
+	 * @return array|WP_REST_Response Converted variables array or error response.
+	 */
+	private function extract_and_convert_variables_from_css( string $css ) {
+		$extractor     = new Variable_Extractor();
+		$raw_variables = $extractor->extract_from_css( $css );
+
+		if ( empty( $raw_variables ) ) {
+			return new WP_REST_Response(
+				[
+					'error' => 'No variables found in CSS',
+					'code'  => 'no_variables',
+				],
+				422
+			);
+		}
+
+		return Variable_Conversion_Service::convert_to_editor_variables( $raw_variables );
 	}
 
 	/**

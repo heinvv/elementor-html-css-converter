@@ -27,7 +27,7 @@
 - [ ] Support compositions.
 - [ ] Support v3 > v4 conversions.
 - [ ] Support for non-Google font-family styles.
-- [ ] Implement non-max-width responsive support.
+- [ ] Implement non max-width responsive support.
 - [ ] Study video support.
 
 ## Playwright Scraper

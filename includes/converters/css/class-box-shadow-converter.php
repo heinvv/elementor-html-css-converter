@@ -226,8 +226,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_color_value( string $value ): bool {
 		$value = trim( $value );
 
-		// CSS variable could be a color
-		if ( Variable_Resolver::is_css_variable( $value ) ) {
+		if ( $this->is_css_variable_that_could_be_color( $value ) ) {
 			return true;
 		}
 
@@ -245,8 +244,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private function is_size_value( string $value ): bool {
 		$value = trim( $value );
 
-		// CSS variable could be a size
-		if ( Variable_Resolver::is_css_variable( $value ) ) {
+		if ( $this->is_css_variable_that_could_be_size( $value ) ) {
 			return true;
 		}
 
@@ -269,11 +267,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 		$blur = isset( $size_values[2] ) ? $this->resolve_size_value( $size_values[2] ) : Size_Prop_Type::generate( $this->create_zero_size() );
 		$spread = isset( $size_values[3] ) ? $this->resolve_size_value( $size_values[3] ) : Size_Prop_Type::generate( $this->create_zero_size() );
 
-		// Resolve color (could be a CSS variable)
-		$color = null;
-		if ( null !== $color_value ) {
-			$color = $this->resolve_color_value( $color_value );
-		}
+		$color = $this->resolve_color_value_if_provided( $color_value );
 		if ( null === $color ) {
 			$color = Color_Prop_Type::generate( 'rgba(0, 0, 0, 0.5)' );
 		}
@@ -298,5 +292,39 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 			'size' => 0.0,
 			'unit' => 'px',
 		];
+	}
+
+	/**
+	 * Check if CSS variable could be a color value.
+	 *
+	 * @param string $value Value to check.
+	 * @return bool True if CSS variable, false otherwise.
+	 */
+	private function is_css_variable_that_could_be_color( string $value ): bool {
+		return Variable_Resolver::is_css_variable( $value );
+	}
+
+	/**
+	 * Check if CSS variable could be a size value.
+	 *
+	 * @param string $value Value to check.
+	 * @return bool True if CSS variable, false otherwise.
+	 */
+	private function is_css_variable_that_could_be_size( string $value ): bool {
+		return Variable_Resolver::is_css_variable( $value );
+	}
+
+	/**
+	 * Resolve color value if provided.
+	 *
+	 * @param string|null $color_value Color value or null.
+	 * @return array|null Resolved color or null.
+	 */
+	private function resolve_color_value_if_provided( ?string $color_value ): ?array {
+		if ( null !== $color_value ) {
+			return $this->resolve_color_value( $color_value );
+		}
+
+		return null;
 	}
 }
