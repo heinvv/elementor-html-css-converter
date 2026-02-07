@@ -14,39 +14,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Class Css_Converter
- *
- * Parses CSS strings and converts supported properties to Elementor atomic format.
- */
 class Css_Converter {
-	/**
-	 * Regex pattern to match CSS declarations.
-	 */
 	private const PATTERN_CSS_DECLARATION = '/([a-zA-Z0-9-]+)\s*:\s*([^;]+);?/';
 
-	/**
-	 * The converter registry.
-	 *
-	 * @var Converter_Registry
-	 */
+	private const PLACEHOLDER_IMAGE_URL = 'none';
+
 	private Converter_Registry $registry;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param Converter_Registry $registry The converter registry.
-	 */
 	public function __construct( Converter_Registry $registry ) {
 		$this->registry = $registry;
 	}
 
-	/**
-	 * Convert CSS string to atomic format.
-	 *
-	 * @param array $params Parameters containing 'cssString' key.
-	 * @return array Result with 'props' and optionally 'customCss'.
-	 */
 	public function convert( array $params ): array {
 		$css_string = $params['cssString'] ?? '';
 
@@ -56,25 +34,10 @@ class Css_Converter {
 		return $result;
 	}
 
-	/**
-	 * Convert an array of CSS properties to atomic format.
-	 *
-	 * This is the public entry point for converting pre-parsed CSS properties.
-	 * Used by Atomic_Data_Parser and Class_Conversion_Service to ensure consistent conversion logic.
-	 *
-	 * @param array $properties Associative array of property => value.
-	 * @return array Result with 'props' and optionally 'customCss'.
-	 */
 	public function convert_properties( array $properties ): array {
 		return $this->convert_properties_to_atomic( $properties );
 	}
 
-	/**
-	 * Parse a CSS string into property-value pairs.
-	 *
-	 * @param string $css_string The CSS string to parse.
-	 * @return array Associative array of property => value.
-	 */
 	private function parse_css_string( string $css_string ): array {
 		$properties = [];
 		$pattern    = self::PATTERN_CSS_DECLARATION;
@@ -90,12 +53,6 @@ class Css_Converter {
 		return $properties;
 	}
 
-	/**
-	 * Convert parsed properties to atomic format.
-	 *
-	 * @param array $properties Associative array of property => value.
-	 * @return array Result with 'props' and optionally 'customCss'.
-	 */
 	private function convert_properties_to_atomic( array $properties ): array {
 		$props       = [];
 		$unsupported = [];
@@ -123,6 +80,10 @@ class Css_Converter {
 			}
 		}
 
+		if ( isset( $props['background'] ) && $this->is_background_prop( $props['background'] ) ) {
+			$props['background'] = $this->remove_placeholder_image_overlays( $props['background'] );
+		}
+
 		$result = [
 			'props' => $props,
 		];
@@ -134,16 +95,6 @@ class Css_Converter {
 		return $result;
 	}
 
-	/**
-	 * Check if a converted result is a multi-property return (shorthand expansion).
-	 *
-	 * Multi-property returns are associative arrays where keys are property names
-	 * and values are prop type arrays (with $$type key).
-	 * Single property returns have $$type at the root level.
-	 *
-	 * @param array $converted The converted result.
-	 * @return bool True if this is a multi-property result.
-	 */
 	private function is_multi_property_result( array $converted ): bool {
 		if ( isset( $converted['$$type'] ) ) {
 			return false;
@@ -158,13 +109,6 @@ class Css_Converter {
 		return true;
 	}
 
-	/**
-	 * Merge two props, handling dimensions and flex merging.
-	 *
-	 * @param array|null $existing Existing prop value or null.
-	 * @param array      $new      New prop value to merge.
-	 * @return array The merged prop value.
-	 */
 	private function merge_props( ?array $existing, array $new ): array {
 		if ( null === $existing ) {
 			return $new;
@@ -185,23 +129,10 @@ class Css_Converter {
 		return $new;
 	}
 
-	/**
-	 * Check if a prop is a dimensions type.
-	 *
-	 * @param array $prop The prop to check.
-	 * @return bool True if it's a dimensions prop.
-	 */
 	private function is_dimensions_prop( array $prop ): bool {
 		return isset( $prop['$$type'] ) && 'dimensions' === $prop['$$type'];
 	}
 
-	/**
-	 * Merge two dimensions props, combining their dimension values.
-	 *
-	 * @param array $existing Existing dimensions prop.
-	 * @param array $new      New dimensions prop to merge.
-	 * @return array The merged dimensions prop.
-	 */
 	private function merge_dimensions( array $existing, array $new ): array {
 		$merged_value = $existing['value'] ?? [];
 
@@ -217,25 +148,10 @@ class Css_Converter {
 		];
 	}
 
-	/**
-	 * Check if a prop is a flex type.
-	 *
-	 * @param array $prop The prop to check.
-	 * @return bool True if it's a flex prop.
-	 */
 	private function is_flex_prop( array $prop ): bool {
 		return isset( $prop['$$type'] ) && 'flex' === $prop['$$type'];
 	}
 
-	/**
-	 * Merge two flex props, combining their component values.
-	 *
-	 * New values override existing values for the same component.
-	 *
-	 * @param array $existing Existing flex prop.
-	 * @param array $new      New flex prop to merge.
-	 * @return array The merged flex prop.
-	 */
 	private function merge_flex( array $existing, array $new ): array {
 		$merged_value = $existing['value'] ?? [];
 
@@ -251,15 +167,6 @@ class Css_Converter {
 		];
 	}
 
-	/**
-	 * Format unsupported properties back into CSS string.
-	 *
-	 * Returns raw CSS declarations without selector wrapper.
-	 * The atomic widget renderer will wrap this in the appropriate selector.
-	 *
-	 * @param array $properties Associative array of property => value.
-	 * @return string Raw CSS declarations.
-	 */
 	private function format_custom_css( array $properties ): string {
 		if ( empty( $properties ) ) {
 			return '';
@@ -273,25 +180,10 @@ class Css_Converter {
 		return implode( ' ', $css_parts );
 	}
 
-	/**
-	 * Check if a prop is a background type.
-	 *
-	 * @param array $prop The prop to check.
-	 * @return bool True if it's a background prop.
-	 */
 	private function is_background_prop( array $prop ): bool {
 		return isset( $prop['$$type'] ) && 'background' === $prop['$$type'];
 	}
 
-	/**
-	 * Merge two background props, combining their values.
-	 *
-	 * Merges color and background-overlay properties.
-	 *
-	 * @param array $existing Existing background prop.
-	 * @param array $new      New background prop to merge.
-	 * @return array The merged background prop.
-	 */
 	private function merge_background( array $existing, array $new ): array {
 		$merged_value = $existing['value'] ?? [];
 
@@ -310,6 +202,10 @@ class Css_Converter {
 					$merged_value['background-overlay'] = $new['value']['background-overlay'];
 				}
 			}
+
+			if ( isset( $new['value']['clip'] ) ) {
+				$merged_value['clip'] = $new['value']['clip'];
+			}
 		}
 
 		return [
@@ -318,15 +214,6 @@ class Css_Converter {
 		];
 	}
 
-	/**
-	 * Merge two background overlay props.
-	 *
-	 * Combines overlay arrays, merging image overlays when possible.
-	 *
-	 * @param array $existing Existing overlay prop.
-	 * @param array $new      New overlay prop to merge.
-	 * @return array The merged overlay prop.
-	 */
 	private function merge_background_overlay( array $existing, array $new ): array {
 		$existing_value = $existing['value'] ?? [];
 		$new_value = $new['value'] ?? [];
@@ -370,17 +257,73 @@ class Css_Converter {
 
 		return [
 			'$$type' => 'background-overlay',
-			'value'  => $merged_overlays,
+			'value'  => array_values( $merged_overlays ),
 		];
 	}
 
-	/**
-	 * Check if two image values match.
-	 *
-	 * @param array|null $image1 First image value.
-	 * @param array|null $image2 Second image value.
-	 * @return bool True if images match.
-	 */
+	private function remove_placeholder_image_overlays( array $background_prop ): array {
+		$value = $background_prop['value'] ?? [];
+
+		if ( ! isset( $value['background-overlay'] ) ) {
+			return $background_prop;
+		}
+
+		$overlay = $value['background-overlay'];
+		$overlay_items = $overlay['value'] ?? [];
+
+		if ( ! is_array( $overlay_items ) || empty( $overlay_items ) ) {
+			return $background_prop;
+		}
+
+		$filtered_items = array_filter( $overlay_items, function( $item ) {
+			if ( ! isset( $item['$$type'] ) || 'background-image-overlay' !== $item['$$type'] ) {
+				return true;
+			}
+
+			return ! $this->is_placeholder_image_overlay( $item );
+		} );
+
+		if ( empty( $filtered_items ) ) {
+			unset( $value['background-overlay'] );
+		} else {
+			$value['background-overlay'] = [
+				'$$type' => 'background-overlay',
+				'value'  => array_values( $filtered_items ),
+			];
+		}
+
+		return [
+			'$$type' => 'background',
+			'value'  => $value,
+		];
+	}
+
+	private function is_placeholder_image_overlay( array $overlay ): bool {
+		$overlay_value = $overlay['value'] ?? [];
+		$image = $overlay_value['image'] ?? null;
+
+		if ( null === $image || ! is_array( $image ) ) {
+			return true;
+		}
+
+		$image_value = $image['value'] ?? [];
+		$src = $image_value['src'] ?? null;
+
+		if ( null === $src || ! is_array( $src ) ) {
+			return true;
+		}
+
+		$src_value = $src['value'] ?? [];
+		$url = $src_value['url'] ?? null;
+		$id = $src_value['id'] ?? null;
+
+		if ( self::PLACEHOLDER_IMAGE_URL === $url && null === $id ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private function images_match( ?array $image1, ?array $image2 ): bool {
 		if ( null === $image1 || null === $image2 ) {
 			return false;
@@ -399,15 +342,6 @@ class Css_Converter {
 		return $url1 === $url2;
 	}
 
-	/**
-	 * Merge two image overlay props.
-	 *
-	 * Merges repeat, size, position, and attachment properties.
-	 *
-	 * @param array $existing Existing image overlay.
-	 * @param array $new      New image overlay to merge.
-	 * @return array The merged image overlay.
-	 */
 	private function merge_image_overlay( array $existing, array $new ): array {
 		$existing_value = $existing['value'] ?? [];
 		$new_value = $new['value'] ?? [];
@@ -436,12 +370,6 @@ class Css_Converter {
 		];
 	}
 
-	/**
-	 * Get the converter for a given property.
-	 *
-	 * @param string $property The CSS property name.
-	 * @return Property_Converter_Interface|null The converter or null.
-	 */
 	private function get_converter_for_property( string $property ): ?Property_Converter_Interface {
 		return $this->registry->resolve( $property );
 	}
