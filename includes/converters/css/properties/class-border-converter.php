@@ -110,7 +110,17 @@ class Border_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_border_shorthand( string $value ): ?array {
-		if ( 'none' === strtolower( $value ) ) {
+		$value_lower = strtolower( trim( $value ) );
+
+		if ( 'none' === $value_lower ) {
+			return [
+				'width' => Size_Prop_Type::generate( [ 'size' => self::ZERO_SIZE, 'unit' => 'px' ] ),
+				'style' => 'none',
+				'color' => null,
+			];
+		}
+
+		if ( '0' === $value_lower ) {
 			return [
 				'width' => Size_Prop_Type::generate( [ 'size' => self::ZERO_SIZE, 'unit' => 'px' ] ),
 				'style' => 'none',

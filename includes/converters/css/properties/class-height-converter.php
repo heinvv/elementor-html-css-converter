@@ -35,24 +35,25 @@ class Height_Converter extends Property_Converter_Base {
 	}
 
 	protected function convert_value( string $property, $value ): ?array {
-		$value = strtolower( trim( $value ) );
+		$value_trimmed = trim( $value );
+		$value_lower = strtolower( $value_trimmed );
 
-		if ( $this->is_unsupported_keyword( $value ) ) {
+		if ( $this->is_unsupported_keyword( $value_lower ) ) {
 			return null;
 		}
 
-		if ( $this->is_keyword_value( $value ) ) {
-			return Size_Prop_Type::generate( self::KEYWORD_VALUES[ $value ] );
+		if ( $this->is_keyword_value( $value_lower ) ) {
+			return Size_Prop_Type::generate( self::KEYWORD_VALUES[ $value_lower ] );
 		}
 
-		if ( $this->is_calc_value( $value ) ) {
+		if ( $this->is_css_function( $value_lower ) ) {
 			return Size_Prop_Type::generate( [
-				'size' => $value,
+				'size' => $value_trimmed,
 				'unit' => 'custom',
 			] );
 		}
 
-		$parsed = Size_Value_Parser::parse( $value );
+		$parsed = Size_Value_Parser::parse( $value_trimmed );
 
 		if ( null === $parsed ) {
 			return null;
@@ -69,8 +70,11 @@ class Height_Converter extends Property_Converter_Base {
 		return in_array( $value, self::UNSUPPORTED_KEYWORDS, true );
 	}
 
-	private function is_calc_value( string $value ): bool {
-		return str_starts_with( $value, 'calc(' );
+	private function is_css_function( string $value ): bool {
+		return str_starts_with( $value, 'max(' ) ||
+			str_starts_with( $value, 'min(' ) ||
+			str_starts_with( $value, 'clamp(' ) ||
+			str_starts_with( $value, 'calc(' );
 	}
 }
 

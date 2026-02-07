@@ -91,12 +91,13 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 		}
 
 		$styles_applied = $conversion_result['props'];
+		$custom_css = $conversion_result['customCss'] ?? '';
 
 		$existing_local_style = $this->find_existing_local_style( $widget );
 		$style_builder        = $this->style_builder;
 		$applicator           = $this;
 
-		$update_callback = function( $widget_data ) use ( $styles_applied, $existing_local_style, $style_builder, $applicator, $widget_id ) {
+		$update_callback = function( $widget_data ) use ( $styles_applied, $existing_local_style, $style_builder, $applicator, $widget_id, $custom_css ) {
 			if ( ! isset( $widget_data['styles'] ) ) {
 				$widget_data['styles'] = [];
 			}
@@ -109,6 +110,13 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 
 				$widget_data['styles'][ $style_id ] = $style_definition;
 				$widget_data = $applicator->add_class_reference_to_widget( $widget_data, $style_id );
+			}
+
+			if ( ! empty( $custom_css ) ) {
+				if ( ! isset( $widget_data['settings'] ) ) {
+					$widget_data['settings'] = [];
+				}
+				$widget_data['settings']['custom_css'] = $custom_css;
 			}
 
 			return $widget_data;
@@ -255,6 +263,11 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 
 				$widget = $this->add_class_reference_to_widget( $widget, $style_id );
 			}
+
+			$custom_css = $conversion_result['customCss'] ?? '';
+			if ( ! empty( $custom_css ) ) {
+				$widget['settings']['custom_css'] = $custom_css;
+			}
 		}
 
 		return $widget;
@@ -311,19 +324,28 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 
 		$conversion_result = $this->convert_css_to_atomic( $css_string );
 
+		$custom_css = $conversion_result['customCss'] ?? '';
+
 		if ( $this->has_no_converted_props( $conversion_result ) ) {
-			return $this->create_success_result(
-				$widget,
-				$conversion_result['customCss'] ?? ''
-			);
+			if ( ! empty( $custom_css ) ) {
+				if ( ! isset( $widget['settings'] ) ) {
+					$widget['settings'] = [];
+				}
+				$widget['settings']['custom_css'] = $custom_css;
+			}
+			return $this->create_success_result( $widget, $custom_css );
 		}
 
 		$widget = $this->add_styles_to_widget( $widget, $conversion_result['props'] );
 
-		return $this->create_success_result(
-			$widget,
-			$conversion_result['customCss'] ?? ''
-		);
+		if ( ! empty( $custom_css ) ) {
+			if ( ! isset( $widget['settings'] ) ) {
+				$widget['settings'] = [];
+			}
+			$widget['settings']['custom_css'] = $custom_css;
+		}
+
+		return $this->create_success_result( $widget, $custom_css );
 	}
 
 	/**

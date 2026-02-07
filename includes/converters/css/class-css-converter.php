@@ -179,6 +179,10 @@ class Css_Converter {
 			return $this->merge_flex( $existing, $new );
 		}
 
+		if ( $this->is_background_prop( $existing ) && $this->is_background_prop( $new ) ) {
+			return $this->merge_background( $existing, $new );
+		}
+
 		return $new;
 	}
 
@@ -260,6 +264,169 @@ class Css_Converter {
 			$css_parts[] = sprintf( '%s: %s;', $property, $value );
 		}
 		return implode( ' ', $css_parts );
+	}
+
+	/**
+	 * Check if a prop is a background type.
+	 *
+	 * @param array $prop The prop to check.
+	 * @return bool True if it's a background prop.
+	 */
+	private function is_background_prop( array $prop ): bool {
+		return isset( $prop['$$type'] ) && 'background' === $prop['$$type'];
+	}
+
+	/**
+	 * Merge two background props, combining their values.
+	 *
+	 * Merges color and background-overlay properties.
+	 *
+	 * @param array $existing Existing background prop.
+	 * @param array $new      New background prop to merge.
+	 * @return array The merged background prop.
+	 */
+	private function merge_background( array $existing, array $new ): array {
+		$merged_value = $existing['value'] ?? [];
+
+		if ( isset( $new['value'] ) && is_array( $new['value'] ) ) {
+			if ( isset( $new['value']['color'] ) ) {
+				$merged_value['color'] = $new['value']['color'];
+			}
+
+			if ( isset( $new['value']['background-overlay'] ) ) {
+				if ( isset( $merged_value['background-overlay'] ) ) {
+					$merged_value['background-overlay'] = $this->merge_background_overlay(
+						$merged_value['background-overlay'],
+						$new['value']['background-overlay']
+					);
+				} else {
+					$merged_value['background-overlay'] = $new['value']['background-overlay'];
+				}
+			}
+		}
+
+		return [
+			'$$type' => 'background',
+			'value'  => $merged_value,
+		];
+	}
+
+	/**
+	 * Merge two background overlay props.
+	 *
+	 * Combines overlay arrays, merging image overlays when possible.
+	 *
+	 * @param array $existing Existing overlay prop.
+	 * @param array $new      New overlay prop to merge.
+	 * @return array The merged overlay prop.
+	 */
+	private function merge_background_overlay( array $existing, array $new ): array {
+		$existing_value = $existing['value'] ?? [];
+		$new_value = $new['value'] ?? [];
+
+		if ( empty( $existing_value ) ) {
+			return $new;
+		}
+
+		if ( empty( $new_value ) ) {
+			return $existing;
+		}
+
+		$merged_overlays = $existing_value;
+
+		foreach ( $new_value as $overlay ) {
+			if ( isset( $overlay['$$type'] ) && 'background-image-overlay' === $overlay['$$type'] ) {
+				$overlay_value = $overlay['value'] ?? [];
+				$image_value = $overlay_value['image'] ?? null;
+
+				$merged_into_existing = false;
+				foreach ( $merged_overlays as $index => $existing_overlay ) {
+					if ( isset( $existing_overlay['$$type'] ) && 'background-image-overlay' === $existing_overlay['$$type'] ) {
+						$existing_overlay_value = $existing_overlay['value'] ?? [];
+						$existing_image_value = $existing_overlay_value['image'] ?? null;
+
+						if ( $this->images_match( $image_value, $existing_image_value ) ) {
+							$merged_overlays[ $index ] = $this->merge_image_overlay( $existing_overlay, $overlay );
+							$merged_into_existing = true;
+							break;
+						}
+					}
+				}
+
+				if ( ! $merged_into_existing ) {
+					$merged_overlays[] = $overlay;
+				}
+			} else {
+				$merged_overlays[] = $overlay;
+			}
+		}
+
+		return [
+			'$$type' => 'background-overlay',
+			'value'  => $merged_overlays,
+		];
+	}
+
+	/**
+	 * Check if two image values match.
+	 *
+	 * @param array|null $image1 First image value.
+	 * @param array|null $image2 Second image value.
+	 * @return bool True if images match.
+	 */
+	private function images_match( ?array $image1, ?array $image2 ): bool {
+		if ( null === $image1 || null === $image2 ) {
+			return false;
+		}
+
+		$src1 = $image1['value']['src'] ?? null;
+		$src2 = $image2['value']['src'] ?? null;
+
+		if ( null === $src1 || null === $src2 ) {
+			return false;
+		}
+
+		$url1 = $src1['value']['url'] ?? $src1['value']['id'] ?? null;
+		$url2 = $src2['value']['url'] ?? $src2['value']['id'] ?? null;
+
+		return $url1 === $url2;
+	}
+
+	/**
+	 * Merge two image overlay props.
+	 *
+	 * Merges repeat, size, position, and attachment properties.
+	 *
+	 * @param array $existing Existing image overlay.
+	 * @param array $new      New image overlay to merge.
+	 * @return array The merged image overlay.
+	 */
+	private function merge_image_overlay( array $existing, array $new ): array {
+		$existing_value = $existing['value'] ?? [];
+		$new_value = $new['value'] ?? [];
+
+		$merged_value = $existing_value;
+
+		if ( isset( $new_value['repeat'] ) ) {
+			$merged_value['repeat'] = $new_value['repeat'];
+		}
+
+		if ( isset( $new_value['size'] ) ) {
+			$merged_value['size'] = $new_value['size'];
+		}
+
+		if ( isset( $new_value['position'] ) ) {
+			$merged_value['position'] = $new_value['position'];
+		}
+
+		if ( isset( $new_value['attachment'] ) ) {
+			$merged_value['attachment'] = $new_value['attachment'];
+		}
+
+		return [
+			'$$type' => 'background-image-overlay',
+			'value'  => $merged_value,
+		];
 	}
 
 	/**

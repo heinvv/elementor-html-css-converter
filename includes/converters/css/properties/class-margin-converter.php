@@ -67,6 +67,13 @@ class Margin_Converter extends Property_Converter_Base {
 			return Variable_Resolver::resolve( $value, 'size' );
 		}
 
+		if ( $this->is_auto_keyword( $value ) ) {
+			return Size_Prop_Type::generate( [
+				'size' => 'auto',
+				'unit' => 'custom',
+			] );
+		}
+
 		if ( $this->is_css_function( $value ) ) {
 			return Size_Prop_Type::generate( [
 				'size' => $value,
@@ -81,6 +88,10 @@ class Margin_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $parsed );
+	}
+
+	private function is_auto_keyword( string $value ): bool {
+		return 'auto' === strtolower( trim( $value ) );
 	}
 
 	private function is_css_function( string $value ): bool {
