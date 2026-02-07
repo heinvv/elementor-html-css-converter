@@ -116,7 +116,13 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 				if ( ! isset( $widget_data['settings'] ) ) {
 					$widget_data['settings'] = [];
 				}
-				$widget_data['settings']['custom_css'] = $custom_css;
+
+				$existing_custom_css = $widget_data['settings']['custom_css'] ?? '';
+				if ( ! empty( $existing_custom_css ) ) {
+					$widget_data['settings']['custom_css'] = $existing_custom_css . "\n" . $custom_css;
+				} else {
+					$widget_data['settings']['custom_css'] = $custom_css;
+				}
 			}
 
 			return $widget_data;
@@ -266,7 +272,12 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 
 			$custom_css = $conversion_result['customCss'] ?? '';
 			if ( ! empty( $custom_css ) ) {
-				$widget['settings']['custom_css'] = $custom_css;
+				$existing_custom_css = $widget['settings']['custom_css'] ?? '';
+				if ( ! empty( $existing_custom_css ) ) {
+					$widget['settings']['custom_css'] = $existing_custom_css . "\n" . $custom_css;
+				} else {
+					$widget['settings']['custom_css'] = $custom_css;
+				}
 			}
 		}
 
@@ -327,13 +338,19 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 		$custom_css = $conversion_result['customCss'] ?? '';
 
 		if ( $this->has_no_converted_props( $conversion_result ) ) {
-			if ( ! empty( $custom_css ) ) {
-				if ( ! isset( $widget['settings'] ) ) {
-					$widget['settings'] = [];
-				}
+		if ( ! empty( $custom_css ) ) {
+			if ( ! isset( $widget['settings'] ) ) {
+				$widget['settings'] = [];
+			}
+
+			$existing_custom_css = $widget['settings']['custom_css'] ?? '';
+			if ( ! empty( $existing_custom_css ) ) {
+				$widget['settings']['custom_css'] = $existing_custom_css . "\n" . $custom_css;
+			} else {
 				$widget['settings']['custom_css'] = $custom_css;
 			}
-			return $this->create_success_result( $widget, $custom_css );
+		}
+		return $this->create_success_result( $widget, $custom_css );
 		}
 
 		$widget = $this->add_styles_to_widget( $widget, $conversion_result['props'] );
@@ -342,7 +359,13 @@ class Widget_Style_Applicator implements Widget_Style_Applicator_Interface {
 			if ( ! isset( $widget['settings'] ) ) {
 				$widget['settings'] = [];
 			}
-			$widget['settings']['custom_css'] = $custom_css;
+
+			$existing_custom_css = $widget['settings']['custom_css'] ?? '';
+			if ( ! empty( $existing_custom_css ) ) {
+				$widget['settings']['custom_css'] = $existing_custom_css . "\n" . $custom_css;
+			} else {
+				$widget['settings']['custom_css'] = $custom_css;
+			}
 		}
 
 		return $this->create_success_result( $widget, $custom_css );

@@ -62,8 +62,7 @@ class Class_Conversion_Service {
 						continue;
 					}
 
-					$css_string = $this->build_css_string( $properties );
-					$result     = $this->css_converter->convert( [ 'cssString' => $css_string ] );
+					$result = $this->css_converter->convert_properties( $properties );
 
 					$breakpoint_props[ $breakpoint ] = [
 						'atomic_props' => $result['props'] ?? [],
@@ -82,22 +81,6 @@ class Class_Conversion_Service {
 		}
 
 		return $converted;
-	}
-
-	/**
-	 * Build CSS string from properties array.
-	 *
-	 * @param array $properties Associative array of property => value.
-	 * @return string CSS declaration string.
-	 */
-	private function build_css_string( array $properties ): string {
-		$css_parts = [];
-
-		foreach ( $properties as $property => $value ) {
-			$css_parts[] = sprintf( '%s: %s;', $property, $value );
-		}
-
-		return implode( ' ', $css_parts );
 	}
 
 	/**

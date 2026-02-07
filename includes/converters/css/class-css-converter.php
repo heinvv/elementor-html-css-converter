@@ -60,14 +60,13 @@ class Css_Converter {
 	 * Convert an array of CSS properties to atomic format.
 	 *
 	 * This is the public entry point for converting pre-parsed CSS properties.
-	 * Used by Atomic_Data_Parser to avoid duplicating conversion logic.
+	 * Used by Atomic_Data_Parser and Class_Conversion_Service to ensure consistent conversion logic.
 	 *
 	 * @param array $properties Associative array of property => value.
-	 * @return array Atomic props (without 'props' wrapper).
+	 * @return array Result with 'props' and optionally 'customCss'.
 	 */
 	public function convert_properties( array $properties ): array {
-		$result = $this->convert_properties_to_atomic( $properties );
-		return $result['props'] ?? [];
+		return $this->convert_properties_to_atomic( $properties );
 	}
 
 	/**
@@ -255,14 +254,22 @@ class Css_Converter {
 	/**
 	 * Format unsupported properties back into CSS string.
 	 *
+	 * Returns raw CSS declarations without selector wrapper.
+	 * The atomic widget renderer will wrap this in the appropriate selector.
+	 *
 	 * @param array $properties Associative array of property => value.
-	 * @return string CSS string.
+	 * @return string Raw CSS declarations.
 	 */
 	private function format_custom_css( array $properties ): string {
+		if ( empty( $properties ) ) {
+			return '';
+		}
+
 		$css_parts = [];
 		foreach ( $properties as $property => $value ) {
 			$css_parts[] = sprintf( '%s: %s;', $property, $value );
 		}
+
 		return implode( ' ', $css_parts );
 	}
 

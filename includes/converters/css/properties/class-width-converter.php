@@ -20,8 +20,14 @@ class Width_Converter extends Property_Converter_Base {
 	private const KEYWORD_VALUES = [
 		'auto'        => [ 'size' => 'auto', 'unit' => 'custom' ],
 		'fit-content' => [ 'size' => 'fit-content', 'unit' => 'custom' ],
+		'-moz-fit-content' => [ 'size' => 'fit-content', 'unit' => 'custom' ],
+		'-webkit-fit-content' => [ 'size' => 'fit-content', 'unit' => 'custom' ],
 		'max-content' => [ 'size' => 'max-content', 'unit' => 'custom' ],
+		'-moz-max-content' => [ 'size' => 'max-content', 'unit' => 'custom' ],
+		'-webkit-max-content' => [ 'size' => 'max-content', 'unit' => 'custom' ],
 		'min-content' => [ 'size' => 'min-content', 'unit' => 'custom' ],
+		'-moz-min-content' => [ 'size' => 'min-content', 'unit' => 'custom' ],
+		'-webkit-min-content' => [ 'size' => 'min-content', 'unit' => 'custom' ],
 	];
 
 	private const UNSUPPORTED_KEYWORDS = [ 'inherit', 'initial', 'unset', 'revert', 'revert-layer' ];

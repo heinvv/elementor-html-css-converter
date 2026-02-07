@@ -87,6 +87,20 @@ class Border_Radius_Converter extends Property_Converter_Base {
 			return Variable_Resolver::resolve( $value, 'size' );
 		}
 
+		if ( $this->is_css_function( $value ) ) {
+			return Size_Prop_Type::generate( [
+				'size' => $value,
+				'unit' => 'custom',
+			] );
+		}
+
+		if ( $this->is_zero_value( $value ) ) {
+			return Size_Prop_Type::generate( [
+				'size' => 0.0,
+				'unit' => 'px',
+			] );
+		}
+
 		$parsed = Size_Value_Parser::parse( $value );
 
 		if ( null === $parsed ) {
@@ -94,6 +108,18 @@ class Border_Radius_Converter extends Property_Converter_Base {
 		}
 
 		return Size_Prop_Type::generate( $parsed );
+	}
+
+	private function is_zero_value( string $value ): bool {
+		return '0' === $value || '0px' === strtolower( $value );
+	}
+
+	private function is_css_function( string $value ): bool {
+		$value_lower = strtolower( $value );
+		return str_starts_with( $value_lower, 'max(' ) ||
+			str_starts_with( $value_lower, 'min(' ) ||
+			str_starts_with( $value_lower, 'clamp(' ) ||
+			str_starts_with( $value_lower, 'calc(' );
 	}
 
 	private function contains_elliptical_syntax( string $value ): bool {
@@ -123,8 +149,8 @@ class Border_Radius_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_shorthand_border_radius( string $value ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
-		$values = array_filter( $values );
+		$values = $this->split_shorthand_value( trim( $value ) );
+		$values = array_filter( $values, fn( $v ) => '' !== trim( $v ) );
 
 		if ( empty( $values ) ) {
 			return null;
@@ -192,6 +218,38 @@ class Border_Radius_Converter extends Property_Converter_Base {
 
 	private function map_logical_to_physical( string $property ): string {
 		return self::LOGICAL_TO_PHYSICAL_MAPPING[ $property ] ?? $property;
+	}
+
+	private function split_shorthand_value( string $value ): array {
+		$values = [];
+		$current = '';
+		$depth = 0;
+		$length = strlen( $value );
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$char = $value[ $i ];
+
+			if ( '(' === $char ) {
+				$depth++;
+				$current .= $char;
+			} elseif ( ')' === $char ) {
+				$depth--;
+				$current .= $char;
+			} elseif ( preg_match( '/\s/', $char ) && 0 === $depth ) {
+				if ( '' !== trim( $current ) ) {
+					$values[] = trim( $current );
+					$current = '';
+				}
+			} else {
+				$current .= $char;
+			}
+		}
+
+		if ( '' !== trim( $current ) ) {
+			$values[] = trim( $current );
+		}
+
+		return $values;
 	}
 }
 

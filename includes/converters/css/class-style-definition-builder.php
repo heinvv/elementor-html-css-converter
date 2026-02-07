@@ -94,14 +94,16 @@ class Style_Definition_Builder {
 	 * @param array       $atomic_props The converted atomic properties.
 	 * @param string|null $state        The CSS state (hover, active, focus, etc.).
 	 * @param string      $breakpoint   The breakpoint.
+	 * @param string|null $custom_css   Optional custom CSS string.
 	 * @return array The variant array.
 	 */
 	public function create_variant(
 		array $atomic_props,
 		?string $state = null,
-		string $breakpoint = self::DEFAULT_BREAKPOINT
+		string $breakpoint = self::DEFAULT_BREAKPOINT,
+		?string $custom_css = null
 	): array {
-		return [
+		$variant = [
 			'meta'       => [
 				'breakpoint' => $breakpoint,
 				'state'      => $state,
@@ -109,6 +111,16 @@ class Style_Definition_Builder {
 			'props'      => $atomic_props,
 			'custom_css' => null,
 		];
+
+		if ( ! empty( $custom_css ) ) {
+			$variant['custom_css'] = [
+				'raw' => class_exists( '\Elementor\Utils' )
+					? \Elementor\Utils::encode_string( $custom_css )
+					: base64_encode( $custom_css ),
+			];
+		}
+
+		return $variant;
 	}
 
 	/**
@@ -140,7 +152,7 @@ class Style_Definition_Builder {
 	 * Build style definition with multiple breakpoints.
 	 *
 	 * @param array  $breakpoint_props Breakpoint-aware atomic properties.
-	 *                                  Format: ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]
+	 *                                  Format: ['desktop' => ['atomic_props' => [...], 'custom_css' => '...'], ...]
 	 * @param string $class_id         Class ID to use as style ID (should match widget settings.classes value).
 	 * @return array Style definition with multiple variants.
 	 */
@@ -150,9 +162,11 @@ class Style_Definition_Builder {
 		$variants = [];
 
 		if ( isset( $breakpoint_props['desktop'] ) ) {
-			$desktop_props = $breakpoint_props['desktop'];
-			if ( ! empty( $desktop_props ) ) {
-				$variants[] = $this->create_variant( $desktop_props, null, 'desktop' );
+			$desktop_data = $breakpoint_props['desktop'];
+			$desktop_props = $desktop_data['atomic_props'] ?? ( is_array( $desktop_data ) && ! isset( $desktop_data['atomic_props'] ) ? $desktop_data : [] );
+			$desktop_css = $desktop_data['custom_css'] ?? null;
+			if ( ! empty( $desktop_props ) || ! empty( $desktop_css ) ) {
+				$variants[] = $this->create_variant( $desktop_props, null, 'desktop', $desktop_css );
 			}
 		}
 
@@ -160,9 +174,11 @@ class Style_Definition_Builder {
 
 		foreach ( $breakpoint_order as $breakpoint ) {
 			if ( isset( $breakpoint_props[ $breakpoint ] ) ) {
-				$breakpoint_props_data = $breakpoint_props[ $breakpoint ];
-				if ( ! empty( $breakpoint_props_data ) ) {
-					$variants[] = $this->create_variant( $breakpoint_props_data, null, $breakpoint );
+				$breakpoint_data = $breakpoint_props[ $breakpoint ];
+				$breakpoint_props_data = $breakpoint_data['atomic_props'] ?? ( is_array( $breakpoint_data ) && ! isset( $breakpoint_data['atomic_props'] ) ? $breakpoint_data : [] );
+				$breakpoint_css = $breakpoint_data['custom_css'] ?? null;
+				if ( ! empty( $breakpoint_props_data ) || ! empty( $breakpoint_css ) ) {
+					$variants[] = $this->create_variant( $breakpoint_props_data, null, $breakpoint, $breakpoint_css );
 				}
 			}
 		}

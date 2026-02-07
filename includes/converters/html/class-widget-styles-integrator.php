@@ -66,6 +66,8 @@ class Widget_Styles_Integrator {
 			$widget           = $this->add_class_reference_to_widget( $widget, $class_id );
 		}
 
+		$widget = $this->apply_custom_css_to_widget_settings( $widget, $breakpoint_props );
+
 		return $widget;
 	}
 
@@ -169,6 +171,44 @@ class Widget_Styles_Integrator {
 	 */
 	public function extract_breakpoint_props_from_widget_data( array $widget_data ): array {
 		return $widget_data['breakpoint_props'] ?? [];
+	}
+
+	/**
+	 * Apply custom CSS from breakpoint_props to widget settings.
+	 *
+	 * Merges custom_css from all breakpoints into widget settings.
+	 *
+	 * @param array $widget          Widget structure.
+	 * @param array $breakpoint_props Breakpoint-aware properties with custom_css.
+	 * @return array Widget with custom_css applied to settings.
+	 */
+	private function apply_custom_css_to_widget_settings( array $widget, array $breakpoint_props ): array {
+		$all_custom_css = [];
+
+		foreach ( $breakpoint_props as $breakpoint => $breakpoint_data ) {
+			if ( is_array( $breakpoint_data ) && isset( $breakpoint_data['custom_css'] ) && ! empty( $breakpoint_data['custom_css'] ) ) {
+				$all_custom_css[] = $breakpoint_data['custom_css'];
+			}
+		}
+
+		if ( empty( $all_custom_css ) ) {
+			return $widget;
+		}
+
+		if ( ! isset( $widget['settings'] ) ) {
+			$widget['settings'] = [];
+		}
+
+		$merged_custom_css = implode( "\n", $all_custom_css );
+		$existing_custom_css = $widget['settings']['custom_css'] ?? '';
+
+		if ( ! empty( $existing_custom_css ) ) {
+			$widget['settings']['custom_css'] = $existing_custom_css . "\n" . $merged_custom_css;
+		} else {
+			$widget['settings']['custom_css'] = $merged_custom_css;
+		}
+
+		return $widget;
 	}
 
 	/**

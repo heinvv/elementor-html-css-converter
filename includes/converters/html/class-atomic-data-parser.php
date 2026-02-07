@@ -303,7 +303,10 @@ class Atomic_Data_Parser {
 		}
 
 		if ( empty( $breakpoint_props ) ) {
-			$breakpoint_props['desktop'] = [];
+			$breakpoint_props['desktop'] = [
+				'atomic_props' => [],
+				'custom_css'   => null,
+			];
 		}
 
 		$element_classes = $this->extract_class_names( $element );
@@ -387,7 +390,10 @@ class Atomic_Data_Parser {
 		}
 
 		if ( empty( $breakpoint_props ) ) {
-			$breakpoint_props['desktop'] = [];
+			$breakpoint_props['desktop'] = [
+				'atomic_props' => [],
+				'custom_css'   => null,
+			];
 		}
 
 		$link_classes = $this->extract_class_names( $link_element );
@@ -454,7 +460,10 @@ class Atomic_Data_Parser {
 		}
 
 		if ( empty( $breakpoint_props ) ) {
-			$breakpoint_props['desktop'] = [];
+			$breakpoint_props['desktop'] = [
+				'atomic_props' => [],
+				'custom_css'   => null,
+			];
 		}
 
 		$link_classes = $this->extract_class_names( $link_element );
@@ -493,10 +502,14 @@ class Atomic_Data_Parser {
 	 * across all entry points (CSS string conversion and HTML parsing).
 	 *
 	 * @param array $styles CSS property-value pairs.
-	 * @return array Atomic props.
+	 * @return array Unified structure with 'atomic_props' and 'custom_css'.
 	 */
 	private function convert_styles_to_atomic_props( array $styles ): array {
-		return $this->css_converter->convert_properties( $styles );
+		$result = $this->css_converter->convert_properties( $styles );
+		return [
+			'atomic_props' => $result['props'] ?? [],
+			'custom_css'   => $result['customCss'] ?? null,
+		];
 	}
 
 	/**

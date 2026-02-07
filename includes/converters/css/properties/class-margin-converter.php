@@ -102,6 +102,38 @@ class Margin_Converter extends Property_Converter_Base {
 			str_starts_with( $value_lower, 'calc(' );
 	}
 
+	private function split_shorthand_value( string $value ): array {
+		$values = [];
+		$current = '';
+		$depth = 0;
+		$length = strlen( $value );
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$char = $value[ $i ];
+
+			if ( '(' === $char ) {
+				$depth++;
+				$current .= $char;
+			} elseif ( ')' === $char ) {
+				$depth--;
+				$current .= $char;
+			} elseif ( preg_match( '/\s/', $char ) && 0 === $depth ) {
+				if ( '' !== trim( $current ) ) {
+					$values[] = trim( $current );
+					$current = '';
+				}
+			} else {
+				$current .= $char;
+			}
+		}
+
+		if ( '' !== trim( $current ) ) {
+			$values[] = trim( $current );
+		}
+
+		return $values;
+	}
+
 	private function parse_margin_property( string $property, string $value ): ?array {
 		switch ( $property ) {
 			case 'margin':
@@ -147,7 +179,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_shorthand_to_logical_properties( string $value ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = $this->split_shorthand_value( trim( $value ) );
 		$count  = count( $values );
 
 		switch ( $count ) {
@@ -211,7 +243,7 @@ class Margin_Converter extends Property_Converter_Base {
 	}
 
 	private function parse_logical_shorthand( string $value, string $axis ): ?array {
-		$values = preg_split( self::REGEX_WHITESPACE_SPLIT, trim( $value ) );
+		$values = $this->split_shorthand_value( trim( $value ) );
 		$count  = count( $values );
 
 		if ( 1 === $count ) {
