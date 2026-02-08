@@ -32,12 +32,18 @@
 
 ## Playwright Scraper
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
-- [ ] Clean up CSS properties + dimensions
+- [x] Clean up CSS properties + dimensions
 - [ ] Support variables.
 - [ ] Support classes.
+- [ ] Support responsiveness.
 
 ## External Frontend
 - [ ] Create endpoint to trigger external UI.
 - [ ] Create NextJS frontend.
+
+## Integrate Playwright workflow back into Elementor
+- [ ] Create import screen.
+- [ ] Create variables import screen.
+- [ ] Create variables export screen.
 
 

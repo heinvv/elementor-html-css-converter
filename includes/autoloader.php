@@ -47,6 +47,15 @@ class Autoloader {
 		'ElementorHtmlCssConverter\Converters\Variables\Variable_Extractor' => 'includes/converters/variables/class-variable-extractor.php',
 		'ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service' => 'includes/converters/variables/class-variable-conversion-service.php',
 
+		// Import classes
+		'ElementorHtmlCssConverter\Converters\Import\Import_Rest_API' => 'includes/converters/import/class-import-rest-api.php',
+
+		// Admin classes
+		'ElementorHtmlCssConverter\Admin\Import_Settings' => 'includes/admin/class-import-settings.php',
+
+		// Editor classes
+		'ElementorHtmlCssConverter\Editor\Import_Editor' => 'includes/editor/class-import-editor.php',
+
 		// Most-used converters
 		'ElementorHtmlCssConverter\Converters\Css\Properties\Color_Converter' => 'includes/converters/css/properties/class-color-converter.php',
 		'ElementorHtmlCssConverter\Converters\Css\Properties\Background_Color_Converter' => 'includes/converters/css/properties/class-background-color-converter.php',
