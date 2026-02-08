@@ -49,17 +49,17 @@ export const useImportPolling = ({
 			try {
 				const response = await fetch(apiUrl + 'import-results/' + jobId);
 
-				if (response.status === 404) {
-					return;
-				}
-
 				if (!response.ok) {
-					throw new Error(`HTTP ${response.status}`);
+					return;
 				}
 
 				const data = await response.json();
 
-				if (data.success && data.data) {
+				if (data.status === 'pending') {
+					return;
+				}
+
+				if (data.status === 'complete' && data.data) {
 					clearInterval(interval);
 					pollIntervalRef.current = null;
 
@@ -83,14 +83,11 @@ export const useImportPolling = ({
 					}
 				}
 			} catch (error) {
-				const errorStatus = (error as { status?: number }).status;
-				if (errorStatus && errorStatus !== 404) {
-					clearInterval(interval);
-					pollIntervalRef.current = null;
-					setStatusMessage('Failed to fetch results');
-					setStatusType('error');
-					setIsLoading(false);
-				}
+				clearInterval(interval);
+				pollIntervalRef.current = null;
+				setStatusMessage('Failed to fetch results');
+				setStatusType('error');
+				setIsLoading(false);
 			}
 		}, pollInterval);
 

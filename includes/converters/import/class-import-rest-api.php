@@ -290,15 +290,17 @@ class Import_Rest_API {
 			return new WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'Results not found for job ID: ' . $job_id,
+					'status'  => 'pending',
+					'job_id'  => $job_id,
 				],
-				404
+				200
 			);
 		}
 
 		return new WP_REST_Response(
 			[
 				'success' => true,
+				'status'  => 'complete',
 				'job_id'  => $job_id,
 				'data'    => $results[ $job_id ]['data'],
 				'received' => $results[ $job_id ]['received'],
