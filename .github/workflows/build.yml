@@ -1,0 +1,86 @@
+name: Build Plugin
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'assets/js/src/**'
+      - 'package.json'
+      - 'webpack.editor.config.js'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build editor assets
+        run: npm run build:editor
+
+      - name: Get plugin version
+        id: version
+        run: |
+          VERSION=$(grep -oP "Version:\s+\K[0-9.]+" elementor-html-css-converter.php || echo "0.0.1")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Plugin version: $VERSION"
+
+      - name: Create plugin zip
+        run: |
+          PLUGIN_NAME="elementor-html-css-converter"
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="${PLUGIN_NAME}-v${VERSION}-$(date +%Y%m%d-%H%M%S).zip"
+          
+          zip -r "$ZIP_NAME" . \
+            -x "*.git*" \
+            -x "node_modules/*" \
+            -x "*.log" \
+            -x ".DS_Store" \
+            -x "dist/*" \
+            -x "build/*" \
+            -x "*.map" \
+            -x "assets/js/src/*" \
+            -x "tsconfig.json" \
+            -x "webpack.editor.config.js" \
+            -x "package.json" \
+            -x "package-lock.json" \
+            -x ".gitignore" \
+            -x "README-BUILD.md" \
+            -x "CLAUDE.md" \
+            -x "docs/*" \
+            -x "test-*.json"
+          
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "Created: $ZIP_NAME"
+          ls -lh "$ZIP_NAME"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-build
+          path: elementor-html-css-converter-v*.zip
+          retention-days: 30
+
+      - name: Create release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: elementor-html-css-converter-v*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
