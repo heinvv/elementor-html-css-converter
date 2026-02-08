@@ -15,7 +15,7 @@ export const useImportPolling = ({
 	}
 
 	const { useRef, useEffect } = ReactLib;
-	const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const pollIntervalRef = useRef(null);
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -32,11 +32,14 @@ export const useImportPolling = ({
 	const startPolling = (jobId: string) => {
 		let attempts = 0;
 		const maxAttempts = 60;
+		const pollInterval = 3000;
+
 		const interval = setInterval(async () => {
 			attempts++;
 
 			if (attempts > maxAttempts) {
 				clearInterval(interval);
+				pollIntervalRef.current = null;
 				setStatusMessage('Timeout waiting for results');
 				setStatusType('error');
 				setIsLoading(false);
@@ -45,7 +48,7 @@ export const useImportPolling = ({
 
 			try {
 				const response = await fetch(apiUrl + 'import-results/' + jobId);
-				
+
 				if (response.status === 404) {
 					return;
 				}
@@ -57,22 +60,23 @@ export const useImportPolling = ({
 				const data = await response.json();
 
 				if (data.success && data.data) {
+					clearInterval(interval);
+					pollIntervalRef.current = null;
+
 					if (data.data.status === 'success') {
-						clearInterval(interval);
 						setStatusMessage('Import completed successfully!');
 						setStatusType('success');
 						setIsLoading(false);
 						setTimeout(() => {
 							onClose();
-							if (window.elementor?.notifications) {
-								window.elementor.notifications.showToast({
+							if ((window as any).elementor?.notifications) {
+								(window as any).elementor.notifications.showToast({
 									message: 'Website imported successfully. Check results.',
 									type: 'success',
 								});
 							}
 						}, 2000);
 					} else if (data.data.status === 'error') {
-						clearInterval(interval);
 						setStatusMessage(data.data.error || 'Import failed');
 						setStatusType('error');
 						setIsLoading(false);
@@ -82,12 +86,13 @@ export const useImportPolling = ({
 				const errorStatus = (error as { status?: number }).status;
 				if (errorStatus && errorStatus !== 404) {
 					clearInterval(interval);
+					pollIntervalRef.current = null;
 					setStatusMessage('Failed to fetch results');
 					setStatusType('error');
 					setIsLoading(false);
 				}
 			}
-		}, 2000);
+		}, pollInterval);
 
 		pollIntervalRef.current = interval;
 	};
