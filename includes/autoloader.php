@@ -50,9 +50,6 @@ class Autoloader {
 		// Import classes
 		'ElementorHtmlCssConverter\Converters\Import\Import_Rest_API' => 'includes/converters/import/class-import-rest-api.php',
 
-		// Admin classes
-		'ElementorHtmlCssConverter\Admin\Import_Settings' => 'includes/admin/class-import-settings.php',
-
 		// Editor classes
 		'ElementorHtmlCssConverter\Editor\Import_Editor' => 'includes/editor/class-import-editor.php',
 

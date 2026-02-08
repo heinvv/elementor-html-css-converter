@@ -15,7 +15,6 @@ use ElementorHtmlCssConverter\Converters\Classes\Elementor_Document_Service;
 use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api;
 use ElementorHtmlCssConverter\Converters\Classes\Classes_Rest_API;
 use ElementorHtmlCssConverter\Converters\Import\Import_Rest_API;
-use ElementorHtmlCssConverter\Admin\Import_Settings;
 use ElementorHtmlCssConverter\Editor\Import_Editor;
 use ElementorHtmlCssConverter\Converters\Css\Style_Definition_Builder;
 use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
@@ -110,10 +109,6 @@ final class Plugin {
 		new Classes_Rest_API( $this->registry );
 
 		new Import_Rest_API();
-
-		if ( is_admin() ) {
-			new Import_Settings();
-		}
 
 		new Import_Editor();
 	}

@@ -21,6 +21,8 @@ class Import_Rest_API {
 	private const NAMESPACE = 'html-css-converter/v1';
 	private const RESULTS_STORAGE_OPTION = 'ehcc_import_results';
 	private const REQUEST_TOKEN_EXPIRY = 3600;
+	private const GITHUB_REPO = 'heinvv/elementor-playwright-scraper';
+	private const VERCEL_ENDPOINT = 'https://elementor-scraper-connect.vercel.app/api/trigger';
 
 	public function __construct() {
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
@@ -109,17 +111,7 @@ class Import_Rest_API {
 	}
 
 	public function trigger_import( WP_REST_Request $request ): WP_REST_Response {
-		$github_repo = get_option( 'ehcc_github_repo', '' );
-
-		if ( empty( $github_repo ) ) {
-			return new WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'GitHub repository not configured',
-				],
-				400
-			);
-		}
+		$github_repo = self::GITHUB_REPO;
 
 		$url                  = $request->get_param( 'url' );
 		$selectors            = $request->get_param( 'selectors' );
@@ -132,6 +124,10 @@ class Import_Rest_API {
 
 		if ( empty( $wordpress_website_url ) ) {
 			$wordpress_website_url = home_url();
+		}
+
+		if ( defined( 'EHCC_WEBHOOK_BASE_URL' ) && ! empty( constant( 'EHCC_WEBHOOK_BASE_URL' ) ) ) {
+			$wordpress_website_url = constant( 'EHCC_WEBHOOK_BASE_URL' );
 		}
 
 		if ( empty( $elementor_base_url ) ) {
@@ -148,7 +144,7 @@ class Import_Rest_API {
 		);
 
 		$payload = [
-			'event_type'    => 'run-import',
+			'event_type'    => 'run-scrape',
 			'client_payload' => [
 				'url'                => $url,
 				'selectors'          => $selectors,
@@ -160,15 +156,53 @@ class Import_Rest_API {
 			],
 		];
 
+		$vercel_response = wp_remote_post(
+			self::VERCEL_ENDPOINT,
+			[
+				'headers' => [
+					'Content-Type' => 'application/json',
+				],
+				'body'    => wp_json_encode( $payload ),
+				'timeout' => 30,
+			]
+		);
+
+		if ( is_wp_error( $vercel_response ) ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Failed to trigger GitHub workflow: ' . $vercel_response->get_error_message(),
+					'job_id'  => $job_id,
+				],
+				500
+			);
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $vercel_response );
+		$response_body = wp_remote_retrieve_body( $vercel_response );
+		$response_data = json_decode( $response_body, true );
+
+		if ( $response_code !== 200 ) {
+			$error_message = $response_data['message'] ?? 'Unknown error from Vercel endpoint';
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Vercel endpoint error: ' . $error_message,
+					'job_id'  => $job_id,
+					'vercel_response' => $response_data,
+				],
+				$response_code
+			);
+		}
+
 		return new WP_REST_Response(
 			[
 				'success'     => true,
-				'message'     => 'Payload prepared. GitHub API integration will be handled later.',
+				'message'     => $response_data['message'] ?? 'GitHub Actions workflow triggered',
 				'job_id'      => $job_id,
 				'github_repo' => $github_repo,
 				'webhook_url' => $webhook_url,
-				'payload'     => $payload,
-				'api_url'     => "https://api.github.com/repos/{$github_repo}/dispatches",
+				'actions_url' => $response_data['actions_url'] ?? '',
 			],
 			200
 		);
