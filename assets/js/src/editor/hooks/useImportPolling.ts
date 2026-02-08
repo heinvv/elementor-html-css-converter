@@ -76,8 +76,31 @@ export const useImportPolling = ({
 									type: 'success',
 								});
 							}
-							if (postId && (window as any).$e) {
-								(window as any).$e.run('editor/documents/open', { id: postId });
+							if (postId && (window as any).elementor) {
+								const elementor = (window as any).elementor;
+								const $e = (window as any).$e;
+								
+								if (elementor.documents) {
+									elementor.documents.invalidateCache(postId);
+								}
+								
+								if ($e && $e.run) {
+									$e.run('editor/documents/open', { id: postId }).then(() => {
+										if (elementor.reloadPreview) {
+											elementor.reloadPreview();
+										}
+									}).catch(() => {
+										if (elementor.reloadPreview) {
+											elementor.reloadPreview();
+										} else {
+											window.location.reload();
+										}
+									});
+								} else if (elementor.reloadPreview) {
+									elementor.reloadPreview();
+								} else {
+									window.location.reload();
+								}
 							}
 						}, 2000);
 					} else if (data.data.status === 'error') {
