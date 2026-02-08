@@ -48,6 +48,7 @@ export const ImportModal = ({ isOpen, onClose, apiUrl, postId }: ImportModalProp
 		setIsLoading,
 		onClose,
 		isOpen,
+		postId,
 	});
 
 	if (!polling) {

@@ -153,6 +153,7 @@ class Import_Rest_API {
 				'webhook_url'        => $webhook_url,
 				'job_id'             => $job_id,
 				'request_token'      => $request_token,
+				'post_id'            => $post_id,
 			],
 		];
 

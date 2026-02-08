@@ -5,6 +5,7 @@ export type UseImportPollingParams = {
 	setIsLoading: (loading: boolean) => void;
 	onClose: () => void;
 	isOpen: boolean;
+	postId: number | null | undefined;
 };
 
 export type UseImportSubmitParams = {

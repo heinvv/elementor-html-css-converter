@@ -8,6 +8,7 @@ export const useImportPolling = ({
 	setIsLoading,
 	onClose,
 	isOpen,
+	postId,
 }: UseImportPollingParams) => {
 	const ReactLib = getReact();
 	if (!ReactLib) {
@@ -74,6 +75,9 @@ export const useImportPolling = ({
 									message: 'Website imported successfully. Check results.',
 									type: 'success',
 								});
+							}
+							if (postId && (window as any).$e) {
+								(window as any).$e.run('editor/documents/open', { id: postId });
 							}
 						}, 2000);
 					} else if (data.data.status === 'error') {
