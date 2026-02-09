@@ -14,13 +14,6 @@ const ACTIVE_BUTTON_STYLE = {
 	},
 };
 
-const INACTIVE_BUTTON_STYLE = {
-	backgroundColor: 'transparent',
-	color: 'text.secondary',
-	border: '1px solid',
-	borderColor: 'divider',
-};
-
 export const ConflictAssessment = ({
 	assessment,
 	onConfirm,
@@ -52,6 +45,9 @@ export const ConflictAssessment = ({
 		Typography: TypographyComponent,
 		Alert: AlertComponent,
 		TextField: TextFieldComponent,
+		Radio: RadioComponent,
+		RadioGroup: RadioGroupComponent,
+		FormControlLabel: FormControlLabelComponent,
 	} = ui;
 
 	const handleChoiceChange = (variableName: string, action: ResolutionAction) => {
@@ -173,24 +169,24 @@ export const ConflictAssessment = ({
 								</BoxComponent>
 							</StackComponent>
 
-						<StackComponent direction="row" spacing={1}>
-							<ButtonComponent
-								size="small"
-								variant={choices[conflict.name] === OVERWRITE_ACTION ? 'contained' : 'outlined'}
-								onClick={() => handleChoiceChange(conflict.name, OVERWRITE_ACTION)}
-								sx={choices[conflict.name] === OVERWRITE_ACTION ? ACTIVE_BUTTON_STYLE : INACTIVE_BUTTON_STYLE}
+						{RadioGroupComponent && FormControlLabelComponent && RadioComponent && (
+							<RadioGroupComponent
+								value={choices[conflict.name]}
+								onChange={(e: any) => handleChoiceChange(conflict.name, e.target.value as ResolutionAction)}
+								sx={{ flexDirection: 'row' }}
 							>
-								Overwrite
-							</ButtonComponent>
-							<ButtonComponent
-								size="small"
-								variant={choices[conflict.name] === RENAME_ACTION ? 'contained' : 'outlined'}
-								onClick={() => handleChoiceChange(conflict.name, RENAME_ACTION)}
-								sx={choices[conflict.name] === RENAME_ACTION ? ACTIVE_BUTTON_STYLE : INACTIVE_BUTTON_STYLE}
-							>
-								Rename
-							</ButtonComponent>
-						</StackComponent>
+								<FormControlLabelComponent
+									value={OVERWRITE_ACTION}
+									control={<RadioComponent />}
+									label="Overwrite"
+								/>
+								<FormControlLabelComponent
+									value={RENAME_ACTION}
+									control={<RadioComponent />}
+									label="Rename"
+								/>
+							</RadioGroupComponent>
+						)}
 
 						{choices[conflict.name] === RENAME_ACTION && TextFieldComponent && (
 							<StackComponent direction="row" spacing={0.5} alignItems="center" sx={{ marginTop: '8px' }}>

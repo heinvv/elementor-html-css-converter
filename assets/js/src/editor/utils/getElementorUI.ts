@@ -19,6 +19,9 @@ export const getElementorUI = (): ElementorUIComponents | null => {
 	const TabsComponent = ui.Tabs;
 	const TypographyComponent = ui.Typography;
 	const IconButtonComponent = ui.IconButton;
+	const RadioComponent = ui.Radio;
+	const RadioGroupComponent = ui.RadioGroup;
+	const FormControlLabelComponent = ui.FormControlLabel;
 
 	if (!DialogComponent || !DialogContentComponent || !DialogActionsComponent ||
 		!ButtonComponent || !TextFieldComponent || !StackComponent ||
@@ -40,5 +43,8 @@ export const getElementorUI = (): ElementorUIComponents | null => {
 		Tabs: TabsComponent,
 		Typography: TypographyComponent,
 		IconButton: IconButtonComponent,
+		Radio: RadioComponent,
+		RadioGroup: RadioGroupComponent,
+		FormControlLabel: FormControlLabelComponent,
 	};
 };

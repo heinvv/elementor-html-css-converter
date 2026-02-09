@@ -17,6 +17,7 @@ export const ImportTab = ({
 	setStatusMessage,
 	statusType,
 	setStatusType,
+	onClose,
 }: ImportTabProps) => {
 	const React = getReact();
 	const ui = getElementorUI();
@@ -167,7 +168,7 @@ export const ImportTab = ({
 					rows={10}
 					value={importText}
 					onChange={(e: any) => setImportText(e.target.value)}
-					placeholder={`:root {\n\t--primary-color: #ff0000;\n\t--spacing-large: 24px;\n}`}
+					placeholder={`--primary-color: #ff0000;\n--spacing-large: 24px;`}
 					disabled={isLoading}
 					sx={{
 						'& .MuiInputBase-input': {
@@ -232,17 +233,36 @@ export const ImportTab = ({
 				</BoxComponent>
 			)}
 			{importSucceeded && (
-				<ButtonComponent
-					variant="outlined"
-					size="small"
-					onClick={() => {
-						setStatusMessage(null);
-						setStatusType(null);
-						setImportedVariables(null);
-					}}
-				>
-					Import More
-				</ButtonComponent>
+				<StackComponent direction="row" spacing={1}>
+					<ButtonComponent
+						variant="outlined"
+						size="small"
+						onClick={() => {
+							setStatusMessage(null);
+							setStatusType(null);
+							setImportedVariables(null);
+						}}
+						sx={{ width: '50%' }}
+					>
+						Import More
+					</ButtonComponent>
+					<ButtonComponent
+						variant="contained"
+						size="small"
+						onClick={onClose}
+						sx={{
+							width: '50%',
+							backgroundColor: '#F3BAFD',
+							color: 'rgb(12, 13, 14)',
+							'&:hover': {
+								backgroundColor: '#e0a0ee',
+								color: 'rgb(12, 13, 14)',
+							},
+						}}
+					>
+						Close modal
+					</ButtonComponent>
+				</StackComponent>
 			)}
 		</StackComponent>
 	);

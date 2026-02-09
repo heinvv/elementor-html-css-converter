@@ -42,6 +42,7 @@ export type ImportTabProps = {
 	setStatusMessage: (message: string | null) => void;
 	statusType: 'success' | 'error' | 'info' | null;
 	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
+	onClose: () => void;
 };
 
 export type ExportTabProps = {

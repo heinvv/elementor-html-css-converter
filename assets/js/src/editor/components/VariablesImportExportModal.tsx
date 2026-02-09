@@ -210,6 +210,7 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 					setStatusMessage={setStatusMessage}
 					statusType={statusType}
 					setStatusType={setStatusType}
+					onClose={handleClose}
 				/>
 			)}
 

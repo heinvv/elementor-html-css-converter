@@ -12,6 +12,9 @@ export type ElementorUIComponents = {
 	Tabs: any;
 	Typography: any;
 	IconButton: any;
+	Radio: any;
+	RadioGroup: any;
+	FormControlLabel: any;
 };
 
 export type ModalManager = {
