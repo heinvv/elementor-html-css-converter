@@ -162,7 +162,7 @@ class Elementor_Document_Service {
 	 * @param array $elements The elements to process.
 	 * @return array The elements with IDs assigned.
 	 */
-	private function assign_ids_recursively( array $elements ): array {
+	protected function assign_ids_recursively( array $elements ): array {
 		foreach ( $elements as &$element ) {
 			if ( ! isset( $element['id'] ) || empty( $element['id'] ) ) {
 				$element['id'] = $this->generate_element_id();
@@ -362,6 +362,57 @@ class Elementor_Document_Service {
 	}
 
 	/**
+	 * Save widgets as an Elementor template in the library.
+	 *
+	 * Creates an elementor_library post directly, bypassing permission checks
+	 * for REST API requests without proper authentication.
+	 *
+	 * @param string $title   The template title.
+	 * @param array  $widgets Array of widget data to save.
+	 * @return int|false Template ID on success, false on failure.
+	 */
+	public function save_as_template( string $title, array $widgets ): int|false {
+		if ( ! $this->is_elementor_available() ) {
+			return false;
+		}
+
+		$template_id = wp_insert_post( [
+			'post_title'  => $title,
+			'post_status' => 'publish',
+			'post_type'   => 'elementor_library',
+		] );
+
+		if ( is_wp_error( $template_id ) || ! $template_id ) {
+			return false;
+		}
+
+		foreach ( $widgets as &$widget ) {
+			$widget['id'] = $this->generate_element_id();
+			if ( ! empty( $widget['elements'] ) ) {
+				$widget['elements'] = $this->assign_ids_recursively( $widget['elements'] );
+			}
+		}
+		unset( $widget );
+
+		$editor_data = $this->get_elements_raw_data( $widgets );
+		$json_value  = wp_slash( wp_json_encode( $editor_data ) );
+
+		if ( false === $json_value ) {
+			wp_delete_post( $template_id, true );
+			return false;
+		}
+
+		update_metadata( 'post', $template_id, '_elementor_data', $json_value );
+		update_post_meta( $template_id, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $template_id, '_elementor_template_type', 'page' );
+		update_post_meta( $template_id, '_elementor_version', ELEMENTOR_VERSION );
+
+		wp_set_object_terms( $template_id, 'page', 'elementor_library_type' );
+
+		return $template_id;
+	}
+
+	/**
 	 * Generate a unique element ID.
 	 *
 	 * @return string The generated ID.
@@ -458,7 +509,7 @@ class Elementor_Document_Service {
 	 * @param array $elements The elements.
 	 * @return array The processed elements.
 	 */
-	private function get_elements_raw_data( array $elements ): array {
+	protected function get_elements_raw_data( array $elements ): array {
 		$editor_data = [];
 
 		foreach ( $elements as $element_data ) {

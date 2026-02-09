@@ -104,6 +104,23 @@ class Import_Rest_API {
 				],
 			]
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/template/(?P<id>\d+)',
+			[
+				'methods'             => 'DELETE',
+				'callback'            => [ $this, 'delete_template' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
 	}
 
 	public function validate_url( $param ): bool {
@@ -153,7 +170,8 @@ class Import_Rest_API {
 				'webhook_url'        => $webhook_url,
 				'job_id'             => $job_id,
 				'request_token'      => $request_token,
-				'post_id'            => $post_id,
+				'post_id'            => 0,
+				'save_as_template'  => true,
 			],
 		];
 
@@ -305,6 +323,52 @@ class Import_Rest_API {
 				'job_id'  => $job_id,
 				'data'    => $results[ $job_id ]['data'],
 				'received' => $results[ $job_id ]['received'],
+			],
+			200
+		);
+	}
+
+	public function delete_template( WP_REST_Request $request ): WP_REST_Response {
+		$template_id = $request->get_param( 'id' );
+
+		$post = get_post( $template_id );
+
+		if ( ! $post ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Template not found',
+				],
+				404
+			);
+		}
+
+		if ( 'elementor_library' !== $post->post_type ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Post is not an Elementor template',
+				],
+				400
+			);
+		}
+
+		$deleted = wp_delete_post( $template_id, true );
+
+		if ( false === $deleted ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Failed to delete template',
+				],
+				500
+			);
+		}
+
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'message' => 'Template deleted',
 			],
 			200
 		);

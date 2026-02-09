@@ -600,6 +600,13 @@ class Rest_Api {
 						'default'           => 'draft',
 						'sanitize_callback' => 'sanitize_text_field',
 					],
+					'save_as_template' => [
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'description'       => 'Save converted widgets as an Elementor template instead of creating/updating a post',
+					],
 				],
 			]
 		);
@@ -623,10 +630,11 @@ class Rest_Api {
 		$import_classes   = $request->get_param( 'import_classes' ) ?? true;
 		$import_images    = $request->get_param( 'import_images' ) ?? true;
 		$update_mode      = $request->get_param( 'update_mode' ) ?? 'create_new';
-		$post_id          = (int) ( $request->get_param( 'postId' ) ?? 0 );
-		$widget_id        = $request->get_param( 'widgetId' ) ?? '';
-		$post_title       = $request->get_param( 'postTitle' ) ?? 'Converted HTML';
-		$post_status      = $request->get_param( 'postStatus' ) ?? 'draft';
+		$post_id           = (int) ( $request->get_param( 'postId' ) ?? 0 );
+		$widget_id         = $request->get_param( 'widgetId' ) ?? '';
+		$post_title        = $request->get_param( 'postTitle' ) ?? 'Converted HTML';
+		$post_status       = $request->get_param( 'postStatus' ) ?? 'draft';
+		$save_as_template  = $request->get_param( 'save_as_template' ) ?? false;
 
 		$options['css_variables']    = $css_variables;
 		$options['import_variables'] = $import_variables;
@@ -637,6 +645,21 @@ class Rest_Api {
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
 
 		if ( ! $result['success'] || empty( $result['widgets'] ) ) {
+			return rest_ensure_response( $result );
+		}
+
+		if ( $save_as_template ) {
+			$template_id = $this->document_service->save_as_template( $post_title, $result['widgets'] );
+
+			if ( false === $template_id ) {
+				return rest_ensure_response( [
+					'success' => false,
+					'error'   => 'Failed to save widgets as template.',
+					'widgets' => $result['widgets'],
+				] );
+			}
+
+			$result['template_id'] = $template_id;
 			return rest_ensure_response( $result );
 		}
 

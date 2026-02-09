@@ -65,44 +65,59 @@ export const useImportPolling = ({
 					pollIntervalRef.current = null;
 
 					if (data.data.status === 'success') {
-						setStatusMessage('Import completed successfully!');
-						setStatusType('success');
-						setIsLoading(false);
-						setTimeout(() => {
-							onClose();
-							if ((window as any).elementor?.notifications) {
-								(window as any).elementor.notifications.showToast({
-									message: 'Website imported successfully. Check results.',
-									type: 'success',
+						const templateId = data.data.results?.converter?.template_id;
+						
+						if (templateId) {
+							const elementorCommon = (window as any).elementorCommon;
+							const $e = (window as any).$e;
+
+							if (elementorCommon && elementorCommon.ajax && $e && $e.run) {
+								elementorCommon.ajax.addRequest('get_template_data', {
+									data: {
+										source: 'local',
+										edit_mode: true,
+										display: true,
+										template_id: templateId,
+									},
+									success: (templateData: any) => {
+										$e.run('document/elements/import', {
+											model: new (window as any).Backbone.Model({ title: 'Imported' }),
+											data: templateData,
+											options: { withPageSettings: false },
+										});
+
+										fetch(apiUrl + 'template/' + templateId, { method: 'DELETE' }).catch(() => {
+										});
+
+										setStatusMessage('Import completed successfully!');
+										setStatusType('success');
+										setIsLoading(false);
+										setTimeout(() => {
+											onClose();
+											if ((window as any).elementor?.notifications) {
+												(window as any).elementor.notifications.showToast({
+													message: 'Website imported successfully.',
+													type: 'success',
+												});
+											}
+										}, 2000);
+									},
+									error: () => {
+										setStatusMessage('Failed to load template data');
+										setStatusType('error');
+										setIsLoading(false);
+									},
 								});
+							} else {
+								setStatusMessage('Elementor editor not available');
+								setStatusType('error');
+								setIsLoading(false);
 							}
-							if (postId && (window as any).elementor) {
-								const elementor = (window as any).elementor;
-								const $e = (window as any).$e;
-								
-								if (elementor.documents) {
-									elementor.documents.invalidateCache(postId);
-								}
-								
-								if ($e && $e.run) {
-									$e.run('editor/documents/open', { id: postId }).then(() => {
-										if (elementor.reloadPreview) {
-											elementor.reloadPreview();
-										}
-									}).catch(() => {
-										if (elementor.reloadPreview) {
-											elementor.reloadPreview();
-										} else {
-											window.location.reload();
-										}
-									});
-								} else if (elementor.reloadPreview) {
-									elementor.reloadPreview();
-								} else {
-									window.location.reload();
-								}
-							}
-						}, 2000);
+						} else {
+							setStatusMessage('Import completed but no template ID found');
+							setStatusType('error');
+							setIsLoading(false);
+						}
 					} else if (data.data.status === 'error') {
 						setStatusMessage(data.data.error || 'Import failed');
 						setStatusType('error');
