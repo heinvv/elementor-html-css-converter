@@ -1,6 +1,7 @@
 import { getReact } from '../../utils/getReact';
 import { getElementorUI } from '../../utils/getElementorUI';
 import { ImportTabProps } from '../../types/components';
+import { syncElementorVariablesToLocalStorage } from '../../utils/syncElementorVariables';
 
 export const ImportTab = ({
 	apiUrl,
@@ -66,6 +67,7 @@ export const ImportTab = ({
 				setStatusType('success');
 				setImportText('');
 
+				await syncElementorVariablesToLocalStorage(apiUrl);
 				window.dispatchEvent(new Event('variables:updated'));
 			} else {
 				setStatusMessage(data.error || data.message || 'Import failed.');
