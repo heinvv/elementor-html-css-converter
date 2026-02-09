@@ -26,6 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Variables_Rest_API {
 
 	private const REGEX_LABEL_WITH_SUFFIX = '/^%s-\d+$/';
+	private const REGEX_LABEL_WITH_ANY_SUFFIX = '/^%s-.+$/';
 
 	/**
 	 * Constructor.
@@ -493,6 +494,7 @@ class Variables_Rest_API {
 		$existing  = isset( $db_record['data'] ) && is_array( $db_record['data'] ) ? $db_record['data'] : [];
 
 		$base_label_lower = strtolower( $base_label );
+		$base_label_quoted = preg_quote( $base_label_lower, '/' );
 
 		foreach ( $existing as $id => $item ) {
 			if ( isset( $item['deleted'] ) && $item['deleted'] ) {
@@ -503,12 +505,17 @@ class Variables_Rest_API {
 				continue;
 			}
 
+			if ( $item['value'] !== $value ) {
+				continue;
+			}
+
 			$item_label_lower = strtolower( $item['label'] );
 
 			$matches_base = $item_label_lower === $base_label_lower;
-			$matches_with_suffix = preg_match( sprintf( self::REGEX_LABEL_WITH_SUFFIX, preg_quote( $base_label_lower, '/' ) ), $item_label_lower );
+			$matches_with_numeric_suffix = preg_match( sprintf( self::REGEX_LABEL_WITH_SUFFIX, $base_label_quoted ), $item_label_lower );
+			$matches_with_any_suffix = preg_match( sprintf( self::REGEX_LABEL_WITH_ANY_SUFFIX, $base_label_quoted ), $item_label_lower );
 
-			if ( ( $matches_base || $matches_with_suffix ) && $item['value'] === $value ) {
+			if ( $matches_base || $matches_with_numeric_suffix || $matches_with_any_suffix ) {
 				return [
 					'id'    => $id,
 					'label' => $item['label'],
