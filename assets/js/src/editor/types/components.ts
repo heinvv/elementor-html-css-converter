@@ -51,3 +51,36 @@ export type ExportTabProps = {
 	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
 };
 
+export type ParsedCssVariable = {
+	name: string;
+	value: string;
+};
+
+export type ResolutionAction = 'overwrite' | 'rename' | 'reactivate' | 'skip' | 'create';
+
+export type ConflictVariable = {
+	name: string;
+	label: string;
+	currentValue: string;
+	newValue: string;
+};
+
+export type AssessmentResult = {
+	conflicts: ConflictVariable[];
+	autoResolutions: Record<string, ResolutionAction>;
+	newCount: number;
+	skipCount: number;
+	reactivateCount: number;
+	hasConflicts: boolean;
+};
+
+export type ConflictAssessmentProps = {
+	assessment: AssessmentResult;
+	onConfirm: (
+		resolutions: Record<string, ResolutionAction>,
+		renameMap: Record<string, string>,
+	) => void;
+	onCancel: () => void;
+	isLoading: boolean;
+};
+

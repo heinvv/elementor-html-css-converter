@@ -361,9 +361,9 @@ See [test-variables-integration.md](../tests/test-variables-integration.md) for 
 The `css_variables` parameter provides a flexible, clean way to supply CSS variables to the conversion process. It complements the existing HTML extraction method and enables powerful integration scenarios with CMSs, theme systems, and design tools.
 
 **Key Points:**
-- ✅ Optional parameter (backward compatible)
-- ✅ Raw CSS variable format (no selectors needed)
-- ✅ Combines with HTML extraction
-- ✅ Value-aware deduplication
-- ✅ Undefined variable warnings
-- ✅ Same import logic as `/import-variables` endpoint
+- [OK] Optional parameter (backward compatible)
+- [OK] Raw CSS variable format (no selectors needed)
+- [OK] Combines with HTML extraction
+- [OK] Value-aware deduplication
+- [OK] Undefined variable warnings
+- [OK] Same import logic as `/import-variables` endpoint

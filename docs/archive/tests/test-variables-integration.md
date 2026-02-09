@@ -513,12 +513,12 @@ curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/convert-html"
 
 ## Success Criteria
 
-✅ **Phase 1 Complete:**
+[OK] **Phase 1 Complete:**
 - All var() references accepted (not rejected)
 - Color and size properties handle var() correctly
 - No customCss fallback for var() values
 
-✅ **Phase 2 Complete:**
+[OK] **Phase 2 Complete:**
 - Variables extracted from ALL selectors in <style> tags
 - Direct css_variables parameter supported
 - Both sources can be combined

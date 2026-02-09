@@ -141,7 +141,7 @@ The PSR-4 autoloader in `includes/class-autoloader.php` uses namespace-to-path m
 
 ## Implementation Steps
 
-1. ✅ Create refactoring plan (this document)
+1. [OK] Create refactoring plan (this document)
 2. Find all files that import from old namespaces
 3. Move directories to new location
 4. Update namespaces in moved files

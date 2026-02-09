@@ -29,46 +29,46 @@ This plan provides a complete mapping of all property mappers from the css-conve
 
 | # | Mapper File | CSS Properties | Prop Type Output | Status |
 |---|-------------|----------------|------------------|--------|
-| 1 | `background-property-mapper.php` | `background`, `background-image` | `Background_Prop_Type` | ✅ IMPLEMENTED (gradients, images) |
-| 2 | `background-color-property-mapper.php` | `background-color` | `Background_Prop_Type` (nested Color) | ✅ IMPLEMENTED |
-| 3 | `color-property-mapper.php` | `color` | `Color_Prop_Type` | ✅ IMPLEMENTED |
-| 4 | `padding-property-mapper.php` | `padding` (shorthand) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
-| 5 | `atomic-padding-property-mapper.php` | `padding-*` (all variants) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
-| 6 | `margin-property-mapper.php` | `margin`, `margin-*` (all variants) | `Dimensions_Prop_Type` | ✅ IMPLEMENTED |
-| 7 | `width-property-mapper.php` | `width`, `min-width`, `max-width` | `Size_Prop_Type` | ✅ IMPLEMENTED (keywords, calc) |
-| 8 | `height-property-mapper.php` | `height`, `min-height`, `max-height` | `Size_Prop_Type` | ✅ IMPLEMENTED (keywords, calc) |
-| 9 | `font-size-property-mapper.php` | `font-size` | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 10 | `display-property-mapper.php` | `display` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
-| 11 | `position-property-mapper.php` | `position` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
-| 12 | `flex-direction-property-mapper.php` | `flex-direction` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
-| 13 | `flex-properties-mapper.php` | `justify-content`, `align-items`, `align-content`, `align-self`, `flex-wrap`, `gap`, `row-gap`, `column-gap`, `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order` | Various | ✅ IMPLEMENTED (all properties) |
-| 14 | `border-property-mapper.php` | `border`, `border-top/right/bottom/left` | Multiple props | ✅ IMPLEMENTED (expands to border-width/style/color) |
-| 15 | `border-radius-property-mapper.php` | `border-radius`, `border-*-*-radius` (all corners) | `Border_Radius_Prop_Type` | ✅ IMPLEMENTED |
-| 16 | `border-width-property-mapper.php` | (via border shorthand) | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 17 | `border-color-property-mapper.php` | (via border shorthand) | `Color_Prop_Type` | ✅ IMPLEMENTED |
-| 18 | `border-style-property-mapper.php` | (via border shorthand) | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 19 | `box-shadow-property-mapper.php` | `box-shadow` | `Box_Shadow_Prop_Type` | ✅ IMPLEMENTED |
-| 20 | `text-shadow-property-mapper.php` | `text-shadow` | Similar to box-shadow | ⚠️ NOT SUPPORTED (no Elementor prop type) |
-| 21 | `opacity-property-mapper.php` | `opacity` | `Size_Prop_Type` (%) | ✅ IMPLEMENTED |
-| 22 | `font-weight-property-mapper.php` | `font-weight` | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 23 | `font-style-property-mapper.php` | `font-style` | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 24 | `text-align-property-mapper.php` | `text-align` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
-| 25 | `line-height-property-mapper.php` | `line-height` | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 26 | `letter-spacing-property-mapper.php` | `letter-spacing` | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 27 | `word-spacing-property-mapper.php` | `word-spacing` | `Size_Prop_Type` | ✅ IMPLEMENTED |
-| 28 | `text-transform-property-mapper.php` | `text-transform` | `String_Prop_Type` (enum) | ✅ IMPLEMENTED |
-| 29 | `text-decoration-property-mapper.php` | `text-decoration` | `String_Prop_Type` | ✅ IMPLEMENTED |
-| 30 | `transform-property-mapper.php` | `transform`, `transform-origin`, `perspective` | `Transform_Prop_Type` | ✅ IMPLEMENTED |
-| 31 | `positioning-property-mapper.php` | `top`, `right`, `bottom`, `left`, `z-index`, `inset-*` | `Size_Prop_Type`, `Number_Prop_Type` | ✅ IMPLEMENTED |
+| 1 | `background-property-mapper.php` | `background`, `background-image` | `Background_Prop_Type` | [OK] IMPLEMENTED (gradients, images) |
+| 2 | `background-color-property-mapper.php` | `background-color` | `Background_Prop_Type` (nested Color) | [OK] IMPLEMENTED |
+| 3 | `color-property-mapper.php` | `color` | `Color_Prop_Type` | [OK] IMPLEMENTED |
+| 4 | `padding-property-mapper.php` | `padding` (shorthand) | `Dimensions_Prop_Type` | [OK] IMPLEMENTED |
+| 5 | `atomic-padding-property-mapper.php` | `padding-*` (all variants) | `Dimensions_Prop_Type` | [OK] IMPLEMENTED |
+| 6 | `margin-property-mapper.php` | `margin`, `margin-*` (all variants) | `Dimensions_Prop_Type` | [OK] IMPLEMENTED |
+| 7 | `width-property-mapper.php` | `width`, `min-width`, `max-width` | `Size_Prop_Type` | [OK] IMPLEMENTED (keywords, calc) |
+| 8 | `height-property-mapper.php` | `height`, `min-height`, `max-height` | `Size_Prop_Type` | [OK] IMPLEMENTED (keywords, calc) |
+| 9 | `font-size-property-mapper.php` | `font-size` | `Size_Prop_Type` | [OK] IMPLEMENTED |
+| 10 | `display-property-mapper.php` | `display` | `String_Prop_Type` (enum) | [OK] IMPLEMENTED |
+| 11 | `position-property-mapper.php` | `position` | `String_Prop_Type` (enum) | [OK] IMPLEMENTED |
+| 12 | `flex-direction-property-mapper.php` | `flex-direction` | `String_Prop_Type` (enum) | [OK] IMPLEMENTED |
+| 13 | `flex-properties-mapper.php` | `justify-content`, `align-items`, `align-content`, `align-self`, `flex-wrap`, `gap`, `row-gap`, `column-gap`, `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order` | Various | [OK] IMPLEMENTED (all properties) |
+| 14 | `border-property-mapper.php` | `border`, `border-top/right/bottom/left` | Multiple props | [OK] IMPLEMENTED (expands to border-width/style/color) |
+| 15 | `border-radius-property-mapper.php` | `border-radius`, `border-*-*-radius` (all corners) | `Border_Radius_Prop_Type` | [OK] IMPLEMENTED |
+| 16 | `border-width-property-mapper.php` | (via border shorthand) | `Size_Prop_Type` | [OK] IMPLEMENTED |
+| 17 | `border-color-property-mapper.php` | (via border shorthand) | `Color_Prop_Type` | [OK] IMPLEMENTED |
+| 18 | `border-style-property-mapper.php` | (via border shorthand) | `String_Prop_Type` | [OK] IMPLEMENTED |
+| 19 | `box-shadow-property-mapper.php` | `box-shadow` | `Box_Shadow_Prop_Type` | [OK] IMPLEMENTED |
+| 20 | `text-shadow-property-mapper.php` | `text-shadow` | Similar to box-shadow | [!] NOT SUPPORTED (no Elementor prop type) |
+| 21 | `opacity-property-mapper.php` | `opacity` | `Size_Prop_Type` (%) | [OK] IMPLEMENTED |
+| 22 | `font-weight-property-mapper.php` | `font-weight` | `String_Prop_Type` | [OK] IMPLEMENTED |
+| 23 | `font-style-property-mapper.php` | `font-style` | `String_Prop_Type` | [OK] IMPLEMENTED |
+| 24 | `text-align-property-mapper.php` | `text-align` | `String_Prop_Type` (enum) | [OK] IMPLEMENTED |
+| 25 | `line-height-property-mapper.php` | `line-height` | `Size_Prop_Type` | [OK] IMPLEMENTED |
+| 26 | `letter-spacing-property-mapper.php` | `letter-spacing` | `Size_Prop_Type` | [OK] IMPLEMENTED |
+| 27 | `word-spacing-property-mapper.php` | `word-spacing` | `Size_Prop_Type` | [OK] IMPLEMENTED |
+| 28 | `text-transform-property-mapper.php` | `text-transform` | `String_Prop_Type` (enum) | [OK] IMPLEMENTED |
+| 29 | `text-decoration-property-mapper.php` | `text-decoration` | `String_Prop_Type` | [OK] IMPLEMENTED |
+| 30 | `transform-property-mapper.php` | `transform`, `transform-origin`, `perspective` | `Transform_Prop_Type` | [OK] IMPLEMENTED |
+| 31 | `positioning-property-mapper.php` | `top`, `right`, `bottom`, `left`, `z-index`, `inset-*` | `Size_Prop_Type`, `Number_Prop_Type` | [OK] IMPLEMENTED |
 
 **Summary:**
-- ✅ Fully Implemented: 30 converters
-- ⚠️ Not Supported: 1 property:
+- [OK] Fully Implemented: 30 converters
+- [!] Not Supported: 1 property:
   - `text-shadow` - Elementor has no prop type
 
 ---
 
-## PHASE 1: FIX EXISTING CONVERTERS ✅ COMPLETED
+## PHASE 1: FIX EXISTING CONVERTERS [OK] COMPLETED
 
 All Phase 1 fixes have been implemented:
 
@@ -182,9 +182,9 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-## PHASE 2: HIGH PRIORITY NEW CONVERTERS ✅ COMPLETED
+## PHASE 2: HIGH PRIORITY NEW CONVERTERS [OK] COMPLETED
 
-### 2.1 Border Radius Converter ✅ COMPLETED
+### 2.1 Border Radius Converter [OK] COMPLETED
 
 **File created:** `class-border-radius-converter.php`
 
@@ -197,13 +197,13 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 2.2 Border Converter ✅ COMPLETED
+### 2.2 Border Converter [OK] COMPLETED
 
 **Files created:**
 - `class-border-converter.php` (shorthand expander)
-- `class-border-width-converter.php` ✅
-- `class-border-style-converter.php` ✅
-- `class-border-color-converter.php` ✅
+- `class-border-width-converter.php` [OK]
+- `class-border-style-converter.php` [OK]
+- `class-border-color-converter.php` [OK]
 
 **Implementation:**
 - Border shorthand is automatically expanded to multiple properties
@@ -221,7 +221,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 2.3 Box Shadow Converter ✅ COMPLETED
+### 2.3 Box Shadow Converter [OK] COMPLETED
 
 **File created:** `class-box-shadow-converter.php`
 
@@ -233,7 +233,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 2.4 Opacity Converter ✅ COMPLETED
+### 2.4 Opacity Converter [OK] COMPLETED
 
 **File created:** `class-opacity-converter.php`
 
@@ -244,9 +244,9 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-## PHASE 3: TYPOGRAPHY CONVERTERS ✅ COMPLETED
+## PHASE 3: TYPOGRAPHY CONVERTERS [OK] COMPLETED
 
-### 3.1 Font Weight Converter ✅ COMPLETED
+### 3.1 Font Weight Converter [OK] COMPLETED
 
 **File created:** `class-font-weight-converter.php`
 
@@ -258,7 +258,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.2 Text Align Converter ✅ COMPLETED
+### 3.2 Text Align Converter [OK] COMPLETED
 
 **File created:** `class-text-align-converter.php`
 
@@ -269,7 +269,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.3 Line Height Converter ✅ COMPLETED
+### 3.3 Line Height Converter [OK] COMPLETED
 
 **File created:** `class-line-height-converter.php`
 
@@ -280,7 +280,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.4 Letter Spacing Converter ✅ COMPLETED
+### 3.4 Letter Spacing Converter [OK] COMPLETED
 
 **File created:** `class-letter-spacing-converter.php`
 
@@ -291,7 +291,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.5 Word Spacing Converter ✅ COMPLETED
+### 3.5 Word Spacing Converter [OK] COMPLETED
 
 **File created:** `class-word-spacing-converter.php`
 
@@ -302,7 +302,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.6 Text Transform Converter ✅ COMPLETED
+### 3.6 Text Transform Converter [OK] COMPLETED
 
 **File created:** `class-text-transform-converter.php`
 
@@ -313,7 +313,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.7 Text Decoration Converter ✅ COMPLETED
+### 3.7 Text Decoration Converter [OK] COMPLETED
 
 **File created:** `class-text-decoration-converter.php`
 
@@ -324,7 +324,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 3.8 Font Style Converter ✅ COMPLETED
+### 3.8 Font Style Converter [OK] COMPLETED
 
 **File created:** `class-font-style-converter.php`
 
@@ -335,9 +335,9 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-## PHASE 4: POSITIONING AND EFFECTS CONVERTERS ✅ MOSTLY COMPLETED
+## PHASE 4: POSITIONING AND EFFECTS CONVERTERS [OK] MOSTLY COMPLETED
 
-### 4.1 Positioning Converter ✅ COMPLETED
+### 4.1 Positioning Converter [OK] COMPLETED
 
 **File created:** `class-positioning-converter.php`
 
@@ -350,7 +350,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 4.2 Text Shadow Converter ⚠️ NOT SUPPORTED
+### 4.2 Text Shadow Converter [!] NOT SUPPORTED
 
 **File created:** `class-text-shadow-converter.php`
 
@@ -362,7 +362,7 @@ Same as Width Converter - needs `auto`, `fit-content`, `min-content`, `max-conte
 
 ---
 
-### 4.3 Transform Converter ✅ COMPLETED
+### 4.3 Transform Converter [OK] COMPLETED
 
 **File created:** `class-transform-converter.php`
 

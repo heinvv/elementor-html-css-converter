@@ -5,8 +5,8 @@
 Plan for integrating CSS variable support into existing REST endpoints.
 
 **Status:** Ready for implementation
-**Standalone endpoint:** ✅ Complete ([/import-variables](plan-variables-endpoint.md))
-**Value-aware deduplication:** ✅ Implemented
+**Standalone endpoint:** [OK] Complete ([/import-variables](plan-variables-endpoint.md))
+**Value-aware deduplication:** [OK] Implemented
 
 ---
 
@@ -106,12 +106,12 @@ All 3 variables extracted: `primary`, `primary-1`, `spacing`
 
 // CURRENT (rejects var):
 if ( self::is_css_variable( $value ) ) {
-    return false;  // ❌ REJECTED
+    return false;  // [X] REJECTED
 }
 
 // NEW (accepts var):
 if ( self::is_css_variable( $value ) ) {
-    return true;  // ✅ ACCEPTED
+    return true;  // [OK] ACCEPTED
 }
 ```
 
@@ -122,8 +122,8 @@ if ( self::is_css_variable( $value ) ) {
 ```
 
 #### Effect:
-- `color: var(--primary-color)` → ✅ Accepted
-- `font-size: var(--font-size)` → ✅ Accepted
+- `color: var(--primary-color)` → [OK] Accepted
+- `font-size: var(--font-size)` → [OK] Accepted
 - Values passed through unchanged to atomic widgets
 
 **Testing:**
@@ -299,7 +299,7 @@ curl -X POST ".../convert-html" \
 
 ## Edge Cases & Considerations
 
-### 1. Variable Value Deduplication (✅ IMPLEMENTED)
+### 1. Variable Value Deduplication ([OK] IMPLEMENTED)
 
 **Scenario:**
 ```css
@@ -312,7 +312,7 @@ primary-color-2: #800080 (purple)
 --primary-color: #ffff00;
 ```
 
-**Behavior:** ✅ Reuses `primary-color-1` (no duplicate created)
+**Behavior:** [OK] Reuses `primary-color-1` (no duplicate created)
 
 **Implementation:** `find_variable_by_base_label_and_value()` method
 
@@ -614,10 +614,10 @@ Note: Conversion succeeds with warning (non-blocking)
 ## Summary
 
 **Phase 1 (BASIC):**
-- ✅ Simple: Change 2 lines of code
-- ✅ No new features, just accept var()
-- ✅ Immediate value for users
-- ✅ Zero risk of breaking changes
+- [OK] Simple: Change 2 lines of code
+- [OK] No new features, just accept var()
+- [OK] Immediate value for users
+- [OK] Zero risk of breaking changes
 
 **Phase 2 (HTML VARIABLE EXTRACTION):**
 - Extract from ALL selectors in `<style>` tags
@@ -628,8 +628,8 @@ Note: Conversion succeeds with warning (non-blocking)
 - Adds convenience for users
 
 **Current Status:**
-- Standalone endpoint: ✅ Complete
-- Value-aware deduplication: ✅ Working
+- Standalone endpoint: [OK] Complete
+- Value-aware deduplication: [OK] Working
 - var() pass-through: ⏳ Waiting for Phase 1
 - HTML extraction: ⏳ Waiting for Phase 2
 

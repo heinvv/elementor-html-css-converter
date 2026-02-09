@@ -133,9 +133,9 @@ The implementation uses a **two-layer security approach**:
    - request_token in payload
    ↓
 7. WordPress validates:
-   ✓ Static secret matches
-   ✓ Request token exists and matches stored token
-   ✓ Token hasn't expired
+   - Static secret matches
+   - Request token exists and matches stored token
+   - Token hasn't expired
    ↓
 8. WordPress deletes token (one-time use)
    ↓
@@ -192,7 +192,7 @@ The implementation uses a **two-layer security approach**:
    - OR check environment variables for `EHCC_WEBHOOK_SECRET`
    - Verify the value is set (not stored in database)
    - Check for any whitespace or special characters
-   - Go to Settings → Scraper Settings to see if it shows "✓ Configured"
+   - Go to Settings → Scraper Settings to see if it shows "Configured"
 2. **GitHub**: Go to Repository → Settings → Secrets and variables → Actions
    - Verify `WEBHOOK_SECRET` secret exists
    - Verify the value exactly matches WordPress constant/environment variable

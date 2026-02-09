@@ -65,6 +65,14 @@ class Variables_Rest_API {
 						'enum'              => [ 'create_new', 'update' ],
 						'sanitize_callback' => 'sanitize_text_field',
 					],
+					'resolutions' => [
+						'type'    => 'object',
+						'default' => [],
+					],
+					'rename_map'  => [
+						'type'    => 'object',
+						'default' => [],
+					],
 				],
 			]
 		);
@@ -92,6 +100,8 @@ class Variables_Rest_API {
 		$url         = $request->get_param( 'url' );
 		$css         = $request->get_param( 'css' );
 		$update_mode = $request->get_param( 'update_mode' ) ?? 'create_new';
+		$resolutions = $request->get_param( 'resolutions' ) ?? [];
+		$rename_map  = $request->get_param( 'rename_map' ) ?? [];
 
 		$validation_error = $this->validate_css_or_url_provided( $css, $url );
 		if ( $validation_error ) {
@@ -129,7 +139,7 @@ class Variables_Rest_API {
 		}
 
 		try {
-			$storage_result = $this->store_variables( $converted, $update_mode );
+			$storage_result = $this->store_variables( $converted, $update_mode, $resolutions, $rename_map );
 		} catch ( \Exception $e ) {
 			return new WP_REST_Response(
 				[
@@ -145,11 +155,12 @@ class Variables_Rest_API {
 
 		return new WP_REST_Response(
 			[
-				'success'   => true,
-				'variables' => $response_variables,
-				'created'   => $storage_result['created'],
-				'reused'    => $storage_result['reused'],
-				'updated'   => $storage_result['updated'],
+				'success'     => true,
+				'variables'   => $response_variables,
+				'created'     => $storage_result['created'],
+				'reused'      => $storage_result['reused'],
+				'updated'     => $storage_result['updated'],
+				'reactivated' => $storage_result['reactivated'],
 			],
 			200
 		);
@@ -288,11 +299,12 @@ class Variables_Rest_API {
 	 *
 	 * @param array  $variables   Converted variables.
 	 * @param string $update_mode Mode: 'create_new' or 'update'.
-	 * @return array Storage result with 'created', 'reused', 'updated' counts, and 'renames' mapping.
-	 *               'renames' maps original CSS variable names to final names (e.g., '--color' => '--color-1').
+	 * @param array  $resolutions Per-variable resolution map (CSS name => action).
+	 * @param array  $rename_map  Per-variable custom rename map (CSS name => new label).
+	 * @return array Storage result with 'created', 'reused', 'updated', 'reactivated' counts, and 'renames' mapping.
 	 * @throws \Exception If Elementor is not active or storage fails.
 	 */
-	public function store_variables( array $variables, string $update_mode ): array {
+	public function store_variables( array $variables, string $update_mode, array $resolutions = [], array $rename_map = [] ): array {
 		if ( ! class_exists( '\Elementor\Plugin' ) ) {
 			throw new \Exception( 'Elementor plugin is not active' );
 		}
@@ -301,10 +313,11 @@ class Variables_Rest_API {
 			Plugin::$instance->kits_manager->get_active_kit()
 		);
 
-		$created = 0;
-		$reused  = 0;
-		$updated = 0;
-		$renames = [];
+		$created     = 0;
+		$reused      = 0;
+		$updated     = 0;
+		$reactivated = 0;
+		$renames     = [];
 
 		foreach ( $variables as $variable ) {
 			$name  = $variable['name'] ?? '';
@@ -323,7 +336,26 @@ class Variables_Rest_API {
 				continue;
 			}
 
-			if ( 'update' === $update_mode ) {
+			$resolution = $resolutions[ $name ] ?? null;
+
+			if ( 'overwrite' === $resolution ) {
+				$result = $this->handle_overwrite_resolution( $repository, $label, $value, $elementor_type );
+				$updated += $result['updated'];
+				$created += $result['created'];
+			} elseif ( 'rename' === $resolution ) {
+				$custom_label = isset( $rename_map[ $name ] ) ? sanitize_text_field( $rename_map[ $name ] ) : '';
+				$result = $this->handle_rename_resolution( $repository, $label, $value, $elementor_type, $custom_label );
+				$created += $result['created'];
+				if ( ! empty( $result['rename'] ) ) {
+					$renames[ $result['rename']['from'] ] = $result['rename']['to'];
+				}
+			} elseif ( 'reactivate' === $resolution ) {
+				$result = $this->handle_reactivate_resolution( $repository, $label, $value, $elementor_type );
+				$reactivated += $result['reactivated'];
+				$created += $result['created'];
+			} elseif ( 'skip' === $resolution ) {
+				$reused++;
+			} elseif ( 'update' === $update_mode ) {
 				$result = $this->handle_update_mode( $repository, $label, $value, $elementor_type );
 				$created += $result['created'];
 				$updated += $result['updated'];
@@ -342,10 +374,11 @@ class Variables_Rest_API {
 		}
 
 		return [
-			'created' => $created,
-			'reused'  => $reused,
-			'updated' => $updated,
-			'renames' => $renames,
+			'created'     => $created,
+			'reused'      => $reused,
+			'updated'     => $updated,
+			'reactivated' => $reactivated,
+			'renames'     => $renames,
 		];
 	}
 
@@ -433,6 +466,92 @@ class Variables_Rest_API {
 			'reused'  => 0,
 			'rename'  => $rename,
 		];
+	}
+
+	private function handle_overwrite_resolution( Variables_Repository $repository, string $label, string $value, string $elementor_type ): array {
+		$existing_id = $this->find_variable_by_label( $repository, $label );
+
+		if ( $existing_id ) {
+			$repository->update(
+				$existing_id,
+				[
+					'label' => $label,
+					'value' => $value,
+				]
+			);
+			return [ 'updated' => 1, 'created' => 0 ];
+		}
+
+		$repository->create(
+			[
+				'type'  => $elementor_type,
+				'label' => $label,
+				'value' => $value,
+			]
+		);
+		return [ 'updated' => 0, 'created' => 1 ];
+	}
+
+	private function handle_rename_resolution( Variables_Repository $repository, string $label, string $value, string $elementor_type, string $custom_label = '' ): array {
+		$final_label = ! empty( $custom_label )
+			? $this->get_unique_label( $repository, $custom_label )
+			: $this->get_unique_label( $repository, $label );
+
+		$repository->create(
+			[
+				'type'  => $elementor_type,
+				'label' => $final_label,
+				'value' => $value,
+			]
+		);
+
+		$rename = null;
+		if ( $final_label !== $label ) {
+			$rename = [
+				'from' => '--' . $label,
+				'to'   => '--' . $final_label,
+			];
+		}
+
+		return [
+			'created' => 1,
+			'rename'  => $rename,
+		];
+	}
+
+	private function handle_reactivate_resolution( Variables_Repository $repository, string $label, string $value, string $elementor_type ): array {
+		$deleted_id = $this->find_deleted_variable_by_label( $repository, $label );
+
+		if ( $deleted_id ) {
+			$repository->restore( $deleted_id, [ 'value' => $value ] );
+			return [ 'reactivated' => 1, 'created' => 0 ];
+		}
+
+		$repository->create(
+			[
+				'type'  => $elementor_type,
+				'label' => $label,
+				'value' => $value,
+			]
+		);
+		return [ 'reactivated' => 0, 'created' => 1 ];
+	}
+
+	private function find_deleted_variable_by_label( Variables_Repository $repository, string $label ): ?string {
+		$db_record = $repository->load();
+		$existing  = isset( $db_record['data'] ) && is_array( $db_record['data'] ) ? $db_record['data'] : [];
+
+		foreach ( $existing as $id => $item ) {
+			if ( ! isset( $item['deleted'] ) || ! $item['deleted'] ) {
+				continue;
+			}
+
+			if ( isset( $item['label'] ) && strtolower( $item['label'] ) === strtolower( $label ) ) {
+				return $id;
+			}
+		}
+
+		return null;
 	}
 
 	/**

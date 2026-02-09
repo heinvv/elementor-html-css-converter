@@ -73,8 +73,8 @@ Copy the generated value and add to `wp-config.php` or environment variable.
 After configuring secrets:
 
 1. Go to **WordPress Admin → Settings → Scraper Settings**
-2. Check that both "GitHub Token" and "Webhook Secret" show "✓ Configured"
-3. If they show "✗ Not configured", verify:
+2. Check that both "GitHub Token" and "Webhook Secret" show "Configured"
+3. If they show "Not configured", verify:
    - Constants are defined in `wp-config.php` (check spelling, quotes)
    - Environment variables are set and accessible to PHP
    - No syntax errors in `wp-config.php`
