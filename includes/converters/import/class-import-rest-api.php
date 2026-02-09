@@ -278,13 +278,34 @@ class Import_Rest_API {
 
 		delete_transient( 'ehcc_import_token_' . $job_id );
 
+		$serialized_payload = wp_json_encode( $data );
+		if ( preg_match( '/<\s*script/i', $serialized_payload ) ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Payload rejected: contains script reference',
+				],
+				400
+			);
+		}
+
+		$sanitized_data = [
+			'status'  => sanitize_text_field( $data['status'] ?? '' ),
+			'error'   => sanitize_text_field( $data['error'] ?? '' ),
+			'results' => [
+				'converter' => [
+					'template_id' => absint( $data['results']['converter']['template_id'] ?? 0 ),
+				],
+			],
+		];
+
 		$results = get_option( self::RESULTS_STORAGE_OPTION, [] );
 		if ( ! is_array( $results ) ) {
 			$results = [];
 		}
 
 		$results[ $job_id ] = [
-			'data'      => $data,
+			'data'      => $sanitized_data,
 			'received'  => current_time( 'mysql' ),
 			'timestamp' => time(),
 		];
@@ -316,16 +337,18 @@ class Import_Rest_API {
 			);
 		}
 
-		return new WP_REST_Response(
-			[
-				'success' => true,
-				'status'  => 'complete',
-				'job_id'  => $job_id,
-				'data'    => $results[ $job_id ]['data'],
-				'received' => $results[ $job_id ]['received'],
-			],
-			200
-		);
+		$response_data = [
+			'success'  => true,
+			'status'   => 'complete',
+			'job_id'   => $job_id,
+			'data'     => $results[ $job_id ]['data'],
+			'received' => $results[ $job_id ]['received'],
+		];
+
+		unset( $results[ $job_id ] );
+		update_option( self::RESULTS_STORAGE_OPTION, $results );
+
+		return new WP_REST_Response( $response_data, 200 );
 	}
 
 	public function delete_template( WP_REST_Request $request ): WP_REST_Response {

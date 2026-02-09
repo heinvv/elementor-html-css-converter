@@ -19,6 +19,15 @@ class Css_Converter {
 
 	private const PLACEHOLDER_IMAGE_URL = 'none';
 
+	private const BLOCKED_CSS_PROPERTIES = [
+		'behavior',
+		'-moz-binding',
+	];
+
+	private const PATTERN_CSS_EXPRESSION = '/expression\s*\(/i';
+	private const PATTERN_CSS_JAVASCRIPT_URL = '/url\s*\(\s*["\']?\s*javascript\s*:/i';
+	private const PATTERN_CSS_IMPORT = '/@import\b/i';
+
 	private Converter_Registry $registry;
 
 	public function __construct( Converter_Registry $registry ) {
@@ -39,18 +48,36 @@ class Css_Converter {
 	}
 
 	private function parse_css_string( string $css_string ): array {
+		$css_string = preg_replace( self::PATTERN_CSS_IMPORT, '', $css_string );
+
 		$properties = [];
 		$pattern    = self::PATTERN_CSS_DECLARATION;
 
 		if ( preg_match_all( $pattern, $css_string, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
-				$property              = trim( $match[1] );
-				$value                 = trim( $match[2] );
-				$properties[ $property ] = $value;
+				$property = trim( $match[1] );
+				$value    = trim( $match[2] );
+
+				if ( $this->is_blocked_css_property( $property ) ) {
+					continue;
+				}
+
+				$properties[ $property ] = $this->sanitize_css_value( $value );
 			}
 		}
 
 		return $properties;
+	}
+
+	private function is_blocked_css_property( string $property ): bool {
+		return in_array( strtolower( $property ), self::BLOCKED_CSS_PROPERTIES, true );
+	}
+
+	private function sanitize_css_value( string $value ): string {
+		$sanitized = preg_replace( self::PATTERN_CSS_EXPRESSION, '(', $value );
+		$sanitized = preg_replace( self::PATTERN_CSS_JAVASCRIPT_URL, 'url(', $sanitized );
+
+		return $sanitized;
 	}
 
 	private function convert_properties_to_atomic( array $properties ): array {
@@ -58,6 +85,12 @@ class Css_Converter {
 		$unsupported = [];
 
 		foreach ( $properties as $property => $value ) {
+			if ( $this->is_blocked_css_property( $property ) ) {
+				continue;
+			}
+
+			$value = $this->sanitize_css_value( $value );
+
 			$converter = $this->get_converter_for_property( $property );
 			if ( null === $converter ) {
 				$unsupported[ $property ] = $value;
@@ -174,7 +207,12 @@ class Css_Converter {
 
 		$css_parts = [];
 		foreach ( $properties as $property => $value ) {
-			$css_parts[] = sprintf( '%s: %s;', $property, $value );
+			if ( $this->is_blocked_css_property( $property ) ) {
+				continue;
+			}
+
+			$sanitized_value = $this->sanitize_css_value( $value );
+			$css_parts[] = sprintf( '%s: %s;', $property, $sanitized_value );
 		}
 
 		return implode( ' ', $css_parts );

@@ -1,13 +1,12 @@
-import React from 'react';
 import { getReact } from '../utils/getReact';
 import { getElementorUI } from '../utils/getElementorUI';
 import { ModalActionsProps } from '../types/components';
 
 export const ModalActions = ({ onClose, onSubmit, isLoading }: ModalActionsProps) => {
-	const ReactLib = getReact();
+	const React = getReact();
 	const ui = getElementorUI();
 
-	if (!ReactLib || !ui) {
+	if (!React || !ui) {
 		return null;
 	}
 

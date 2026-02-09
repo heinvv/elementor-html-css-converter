@@ -57,6 +57,9 @@ class Atomic_Data_Parser {
 
 	private const REGEX_WHITESPACE_SPLIT = '/\s+/';
 	private const REGEX_ELEMENTOR_CLASS_PREFIX = '/^(elementor-|e-con-|e-)/';
+	private const REGEX_SVG_DANGEROUS_TAGS = '/<\s*\/?\s*(script|foreignObject|iframe|object|embed|applet|form|input|textarea|button|select)\b[^>]*>.*?<\s*\/\s*\1\s*>|<\s*\/?\s*(script|foreignObject|iframe|object|embed|applet|form|input|textarea|button|select)\b[^>]*\/?>/is';
+	private const REGEX_SVG_EVENT_HANDLERS = '/\s+on\w+\s*=\s*["\'][^"\']*["\']/i';
+	private const REGEX_SVG_JAVASCRIPT_HREF = '/(xlink:href|href)\s*=\s*["\']javascript:[^"\']*["\']/i';
 
 	/**
 	 * Parsed ID rules with breakpoints for current document.
@@ -137,14 +140,14 @@ class Atomic_Data_Parser {
 	 */
 	private function extract_svg_elements_from_html( string $html ): array {
 		$svg_map = [];
-		
+
 		$pattern = '/<a[^>]*>[\s\S]*?<svg[^>]*>[\s\S]*?<\/svg>[\s\S]*?<\/a>/i';
-		
+
 		if ( preg_match_all( $pattern, $html, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$full_anchor = $match[0];
 				if ( preg_match( '/<svg[^>]*>[\s\S]*?<\/svg>/i', $full_anchor, $svg_match ) ) {
-					$svg_content = $svg_match[0];
+					$svg_content = $this->sanitize_svg_content( $svg_match[0] );
 					$anchor_hash = md5( trim( preg_replace( '/\s+/', ' ', $full_anchor ) ) );
 					$svg_map[ $anchor_hash ] = $svg_content;
 				}
@@ -154,7 +157,7 @@ class Atomic_Data_Parser {
 		$standalone_pattern = '/<svg[^>]*>[\s\S]*?<\/svg>/i';
 		if ( preg_match_all( $standalone_pattern, $html, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
-				$svg_content = $match[0];
+				$svg_content = $this->sanitize_svg_content( $match[0] );
 				$svg_hash = md5( $svg_content );
 				$key = 'standalone_' . $svg_hash;
 				if ( ! isset( $svg_map[ $key ] ) ) {
@@ -614,6 +617,23 @@ class Atomic_Data_Parser {
 	}
 
 	/**
+	 * Strip dangerous elements and attributes from SVG content.
+	 *
+	 * Removes script tags, foreignObject, event handler attributes, and javascript: URLs
+	 * as a defense-in-depth layer on top of wp_kses sanitization.
+	 *
+	 * @param string $svg_content Raw SVG content string.
+	 * @return string Sanitized SVG content.
+	 */
+	private function sanitize_svg_content( string $svg_content ): string {
+		$sanitized = preg_replace( self::REGEX_SVG_DANGEROUS_TAGS, '', $svg_content );
+		$sanitized = preg_replace( self::REGEX_SVG_EVENT_HANDLERS, '', $sanitized );
+		$sanitized = preg_replace( self::REGEX_SVG_JAVASCRIPT_HREF, '', $sanitized );
+
+		return $sanitized;
+	}
+
+	/**
 	 * Extract SVG content from DOMElement.
 	 *
 	 * Gets the full outerHTML of the SVG element including all nested elements and attributes.
@@ -622,7 +642,9 @@ class Atomic_Data_Parser {
 	 * @return string SVG HTML content.
 	 */
 	private function extract_svg_content( \DOMElement $element ): string {
-		return $element->ownerDocument->saveXML( $element );
+		$raw_svg = $element->ownerDocument->saveXML( $element );
+
+		return $this->sanitize_svg_content( $raw_svg );
 	}
 
 	/**

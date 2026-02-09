@@ -17,10 +17,12 @@ class Import_Editor {
 
 	public function __construct() {
 		add_action( 'elementor/editor/before_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+		add_action( 'elementor/editor/v2/scripts/enqueue', [ $this, 'enqueue_scripts' ] );
 	}
 
 	public function enqueue_scripts() {
 		$plugin_url = plugin_dir_url( EHCC_FILE );
+		$script_path = $plugin_url . 'assets/js/editor/compiled/import-modal-react.js';
 
 		wp_enqueue_script(
 			'ehcc-import-button',
@@ -32,8 +34,8 @@ class Import_Editor {
 
 		wp_enqueue_script(
 			'ehcc-import-modal-react',
-			$plugin_url . 'assets/js/editor/compiled/import-modal-react.js',
-			[ 'elementor-common', 'react', 'react-dom' ],
+			$script_path,
+			[ 'elementor-common' ],
 			EHCC_VERSION,
 			true
 		);

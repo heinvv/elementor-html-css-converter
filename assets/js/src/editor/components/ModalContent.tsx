@@ -1,4 +1,3 @@
-import React from 'react';
 import { getReact } from '../utils/getReact';
 import { getElementorUI } from '../utils/getElementorUI';
 import { ModalContentProps } from '../types/components';
@@ -15,10 +14,10 @@ export const ModalContent = ({
 	statusType,
 	onSubmit,
 }: ModalContentProps) => {
-	const ReactLib = getReact();
+	const React = getReact();
 	const ui = getElementorUI();
 
-	if (!ReactLib || !ui) {
+	if (!React || !ui) {
 		return null;
 	}
 

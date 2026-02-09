@@ -1,4 +1,3 @@
-import React from 'react';
 import { getReact } from '../utils/getReact';
 import { getElementorUI } from '../utils/getElementorUI';
 import { useImportForm } from '../hooks/useImportForm';
@@ -10,8 +9,8 @@ import { ModalActions } from './ModalActions';
 import { ImportModalProps } from '../types/components';
 
 export const ImportModal = ({ isOpen, onClose, apiUrl, postId }: ImportModalProps) => {
-	const ReactLib = getReact();
-	if (!ReactLib) {
+	const React = getReact();
+	if (!React) {
 		return null;
 	}
 

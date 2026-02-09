@@ -208,8 +208,9 @@ class Rest_Api {
 						'sanitize_callback' => 'sanitize_text_field',
 					],
 					'widgetSettings' => [
-						'type'    => 'object',
-						'default' => [],
+						'type'              => 'object',
+						'default'           => [],
+						'sanitize_callback' => [ $this, 'sanitize_widget_settings' ],
 					],
 					'cssString'      => [
 						'type'              => 'string',
@@ -246,8 +247,9 @@ class Rest_Api {
 						'sanitize_callback' => 'sanitize_text_field',
 					],
 					'widgetSettings' => [
-						'type'    => 'object',
-						'default' => [],
+						'type'              => 'object',
+						'default'           => [],
+						'sanitize_callback' => [ $this, 'sanitize_widget_settings' ],
 					],
 					'cssString'      => [
 						'type'              => 'string',
@@ -436,6 +438,31 @@ class Rest_Api {
 		];
 
 		return wp_kses( $html, $allowed_html );
+	}
+
+	/**
+	 * Recursively sanitize widget settings by stripping all HTML tags from string values.
+	 *
+	 * @param mixed $settings The widget settings value (object, array, or scalar).
+	 * @return mixed The sanitized settings.
+	 */
+	public function sanitize_widget_settings( $settings ) {
+		if ( is_string( $settings ) ) {
+			return wp_strip_all_tags( $settings );
+		}
+
+		if ( ! is_array( $settings ) ) {
+			return $settings;
+		}
+
+		$sanitized = [];
+
+		foreach ( $settings as $key => $value ) {
+			$sanitized_key = is_string( $key ) ? wp_strip_all_tags( $key ) : $key;
+			$sanitized[ $sanitized_key ] = $this->sanitize_widget_settings( $value );
+		}
+
+		return $sanitized;
 	}
 
 	/**

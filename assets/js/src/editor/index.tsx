@@ -1,6 +1,18 @@
 import { createModalManager } from './utils/modalManager';
+import { createVariablesModalManager } from './utils/variablesModalManager';
+import { initVariablesButtonInjector } from './utils/variablesButtonInjector';
+
+let retryCount = 0;
+const MAX_RETRIES = 200;
 
 function waitForReact() {
+	retryCount++;
+
+	if (retryCount > MAX_RETRIES) {
+		console.warn('[EHCC] Variables Import/Export: Failed to initialize - React or Elementor UI not available');
+		return;
+	}
+
 	const ui = (window as any).elementorV2?.ui;
 	if (!ui) {
 		setTimeout(waitForReact, 100);
@@ -15,13 +27,32 @@ function waitForReact() {
 		return;
 	}
 
-	const ehccImportModalReact = createModalManager();
+	try {
+		const ehccImportModalReact = createModalManager();
 
-	if (typeof window !== 'undefined') {
-		(window as any).ehccImportModalReact = ehccImportModalReact;
+		if (typeof window !== 'undefined') {
+			(window as any).ehccImportModalReact = ehccImportModalReact;
+		}
+
+		ehccImportModalReact.init();
+
+		const variablesModalManager = createVariablesModalManager();
+		variablesModalManager.init();
+		initVariablesButtonInjector(variablesModalManager);
+
+		if (typeof window !== 'undefined') {
+			(window as any).ehccVariablesImportExport = variablesModalManager;
+		}
+	} catch (error) {
+		console.error('[EHCC] Variables Import/Export: Initialization error:', error);
 	}
-
-	ehccImportModalReact.init();
 }
 
-waitForReact();
+if (typeof window !== 'undefined') {
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', waitForReact);
+	} else {
+		waitForReact();
+	}
+}
+

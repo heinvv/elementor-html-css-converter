@@ -27,3 +27,27 @@ export type ImportModalProps = {
 	apiUrl: string;
 	postId?: number | null;
 };
+
+export type VariablesImportExportModalProps = {
+	isOpen: boolean;
+	onClose: () => void;
+	apiUrl: string;
+};
+
+export type ImportTabProps = {
+	apiUrl: string;
+	isLoading: boolean;
+	setIsLoading: (loading: boolean) => void;
+	statusMessage: string | null;
+	setStatusMessage: (message: string | null) => void;
+	statusType: 'success' | 'error' | 'info' | null;
+	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
+};
+
+export type ExportTabProps = {
+	statusMessage: string | null;
+	setStatusMessage: (message: string | null) => void;
+	statusType: 'success' | 'error' | 'info' | null;
+	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
+};
+

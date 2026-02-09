@@ -2,11 +2,16 @@ export type ElementorUIComponents = {
 	Dialog: any;
 	DialogContent: any;
 	DialogActions: any;
+	DialogTitle: any;
 	Button: any;
 	TextField: any;
 	Stack: any;
 	Box: any;
 	Alert: any;
+	Tab: any;
+	Tabs: any;
+	Typography: any;
+	IconButton: any;
 };
 
 export type ModalManager = {
@@ -18,3 +23,4 @@ export type ModalManager = {
 	close(): void;
 	render(): void;
 };
+

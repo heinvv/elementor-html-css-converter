@@ -731,6 +731,8 @@ class Image_Import_Service {
 			];
 		}
 
+		$svg_content = $this->strip_dangerous_svg_elements( $svg_content );
+
 		$permission_check = $this->check_svg_import_permissions();
 		if ( ! $permission_check['allowed'] ) {
 			return [
@@ -893,4 +895,21 @@ class Image_Import_Service {
 		];
 	}
 
+	/**
+	 * Strip script tags, dangerous elements, event handlers, and javascript: URLs from SVG content.
+	 *
+	 * @param string $svg_content Raw SVG content.
+	 * @return string Sanitized SVG content.
+	 */
+	private function strip_dangerous_svg_elements( string $svg_content ): string {
+		$dangerous_tags_pattern = '/<\s*\/?\s*(script|foreignObject|iframe|object|embed|applet|form|input|textarea|button|select)\b[^>]*>.*?<\s*\/\s*\1\s*>|<\s*\/?\s*(script|foreignObject|iframe|object|embed|applet|form|input|textarea|button|select)\b[^>]*\/?>/is';
+		$event_handler_pattern = '/\s+on\w+\s*=\s*["\'][^"\']*["\']/i';
+		$javascript_href_pattern = '/(xlink:href|href)\s*=\s*["\']javascript:[^"\']*["\']/i';
+
+		$sanitized = preg_replace( $dangerous_tags_pattern, '', $svg_content );
+		$sanitized = preg_replace( $event_handler_pattern, '', $sanitized );
+		$sanitized = preg_replace( $javascript_href_pattern, '', $sanitized );
+
+		return $sanitized;
+	}
 }
