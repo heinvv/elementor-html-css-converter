@@ -9,6 +9,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Fallback_Substitutor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -35,16 +36,17 @@ class Css_Converter {
 	}
 
 	public function convert( array $params ): array {
-		$css_string = $params['cssString'] ?? '';
+		$css_string        = $params['cssString'] ?? '';
+		$variable_fallback = $params['variable_fallback'] ?? [];
 
 		$properties = $this->parse_css_string( $css_string );
-		$result     = $this->convert_properties_to_atomic( $properties );
+		$result     = $this->convert_properties_to_atomic( $properties, $variable_fallback );
 
 		return $result;
 	}
 
-	public function convert_properties( array $properties ): array {
-		return $this->convert_properties_to_atomic( $properties );
+	public function convert_properties( array $properties, array $variable_fallback = [] ): array {
+		return $this->convert_properties_to_atomic( $properties, $variable_fallback );
 	}
 
 	private function parse_css_string( string $css_string ): array {
@@ -80,7 +82,7 @@ class Css_Converter {
 		return $sanitized;
 	}
 
-	private function convert_properties_to_atomic( array $properties ): array {
+	private function convert_properties_to_atomic( array $properties, array $variable_fallback = [] ): array {
 		$props       = [];
 		$unsupported = [];
 
@@ -90,6 +92,7 @@ class Css_Converter {
 			}
 
 			$value = $this->sanitize_css_value( $value );
+			$value = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
 
 			$converter = $this->get_converter_for_property( $property );
 			if ( null === $converter ) {

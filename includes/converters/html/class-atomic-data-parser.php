@@ -69,6 +69,13 @@ class Atomic_Data_Parser {
 	private array $id_rules_with_breakpoints = [];
 
 	/**
+	 * Variable fallback map for substituting unresolved var() references.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $variable_fallback = [];
+
+	/**
 	 * Tags that should have their text content wrapped in paragraphs.
 	 *
 	 * @var array
@@ -104,13 +111,16 @@ class Atomic_Data_Parser {
 	 * Extracts CSS from <style> tags (ID selectors only) and applies
 	 * styles to elements based on their id attribute.
 	 *
-	 * @param string $html HTML content to parse.
+	 * @param string $html    HTML content to parse.
+	 * @param array  $options Optional. Keys: variable_fallback (map of --name => value for unresolved var() substitution).
 	 * @return array Array of widget data.
 	 */
-	public function parse_html_for_atomic_widgets( string $html ): array {
+	public function parse_html_for_atomic_widgets( string $html, array $options = [] ): array {
 		if ( empty( trim( $html ) ) ) {
 			return [];
 		}
+
+		$this->variable_fallback = $options['variable_fallback'] ?? [];
 
 		$svg_map = $this->extract_svg_elements_from_html( $html );
 
@@ -508,7 +518,7 @@ class Atomic_Data_Parser {
 	 * @return array Unified structure with 'atomic_props' and 'custom_css'.
 	 */
 	private function convert_styles_to_atomic_props( array $styles ): array {
-		$result = $this->css_converter->convert_properties( $styles );
+		$result = $this->css_converter->convert_properties( $styles, $this->variable_fallback );
 		return [
 			'atomic_props' => $result['props'] ?? [],
 			'custom_css'   => $result['customCss'] ?? null,

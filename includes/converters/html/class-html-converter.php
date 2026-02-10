@@ -14,6 +14,7 @@ use ElementorHtmlCssConverter\Converters\Html\Atomic_Widget_JSON_Creator;
 use ElementorHtmlCssConverter\Converters\Html\Widget_Styles_Integrator;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Extractor;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Conversion_Service;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Fallback_Substitutor;
 use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_API;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use ElementorHtmlCssConverter\Converters\Classes\Class_Extractor;
@@ -138,7 +139,10 @@ class Html_Converter {
 			$warnings = $this->check_undefined_variables( $html, $imported_variables );
 		}
 
-		$widget_data_array = $this->data_parser->parse_html_for_atomic_widgets( $html );
+		$variable_fallback = $this->build_variable_fallback_map( $css_variables, $css, $variable_renames );
+		$widget_data_array = $this->data_parser->parse_html_for_atomic_widgets( $html, [
+			'variable_fallback' => $variable_fallback,
+		] );
 
 		if ( empty( $widget_data_array ) ) {
 			return $this->build_error_result( 'No supported HTML elements found' );
@@ -388,6 +392,34 @@ class Html_Converter {
 			'success' => true,
 			'widgets' => $widgets,
 		];
+	}
+
+	/**
+	 * Build variable fallback map for substituting unresolved var() references.
+	 *
+	 * Includes all variable definitions from css_variables param and extracted CSS.
+	 * Applies renames so that variables renamed during import (e.g. --primary -> --primary-1)
+	 * can still be resolved when the CSS has been updated to use the new names.
+	 *
+	 * @param string $css_variables   Raw CSS variable declarations from request.
+	 * @param string $extracted_css   CSS extracted from HTML style tags.
+	 * @param array  $variable_renames Map of original name => renamed name.
+	 * @return array<string, string> Map of --variable-name => literal value.
+	 */
+	private function build_variable_fallback_map( string $css_variables, string $extracted_css, array $variable_renames = [] ): array {
+		$map       = Variable_Fallback_Substitutor::build_fallback_map_from_css( $css_variables );
+		$from_html = Variable_Fallback_Substitutor::build_fallback_map_from_css( $extracted_css );
+		$map       = array_merge( $map, $from_html );
+
+		foreach ( $variable_renames as $original => $renamed ) {
+			$original_with_dashes = str_starts_with( $original, '--' ) ? $original : '--' . $original;
+			$renamed_with_dashes  = str_starts_with( $renamed, '--' ) ? $renamed : '--' . $renamed;
+			if ( isset( $map[ $original_with_dashes ] ) ) {
+				$map[ $renamed_with_dashes ] = $map[ $original_with_dashes ];
+			}
+		}
+
+		return $map;
 	}
 
 	/**
