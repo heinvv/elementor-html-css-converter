@@ -182,7 +182,7 @@ All successful responses include:
 ### No Supported Types
 ```json
 {
-  "error": "No supported variable types found",
+  "error": "Unsupported variable types found",
   "code": "no_supported_types"
 }
 ```

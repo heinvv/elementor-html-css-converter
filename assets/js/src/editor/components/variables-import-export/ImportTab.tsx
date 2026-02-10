@@ -30,7 +30,9 @@ export const ImportTab = ({
 	const [importText, setImportText] = useState('');
 	const [phase, setPhase] = useState<ImportPhase>('input');
 	const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
-	const [importedVariables, setImportedVariables] = useState<Record<string, { name: string; value: string }> | null>(null);
+	const [importedVariables, setImportedVariables] = useState<Record<string, { name: string; value: string; original_name?: string | null }> | null>(null);
+	const [skippedVariables, setSkippedVariables] = useState<Array<{ name: string; value: string }>>([]);
+	const [unregisteredFonts, setUnregisteredFonts] = useState<Array<{ name: string; font: string }>>([]);
 
 	const {
 		Stack: StackComponent,
@@ -70,17 +72,23 @@ export const ImportTab = ({
 				const reusedCount = data.reused || 0;
 				const updatedCount = data.updated || 0;
 				const reactivatedCount = data.reactivated || 0;
+				const skipped: Array<{ name: string; value: string }> = data.skipped_variables || [];
 
 				const parts: string[] = [];
 				if (createdCount > 0) parts.push(`${createdCount} created`);
-				if (reusedCount > 0) parts.push(`${reusedCount} reused`);
 				if (updatedCount > 0) parts.push(`${updatedCount} updated`);
 				if (reactivatedCount > 0) parts.push(`${reactivatedCount} reactivated`);
+				if (reusedCount > 0) parts.push(`${reusedCount} skipped`);
+				if (skipped.length > 0) parts.push(`${skipped.length} not imported`);
+
+				const unregistered: Array<{ name: string; font: string }> = data.unregistered_fonts || [];
 
 				setStatusMessage(`Import complete: ${parts.join(', ')}.`);
 				setStatusType('success');
 				setImportText('');
 				setImportedVariables(data.variables || null);
+				setSkippedVariables(skipped);
+				setUnregisteredFonts(unregistered);
 
 				await reloadElementorVariablesService();
 				window.dispatchEvent(new Event('variables:updated'));
@@ -112,6 +120,8 @@ export const ImportTab = ({
 		setStatusMessage(null);
 		setStatusType(null);
 		setImportedVariables(null);
+		setSkippedVariables([]);
+		setUnregisteredFonts([]);
 
 		const parsed = parseCssVariables(importText);
 
@@ -173,7 +183,7 @@ export const ImportTab = ({
 					rows={6}
 					value={importText}
 					onChange={(e: any) => setImportText(e.target.value)}
-					placeholder={`--primary-color: #ff0000;\n--spacing-large: 24px;`}
+					placeholder={`--primary-color: #ff0000;\n--spacing-large: 24px;\n--heading-font: "Roboto";`}
 					disabled={isLoading}
 					sx={{
 						'& .MuiInputBase-input': {
@@ -222,31 +232,117 @@ export const ImportTab = ({
 										listStyleType: 'disc',
 									}}
 								>
-									{Object.entries(importedVariables).map(([label, variable]) => (
-										<BoxComponent
-											component="li"
-											key={label}
-											sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
-										>
-											{variable.name}: {variable.value}
-										</BoxComponent>
-									))}
+									{Object.entries(importedVariables).map(([label, rawVar]) => {
+										const variable = rawVar as { name: string; value: string; original_name?: string | null };
+										return (
+											<BoxComponent
+												component="li"
+												key={label}
+												sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
+											>
+												{variable.name}: {variable.value}
+												{variable.original_name && (
+													<BoxComponent
+														component="span"
+														sx={{ fontStyle: 'italic', color: 'text.secondary', marginLeft: '8px' }}
+													>
+														(renamed from {variable.original_name})
+													</BoxComponent>
+												)}
+											</BoxComponent>
+										);
+									})}
 								</BoxComponent>
 							)}
-						</StackComponent>
-					</AlertComponent>
-				</BoxComponent>
-			)}
-			{importSucceeded && (
+					</StackComponent>
+				</AlertComponent>
+			</BoxComponent>
+		)}
+		{importSucceeded && skippedVariables.length > 0 && (
+			<BoxComponent>
+				<AlertComponent
+					severity="warning"
+					sx={{ fontSize: '14px', padding: '16px 20px' }}
+				>
+					<StackComponent direction="column" spacing={1}>
+						{TypographyComponent && (
+							<TypographyComponent variant="subtitle2" sx={{ fontWeight: 600 }}>
+								{skippedVariables.length} variable{skippedVariables.length === 1 ? '' : 's'} not imported (unsupported type):
+							</TypographyComponent>
+						)}
+						<BoxComponent
+							component="ul"
+							sx={{
+								margin: 0,
+								paddingLeft: '20px',
+								listStyleType: 'disc',
+							}}
+						>
+							{skippedVariables.map((variable) => (
+								<BoxComponent
+									component="li"
+									key={variable.name}
+									sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
+								>
+									{variable.name}: {variable.value}
+								</BoxComponent>
+							))}
+						</BoxComponent>
+					</StackComponent>
+				</AlertComponent>
+			</BoxComponent>
+		)}
+		{importSucceeded && unregisteredFonts.length > 0 && (
+			<BoxComponent>
+				<AlertComponent
+					severity="info"
+					sx={{ fontSize: '14px', padding: '16px 20px' }}
+				>
+					<StackComponent direction="column" spacing={1}>
+						{TypographyComponent && (
+							<TypographyComponent variant="subtitle2" sx={{ fontWeight: 600 }}>
+								{unregisteredFonts.length} font{unregisteredFonts.length === 1 ? '' : 's'} not available in Elementor:
+							</TypographyComponent>
+						)}
+						<BoxComponent
+							component="ul"
+							sx={{
+								margin: 0,
+								paddingLeft: '20px',
+								listStyleType: 'disc',
+							}}
+						>
+							{unregisteredFonts.map((entry: { name: string; font: string }) => (
+								<BoxComponent
+									component="li"
+									key={entry.name}
+									sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
+								>
+									{entry.font} ({entry.name})
+								</BoxComponent>
+							))}
+						</BoxComponent>
+						{TypographyComponent && (
+							<TypographyComponent variant="body2" color="text.secondary">
+								These font variables were imported but may not render correctly. You can replace them in the Variables Manager.
+							</TypographyComponent>
+						)}
+					</StackComponent>
+				</AlertComponent>
+			</BoxComponent>
+		)}
+		{importSucceeded && (
 				<StackComponent direction="row" spacing={1}>
 					<ButtonComponent
 						variant="outlined"
 						size="small"
-						onClick={() => {
-							setStatusMessage(null);
-							setStatusType(null);
-							setImportedVariables(null);
-						}}
+					onClick={() => {
+						setStatusMessage(null);
+						setStatusType(null);
+						setImportedVariables(null);
+						setSkippedVariables([]);
+						setUnregisteredFonts([]);
+					}}
 						sx={{ width: '50%' }}
 					>
 						Import More

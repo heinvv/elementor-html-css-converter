@@ -11,6 +11,7 @@ namespace ElementorHtmlCssConverter\Converters\Variables;
 
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 use Elementor\Plugin;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Font_Family_Variable_Convertor;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -126,41 +127,45 @@ class Variables_Rest_API {
 			return $extract_result;
 		}
 
-		$converted = $extract_result;
+		$converted         = $extract_result['converted'];
+		$skipped_variables = $extract_result['skipped'];
 
-		if ( empty( $converted ) ) {
-			return new WP_REST_Response(
-				[
-					'error' => 'No supported variable types found',
-					'code'  => 'no_supported_types',
-				],
-				422
-			);
+		$storage_result = [
+			'created'     => 0,
+			'reused'      => 0,
+			'updated'     => 0,
+			'reactivated' => 0,
+		];
+
+		if ( ! empty( $converted ) ) {
+			try {
+				$storage_result = $this->store_variables( $converted, $update_mode, $resolutions, $rename_map );
+			} catch ( \Exception $e ) {
+				return new WP_REST_Response(
+					[
+						'error'   => 'Failed to store variables',
+						'code'    => 'storage_error',
+						'details' => $e->getMessage(),
+					],
+					500
+				);
+			}
 		}
 
-		try {
-			$storage_result = $this->store_variables( $converted, $update_mode, $resolutions, $rename_map );
-		} catch ( \Exception $e ) {
-			return new WP_REST_Response(
-				[
-					'error'   => 'Failed to store variables',
-					'code'    => 'storage_error',
-					'details' => $e->getMessage(),
-				],
-				500
-			);
-		}
-
-		$response_variables = $this->format_response_variables( $converted );
+		$renames             = $storage_result['renames'] ?? [];
+		$response_variables  = $this->format_response_variables( $converted, $resolutions, $renames );
+		$unregistered_fonts = $this->detect_unregistered_fonts( $converted );
 
 		return new WP_REST_Response(
 			[
-				'success'     => true,
-				'variables'   => $response_variables,
-				'created'     => $storage_result['created'],
-				'reused'      => $storage_result['reused'],
-				'updated'     => $storage_result['updated'],
-				'reactivated' => $storage_result['reactivated'],
+				'success'            => true,
+				'variables'          => $response_variables,
+				'created'            => $storage_result['created'],
+				'reused'             => $storage_result['reused'],
+				'updated'            => $storage_result['updated'],
+				'reactivated'        => $storage_result['reactivated'],
+				'skipped_variables'  => $skipped_variables,
+				'unregistered_fonts' => $unregistered_fonts,
 			],
 			200
 		);
@@ -226,7 +231,7 @@ class Variables_Rest_API {
 	 * Extract and convert variables from CSS.
 	 *
 	 * @param string $css CSS content.
-	 * @return array|WP_REST_Response Converted variables array or error response.
+	 * @return array{converted: array, skipped: array}|WP_REST_Response Converted and skipped variables or error response.
 	 */
 	private function extract_and_convert_variables_from_css( string $css ) {
 		$extractor     = new Variable_Extractor();
@@ -565,9 +570,14 @@ class Variables_Rest_API {
 			'color-hex'             => 'global-color-variable',
 			'color-rgb'             => 'global-color-variable',
 			'color-rgba'            => 'global-color-variable',
+			'color-hsl'             => 'global-color-variable',
+			'color-hsla'            => 'global-color-variable',
 			'color-named'           => 'global-color-variable',
+			'color-mix'             => 'global-color-variable',
 			'size-length-viewport'  => 'global-size-variable',
 			'size-percentage'       => 'global-size-variable',
+			'size-function'         => 'global-custom-size-variable',
+			'font-family'           => 'global-font-variable',
 		];
 
 		return $type_map[ $type ] ?? null;
@@ -688,7 +698,7 @@ class Variables_Rest_API {
 	 * @param array $converted Converted variables.
 	 * @return array Formatted variables.
 	 */
-	private function format_response_variables( array $converted ): array {
+	private function format_response_variables( array $converted, array $resolutions = [], array $renames = [] ): array {
 		$formatted = [];
 
 		foreach ( $converted as $variable ) {
@@ -698,16 +708,56 @@ class Variables_Rest_API {
 				continue;
 			}
 
-			$key = ltrim( $name, '-' );
+			$resolution = $resolutions[ $name ] ?? null;
 
-			$formatted[ $key ] = [
-				'name'  => $name,
-				'value' => $variable['value'] ?? '',
-				'type'  => $variable['type'] ?? '',
+			if ( 'skip' === $resolution ) {
+				continue;
+			}
+
+			$label = ltrim( $name, '-' );
+			$display_name = $name;
+
+			if ( isset( $renames[ $name ] ) ) {
+				$display_name = $renames[ $name ];
+				$label = ltrim( $display_name, '-' );
+			}
+
+			$formatted[ $label ] = [
+				'name'          => $display_name,
+				'value'         => $variable['value'] ?? '',
+				'type'          => $variable['type'] ?? '',
+				'original_name' => isset( $renames[ $name ] ) ? $name : null,
 			];
 		}
 
 		return $formatted;
+	}
+
+	private function detect_unregistered_fonts( array $converted ): array {
+		$convertor = new Font_Family_Variable_Convertor();
+		$unregistered = [];
+
+		foreach ( $converted as $variable ) {
+			if ( 'font-family' !== ( $variable['type'] ?? '' ) ) {
+				continue;
+			}
+
+			$font_name = $variable['value'] ?? '';
+			$css_name  = $variable['name'] ?? '';
+
+			if ( empty( $font_name ) || empty( $css_name ) ) {
+				continue;
+			}
+
+			if ( ! $convertor->is_supported_font( $font_name ) ) {
+				$unregistered[] = [
+					'name' => $css_name,
+					'font' => $font_name,
+				];
+			}
+		}
+
+		return $unregistered;
 	}
 }
 

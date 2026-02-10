@@ -24,11 +24,12 @@ class Variable_Conversion_Service {
 	 * Convert raw variables to Elementor format.
 	 *
 	 * @param array $variables Array of variables with 'name' and 'value' keys.
-	 * @return array Converted variables.
+	 * @return array{converted: array, skipped: array} Converted and skipped variables.
 	 */
 	public static function convert_to_editor_variables( array $variables ): array {
 		$registry  = new Variable_Convertor_Registry();
 		$converted = [];
+		$skipped   = [];
 
 		foreach ( $variables as $variable ) {
 			$name  = $variable['name'] ?? null;
@@ -42,9 +43,17 @@ class Variable_Conversion_Service {
 
 			if ( $convertor ) {
 				$converted[] = $convertor->convert( $name, $value );
+			} else {
+				$skipped[] = [
+					'name'  => $name,
+					'value' => $value,
+				];
 			}
 		}
 
-		return $converted;
+		return [
+			'converted' => $converted,
+			'skipped'   => $skipped,
+		];
 	}
 }

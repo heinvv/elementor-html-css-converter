@@ -360,16 +360,16 @@ color: var(--primary-color, #ff0000);
 
 ---
 
-### 5. calc() Expressions
+### 5. calc() / min() / max() / clamp() Expressions
 
 **Scenario:**
 ```css
 --spacing: calc(1rem + 2px);
+--max-width: min(100%, 600px);
+--fluid-size: clamp(1rem, 2.5vw, 2rem);
 ```
 
-**Behavior:** Not imported (unsupported type - doesn't match color/size pattern)
-
-**Future:** Could add calc-expression convertor if needed
+**Behavior:** Imported as `global-custom-size-variable` via `Css_Function_Variable_Convertor`. The full expression is preserved as-is with `unit: 'custom'`.
 
 ---
 
@@ -597,9 +597,8 @@ Note: Conversion succeeds with warning (non-blocking)
    - Currently: Pass through var() as-is
    - Future: Optionally resolve var() to actual values
 
-2. **calc() Expression Support**
-   - Currently: Not supported
-   - Future: Add calc-expression convertor
+2. **calc() / min() / max() / clamp() Expression Support**
+   - DONE: Supported via `Css_Function_Variable_Convertor`, mapped to `global-custom-size-variable`
 
 3. **Scoped Variables**
    - Currently: All variables stored globally

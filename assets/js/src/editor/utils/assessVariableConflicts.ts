@@ -4,6 +4,7 @@ import {
 	ParsedCssVariable,
 	ResolutionAction,
 } from '../types/components';
+import { normalizeVariableValue } from './normalizeVariableValue';
 
 const VARIABLES_STORAGE_KEY = 'elementor-global-variables';
 
@@ -73,7 +74,9 @@ export const assessVariableConflicts = (parsed: ParsedCssVariable[]): Assessment
 			continue;
 		}
 
-		if (match.variable.value === parsedVar.value) {
+		const normalizedIncoming = normalizeVariableValue(parsedVar.value, match.variable.type);
+
+		if (match.variable.value === normalizedIncoming) {
 			autoResolutions[parsedVar.name] = 'skip';
 			skipCount++;
 			continue;
@@ -83,7 +86,7 @@ export const assessVariableConflicts = (parsed: ParsedCssVariable[]): Assessment
 			name: parsedVar.name,
 			label,
 			currentValue: match.variable.value,
-			newValue: parsedVar.value,
+			newValue: normalizedIncoming,
 		});
 	}
 

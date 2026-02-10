@@ -11,10 +11,17 @@
 namespace ElementorHtmlCssConverter\Converters\Variables;
 
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Hex_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Hsl_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Hsla_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Mix_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Named_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgb_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgba_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Opacity_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Line_Height_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Length_Size_Viewport_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Font_Family_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Css_Function_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Percentage_Variable_Convertor;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -45,9 +52,16 @@ class Variable_Convertor_Registry {
 			new Color_Hex_Variable_Convertor(),
 			new Color_Rgb_Variable_Convertor(),
 			new Color_Rgba_Variable_Convertor(),
+			new Color_Hsl_Variable_Convertor(),
+			new Color_Hsla_Variable_Convertor(),
 			new Color_Named_Variable_Convertor(),
+			new Color_Mix_Variable_Convertor(),
+			new Opacity_Variable_Convertor(),
+			new Line_Height_Variable_Convertor(),
 			new Length_Size_Viewport_Variable_Convertor(),
 			new Percentage_Variable_Convertor(),
+			new Css_Function_Variable_Convertor(),
+			new Font_Family_Variable_Convertor(),
 		];
 	}
 
