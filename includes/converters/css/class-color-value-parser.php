@@ -7,7 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Color_Value_Parser {
 
-	private const PATTERN_NAMED_COLOR = '/^[a-zA-Z0-9-]+$/';
 	private const TRANSPARENT_RGBA = 'rgba(0,0,0,0)';
 
 	public static function parse( string $value ): ?string {
@@ -70,6 +69,6 @@ class Color_Value_Parser {
 	}
 
 	private static function is_named_color( string $value ): bool {
-		return 1 === preg_match( self::PATTERN_NAMED_COLOR, $value );
+		return Css_Named_Colors::is_named_color( $value );
 	}
 }

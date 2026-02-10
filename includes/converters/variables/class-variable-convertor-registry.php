@@ -11,6 +11,7 @@
 namespace ElementorHtmlCssConverter\Converters\Variables;
 
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Hex_Variable_Convertor;
+use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Named_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgb_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Color_Rgba_Variable_Convertor;
 use ElementorHtmlCssConverter\Converters\Variables\Convertors\Length_Size_Viewport_Variable_Convertor;
@@ -44,6 +45,7 @@ class Variable_Convertor_Registry {
 			new Color_Hex_Variable_Convertor(),
 			new Color_Rgb_Variable_Convertor(),
 			new Color_Rgba_Variable_Convertor(),
+			new Color_Named_Variable_Convertor(),
 			new Length_Size_Viewport_Variable_Convertor(),
 			new Percentage_Variable_Convertor(),
 		];

@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Css\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Css_Named_Colors;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Box_Shadow_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Shadow_Prop_Type;
@@ -21,13 +22,6 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	private const REGEX_SIZE_VALUE_VALIDATION = '/^-?(?:\d+(?:\.\d+)?|\.\d+)(px|em|rem|%|vw|vh)$/';
 	private const SUPPORTED_PROPERTIES = [ 'box-shadow' ];
 	private const DEFAULT_SHADOW_COLOR = 'rgba(0, 0, 0, 0.5)';
-
-	private const NAMED_COLORS = [
-		'transparent', 'black', 'white', 'red', 'green', 'blue', 'yellow',
-		'cyan', 'magenta', 'gray', 'grey', 'orange', 'purple', 'pink',
-		'brown', 'navy', 'teal', 'lime', 'olive', 'maroon', 'silver',
-		'aqua', 'fuchsia', 'gold', 'coral', 'crimson',
-	];
 
 	protected function get_supported_properties_list(): array {
 		return self::SUPPORTED_PROPERTIES;
@@ -232,7 +226,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 			return true;
 		}
 
-		return in_array( strtolower( $value ), self::NAMED_COLORS, true );
+		return Css_Named_Colors::is_named_color( $value );
 	}
 
 	private function is_size_value( string $value ): bool {

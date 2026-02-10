@@ -565,6 +565,7 @@ class Variables_Rest_API {
 			'color-hex'             => 'global-color-variable',
 			'color-rgb'             => 'global-color-variable',
 			'color-rgba'            => 'global-color-variable',
+			'color-named'           => 'global-color-variable',
 			'size-length-viewport'  => 'global-size-variable',
 			'size-percentage'       => 'global-size-variable',
 		];

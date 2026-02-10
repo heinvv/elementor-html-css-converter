@@ -51,9 +51,11 @@ class Class_Registration_Service {
 	 * @param array  $converted_classes Breakpoint-aware converted classes.
 	 * @param string $update_mode       Mode: 'create_new' or 'update'.
 	 * @param string $context           Context: 'frontend' or 'preview'.
+	 * @param array  $resolutions       Per-class resolution map (class name => action).
+	 * @param array  $rename_map        Per-class custom rename map (class name => new label).
 	 * @return array Result with 'registered', 'skipped', 'updated', 'overflow', 'classes'.
 	 */
-	public function register_with_elementor( array $converted_classes, string $update_mode, string $context ): array {
+	public function register_with_elementor( array $converted_classes, string $update_mode, string $context, array $resolutions = [], array $rename_map = [] ): array {
 		if ( ! $this->is_global_classes_available() ) {
 			return [
 				'success'    => false,
@@ -99,6 +101,66 @@ class Class_Registration_Service {
 
 			if ( ! $has_content ) {
 				++$skipped;
+				continue;
+			}
+
+			$resolution = $resolutions[ $class_name ] ?? null;
+
+			if ( 'skip' === $resolution ) {
+				++$skipped;
+				continue;
+			}
+
+			if ( 'overwrite' === $resolution ) {
+				$existing_id = $this->find_class_by_label( $existing_items, $class_name );
+
+				if ( $existing_id ) {
+					$existing_items[ $existing_id ] = $this->create_class_config_with_breakpoints(
+						$existing_id,
+						$class_name,
+						$breakpoint_props
+					);
+					++$updated;
+
+					$classes[ $class_name ] = [
+						'id'             => $class_name,
+						'label'          => $class_name,
+						'elementor_id'   => $existing_id,
+						'breakpoint_props' => $breakpoint_props,
+						'status'         => 'updated',
+					];
+				} else {
+					$result_data = $this->create_new_class( $class_name, $class_name, $breakpoint_props, $existing_items, $existing_order, $existing_labels, $available_slots );
+					if ( $result_data ) {
+						$existing_items  = $result_data['existing_items'];
+						$existing_order  = $result_data['existing_order'];
+						$existing_labels = $result_data['existing_labels'];
+						$available_slots = $result_data['available_slots'];
+						$classes[ $class_name ] = $result_data['class_entry'];
+						++$registered;
+					} else {
+						$overflow[] = $class_name;
+					}
+				}
+				continue;
+			}
+
+			if ( 'rename' === $resolution ) {
+				$custom_label = isset( $rename_map[ $class_name ] ) ? sanitize_text_field( $rename_map[ $class_name ] ) : '';
+				$final_label  = ! empty( $custom_label ) ? $custom_label : $class_name;
+				$unique_label = $this->get_unique_label( $final_label, $existing_labels );
+
+				$result_data = $this->create_new_class( $class_name, $unique_label, $breakpoint_props, $existing_items, $existing_order, $existing_labels, $available_slots );
+				if ( $result_data ) {
+					$existing_items  = $result_data['existing_items'];
+					$existing_order  = $result_data['existing_order'];
+					$existing_labels = $result_data['existing_labels'];
+					$available_slots = $result_data['available_slots'];
+					$classes[ $class_name ] = $result_data['class_entry'];
+					++$registered;
+				} else {
+					$overflow[] = $class_name;
+				}
 				continue;
 			}
 
@@ -194,38 +256,17 @@ class Class_Registration_Service {
 						'status'         => 'reused',
 					];
 				} else {
-					if ( $available_slots <= 0 ) {
+					$result_data = $this->create_new_class( $class_name, $class_name, $breakpoint_props, $existing_items, $existing_order, $existing_labels, $available_slots );
+					if ( $result_data ) {
+						$existing_items  = $result_data['existing_items'];
+						$existing_order  = $result_data['existing_order'];
+						$existing_labels = $result_data['existing_labels'];
+						$available_slots = $result_data['available_slots'];
+						$classes[ $class_name ] = $result_data['class_entry'];
+						++$registered;
+					} else {
 						$overflow[] = $class_name;
-						continue;
 					}
-
-					$label  = $this->truncate_label( $class_name );
-					$new_id = $this->generate_class_id( $label );
-
-					$counter = 1;
-					while ( isset( $existing_items[ $new_id ] ) ) {
-						$new_id = $this->generate_class_id( $label ) . '-' . $counter;
-						++$counter;
-					}
-
-					$existing_items[ $new_id ] = $this->create_class_config_with_breakpoints(
-						$new_id,
-						$label,
-						$breakpoint_props
-					);
-					$existing_order[]   = $new_id;
-					$existing_labels[]  = strtolower( $label );
-
-					++$registered;
-					--$available_slots;
-
-					$classes[ $class_name ] = [
-						'id'             => $class_name,
-						'label'          => $label,
-						'elementor_id'   => $new_id,
-						'breakpoint_props' => $breakpoint_props,
-						'status'         => 'created',
-					];
 				}
 			}
 		}
@@ -252,6 +293,43 @@ class Class_Registration_Service {
 			'updated'    => $updated,
 			'overflow'   => $overflow,
 			'classes'    => $classes,
+		];
+	}
+
+	private function create_new_class( string $class_name, string $label, array $breakpoint_props, array $existing_items, array $existing_order, array $existing_labels, int $available_slots ): ?array {
+		if ( $available_slots <= 0 ) {
+			return null;
+		}
+
+		$truncated_label = $this->truncate_label( $label );
+		$new_id          = $this->generate_class_id( $truncated_label );
+
+		$counter = 1;
+		while ( isset( $existing_items[ $new_id ] ) ) {
+			$new_id = $this->generate_class_id( $truncated_label ) . '-' . $counter;
+			++$counter;
+		}
+
+		$existing_items[ $new_id ] = $this->create_class_config_with_breakpoints(
+			$new_id,
+			$truncated_label,
+			$breakpoint_props
+		);
+		$existing_order[]  = $new_id;
+		$existing_labels[] = strtolower( $truncated_label );
+
+		return [
+			'existing_items'  => $existing_items,
+			'existing_order'  => $existing_order,
+			'existing_labels' => $existing_labels,
+			'available_slots' => $available_slots - 1,
+			'class_entry'     => [
+				'id'               => $class_name,
+				'label'            => $truncated_label,
+				'elementor_id'     => $new_id,
+				'breakpoint_props' => $breakpoint_props,
+				'status'           => 'created',
+			],
 		];
 	}
 

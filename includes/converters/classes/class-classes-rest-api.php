@@ -10,6 +10,8 @@
 namespace ElementorHtmlCssConverter\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
+use ElementorHtmlCssConverter\Converters\Classes\Atomic_To_Css_Converter;
+use Elementor\Modules\GlobalClasses\Global_Classes_Repository;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -75,6 +77,32 @@ class Classes_Rest_API {
 						'enum'              => [ 'frontend', 'preview' ],
 						'sanitize_callback' => 'sanitize_text_field',
 					],
+					'resolutions' => [
+						'type'    => 'object',
+						'default' => [],
+					],
+					'rename_map'  => [
+						'type'    => 'object',
+						'default' => [],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'html-css-converter/v1',
+			'/export-classes',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'export_classes' ],
+				'permission_callback' => [ $this, 'check_permissions' ],
+				'args'                => [
+					'context' => [
+						'type'              => 'string',
+						'default'           => 'frontend',
+						'enum'              => [ 'frontend', 'preview' ],
+						'sanitize_callback' => 'sanitize_text_field',
+					],
 				],
 			]
 		);
@@ -103,6 +131,8 @@ class Classes_Rest_API {
 		$css         = $request->get_param( 'css' );
 		$update_mode = $request->get_param( 'update_mode' ) ?? 'create_new';
 		$context     = $request->get_param( 'context' ) ?? 'frontend';
+		$resolutions = $request->get_param( 'resolutions' ) ?? [];
+		$rename_map  = $request->get_param( 'rename_map' ) ?? [];
 
 		$validation_error = $this->validate_css_or_url_provided( $css, $url );
 		if ( $validation_error ) {
@@ -122,7 +152,79 @@ class Classes_Rest_API {
 
 		$css = $this->remove_utf8_bom( $css );
 
-		return $this->process_and_register_classes( $css, $update_mode, $context );
+		return $this->process_and_register_classes( $css, $update_mode, $context, $resolutions, $rename_map );
+	}
+
+	/**
+	 * Handle the export classes request.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function export_classes( WP_REST_Request $request ): WP_REST_Response {
+		$context = $request->get_param( 'context' ) ?? 'frontend';
+
+		if ( ! class_exists( '\Elementor\Plugin' ) || ! class_exists( '\Elementor\Modules\GlobalClasses\Global_Classes_Repository' ) ) {
+			return new WP_REST_Response(
+				[
+					'error' => 'Global Classes not available',
+					'code'  => 'not_available',
+				],
+				500
+			);
+		}
+
+		try {
+			$repository = Global_Classes_Repository::make()->context( $context );
+			$all_classes = $repository->all();
+			$items = $all_classes->get_items()->all();
+			$order = $all_classes->get_order()->all();
+		} catch ( \Exception $e ) {
+			return new WP_REST_Response(
+				[
+					'error'   => 'Failed to read classes',
+					'code'    => 'read_error',
+					'details' => $e->getMessage(),
+				],
+				500
+			);
+		}
+
+		if ( empty( $items ) ) {
+			return new WP_REST_Response(
+				[
+					'success'     => true,
+					'css'         => '',
+					'total_classes' => 0,
+				],
+				200
+			);
+		}
+
+		$ordered_items = [];
+		foreach ( $order as $id ) {
+			if ( isset( $items[ $id ] ) ) {
+				$ordered_items[] = $items[ $id ];
+			}
+		}
+
+		foreach ( $items as $id => $item ) {
+			if ( ! in_array( $id, $order, true ) ) {
+				$ordered_items[] = $item;
+			}
+		}
+
+		$converter = new Atomic_To_Css_Converter();
+		$css = $converter->convert_classes_to_css( $ordered_items );
+
+		return new WP_REST_Response(
+			[
+				'success'       => true,
+				'css'           => $css,
+				'total_classes' => count( $items ),
+			],
+			200
+		);
 	}
 
 	/**
@@ -195,9 +297,10 @@ class Classes_Rest_API {
 	 * @param string $context     Context: 'frontend' or 'preview'.
 	 * @return WP_REST_Response Response with results.
 	 */
-	private function process_and_register_classes( string $css, string $update_mode, string $context ): WP_REST_Response {
+	private function process_and_register_classes( string $css, string $update_mode, string $context, array $resolutions = [], array $rename_map = [] ): WP_REST_Response {
 		$extractor         = new Class_Extractor();
-		$extracted_classes = $extractor->extract_from_css( $css );
+		$matcher           = new \ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher();
+		$extracted_classes = $extractor->extract_from_css( $css, $matcher );
 
 		if ( empty( $extracted_classes ) ) {
 			return new WP_REST_Response(
@@ -228,7 +331,9 @@ class Classes_Rest_API {
 			$result = $registration_service->register_with_elementor(
 				$converted_classes,
 				$update_mode,
-				$context
+				$context,
+				$resolutions,
+				$rename_map
 			);
 		} catch ( \Exception $e ) {
 			return new WP_REST_Response(

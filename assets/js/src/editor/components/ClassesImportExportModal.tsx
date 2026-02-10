@@ -1,11 +1,11 @@
 import { getReact } from '../utils/getReact';
 import { getElementorUI } from '../utils/getElementorUI';
-import { useVariablesImportExport } from '../hooks/useVariablesImportExport';
-import { ImportTab } from './variables-import-export/ImportTab';
-import { ExportTab } from './variables-import-export/ExportTab';
+import { useClassesImportExport } from '../hooks/useClassesImportExport';
+import { ClassesImportTab } from './classes-import-export/ImportTab';
+import { ClassesExportTab } from './classes-import-export/ExportTab';
 import { VariablesImportExportModalProps } from '../types/components';
 
-export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: VariablesImportExportModalProps) => {
+export const ClassesImportExportModal = ({ isOpen, onClose, apiUrl }: VariablesImportExportModalProps) => {
 	const React = getReact();
 	if (!React) {
 		return null;
@@ -16,7 +16,7 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 		return null;
 	}
 
-	const state = useVariablesImportExport();
+	const state = useClassesImportExport();
 	if (!state) {
 		return null;
 	}
@@ -50,7 +50,7 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 	} = ui;
 
 	if (!DialogComponent || !BoxComponent) {
-		console.error('[EHCC] Variables Import/Export: Required UI components not available');
+		console.error('[EHCC] Classes Import/Export: Required UI components not available');
 		return null;
 	}
 
@@ -124,7 +124,7 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 								fontWeight: 'bold',
 							}}
 						>
-							Import / Export
+							Import / Export Classes
 						</BoxComponent>
 					</BoxComponent>
 				</BoxComponent>
@@ -215,7 +215,7 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 			)}
 
 			{activeTab === 0 && (
-				<ImportTab
+				<ClassesImportTab
 					apiUrl={apiUrl}
 					isLoading={isLoading}
 					setIsLoading={setIsLoading}
@@ -227,14 +227,15 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 				/>
 			)}
 
-			{activeTab === 1 && (
-				<ExportTab
-					statusMessage={statusMessage}
-					setStatusMessage={setStatusMessage}
-					statusType={statusType}
-					setStatusType={setStatusType}
-				/>
-			)}
+		{activeTab === 1 && (
+			<ClassesExportTab
+				apiUrl={apiUrl}
+				statusMessage={statusMessage}
+				setStatusMessage={setStatusMessage}
+				statusType={statusType}
+				setStatusType={setStatusType}
+			/>
+		)}
 		</DialogComponent>
 	);
 };

@@ -15,7 +15,7 @@ const ACTIVE_BUTTON_STYLE = {
 	},
 };
 
-export const ConflictAssessment = ({
+export const ClassConflictAssessment = ({
 	assessment,
 	onConfirm,
 	onCancel,
@@ -36,7 +36,6 @@ export const ConflictAssessment = ({
 	}
 
 	const [choices, setChoices] = useState<Record<string, ResolutionAction>>(defaultChoices);
-
 	const [renameValues, setRenameValues] = useState<Record<string, string>>({});
 
 	const {
@@ -51,27 +50,27 @@ export const ConflictAssessment = ({
 		FormControlLabel: FormControlLabelComponent,
 	} = ui;
 
-	const handleChoiceChange = (variableName: string, action: ResolutionAction) => {
+	const handleChoiceChange = (className: string, action: ResolutionAction) => {
 		setChoices((prev: Record<string, ResolutionAction>) => ({
 			...prev,
-			[variableName]: action,
+			[className]: action,
 		}));
 
-		if (action === RENAME_ACTION && !renameValues[variableName]) {
-			const conflict = assessment.conflicts.find((c) => c.name === variableName);
+		if (action === RENAME_ACTION && !renameValues[className]) {
+			const conflict = assessment.conflicts.find((c) => c.name === className);
 			if (conflict) {
 				setRenameValues((prev: Record<string, string>) => ({
 					...prev,
-					[variableName]: conflict.label,
+					[className]: conflict.label + '-copy',
 				}));
 			}
 		}
 	};
 
-	const handleRenameValueChange = (variableName: string, newLabel: string) => {
+	const handleRenameValueChange = (className: string, newLabel: string) => {
 		setRenameValues((prev: Record<string, string>) => ({
 			...prev,
-			[variableName]: newLabel,
+			[className]: newLabel,
 		}));
 	};
 
@@ -82,9 +81,9 @@ export const ConflictAssessment = ({
 		};
 
 		const filteredRenameMap: Record<string, string> = {};
-		for (const [variableName, action] of Object.entries(allResolutions)) {
-			if (action === RENAME_ACTION && renameValues[variableName]) {
-				filteredRenameMap[variableName] = renameValues[variableName];
+		for (const [className, action] of Object.entries(allResolutions)) {
+			if (action === RENAME_ACTION && renameValues[className]) {
+				filteredRenameMap[className] = renameValues[className];
 			}
 		}
 
@@ -98,9 +97,6 @@ export const ConflictAssessment = ({
 	if (assessment.skipCount > 0) {
 		summaryParts.push(`${assessment.skipCount} unchanged`);
 	}
-	if (assessment.reactivateCount > 0) {
-		summaryParts.push(`${assessment.reactivateCount} reactivated`);
-	}
 
 	return (
 		<StackComponent direction="column" spacing={2} sx={{ padding: '20px' }}>
@@ -112,7 +108,7 @@ export const ConflictAssessment = ({
 
 			{AlertComponent && (
 				<AlertComponent severity="warning">
-					{assessment.conflicts.length} variable{assessment.conflicts.length !== 1 ? 's' : ''} already exist with different values.
+					{assessment.conflicts.length} class{assessment.conflicts.length !== 1 ? 'es' : ''} already exist with different styles.
 				</AlertComponent>
 			)}
 
@@ -133,7 +129,7 @@ export const ConflictAssessment = ({
 									variant="subtitle2"
 									sx={{ fontFamily: 'monospace', marginBottom: '8px' }}
 								>
-									{conflict.name}
+									.{conflict.name}
 								</TypographyComponent>
 							)}
 
@@ -201,7 +197,7 @@ export const ConflictAssessment = ({
 										variant="body2"
 										sx={{ fontFamily: 'monospace', fontSize: '13px', color: 'text.secondary' }}
 									>
-										--
+										.
 									</TypographyComponent>
 								)}
 								<TextFieldComponent

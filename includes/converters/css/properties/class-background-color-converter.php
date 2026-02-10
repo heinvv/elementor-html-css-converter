@@ -3,6 +3,7 @@ namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Css_Named_Colors;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Overlay_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Background_Gradient_Overlay_Prop_Type;
@@ -351,14 +352,7 @@ class Background_Color_Converter extends Property_Converter_Base {
 			return $value;
 		}
 
-		$named_colors = [
-			'transparent', 'black', 'white', 'red', 'green', 'blue', 'yellow',
-			'cyan', 'magenta', 'gray', 'grey', 'orange', 'pink', 'purple',
-			'brown', 'navy', 'teal', 'olive', 'maroon', 'aqua', 'fuchsia',
-			'lime', 'silver', 'gold', 'coral', 'salmon', 'tomato', 'crimson',
-		];
-
-		if ( in_array( strtolower( $value ), $named_colors, true ) ) {
+		if ( Css_Named_Colors::is_named_color( $value ) ) {
 			return strtolower( $value );
 		}
 

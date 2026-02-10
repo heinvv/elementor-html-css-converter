@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
 use ElementorHtmlCssConverter\Converters\Css\Size_Value_Parser;
 use ElementorHtmlCssConverter\Converters\Css\Color_Value_Parser;
+use ElementorHtmlCssConverter\Converters\Css\Css_Named_Colors;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\AtomicWidgets\PropTypes\Color_Prop_Type;
 use Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type;
@@ -42,13 +43,6 @@ class Border_Converter extends Property_Converter_Base {
 		'thin'   => [ 'size' => self::BORDER_WIDTH_THIN, 'unit' => 'px' ],
 		'medium' => [ 'size' => self::BORDER_WIDTH_MEDIUM, 'unit' => 'px' ],
 		'thick'  => [ 'size' => self::BORDER_WIDTH_THICK, 'unit' => 'px' ],
-	];
-
-	private const NAMED_COLORS = [
-		'transparent', 'black', 'white', 'red', 'green', 'blue', 'yellow',
-		'cyan', 'magenta', 'gray', 'grey', 'orange', 'purple', 'pink',
-		'brown', 'navy', 'teal', 'lime', 'olive', 'maroon', 'silver',
-		'aqua', 'fuchsia', 'gold', 'coral', 'crimson', 'currentcolor',
 	];
 
 	protected function get_supported_properties_list(): array {
@@ -230,7 +224,7 @@ class Border_Converter extends Property_Converter_Base {
 			return true;
 		}
 
-		return in_array( strtolower( $value ), self::NAMED_COLORS, true );
+		return Css_Named_Colors::is_named_color( $value );
 	}
 
 	private function build_expanded_properties( array $parsed ): array {

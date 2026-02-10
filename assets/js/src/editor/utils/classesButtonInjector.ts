@@ -1,14 +1,14 @@
 import { getReact } from './getReact';
-import { ImportExportButton } from '../components/variables-import-export/ImportExportButton';
+import { SyncButton } from '../components/classes-import-export/SyncButton';
 import { ModalManager } from '../types/utils';
 
-const PANEL_TITLE_TEXT = 'Variables Manager';
-const BUTTON_ID = 'ehcc-variables-import-export-button';
+const PANEL_TITLE_TEXT = 'Class Manager';
+const BUTTON_ID = 'ehcc-classes-import-export-button';
 
 const createFallbackButton = (modalManager: ModalManager): HTMLElement => {
 	const button = document.createElement('button');
 	button.type = 'button';
-	button.setAttribute('aria-label', 'Import / Export Variables');
+	button.setAttribute('aria-label', 'Import / Export Classes');
 	button.className = 'MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall';
 	button.style.cssText = 'padding: 4px; border-radius: 4px; border: none; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: inherit;';
 
@@ -64,7 +64,7 @@ const renderButtonWithReact = (container: Element, modalManager: ModalManager): 
 	try {
 		const root = createRoot(container);
 		root.render(
-			ReactLib.createElement(ImportExportButton, {
+			ReactLib.createElement(SyncButton, {
 				onClick: () => {
 					modalManager.open();
 				},
@@ -72,115 +72,73 @@ const renderButtonWithReact = (container: Element, modalManager: ModalManager): 
 		);
 		return true;
 	} catch (error) {
-		console.error('[EHCC] Variables Import/Export: React rendering error:', error);
 		const fallbackButton = createFallbackButton(modalManager);
 		container.appendChild(fallbackButton);
 		return true;
 	}
 };
 
-const findVariablesManagerPanel = (root: Element): Element | null => {
-	const titleElements = root.querySelectorAll('h2, h3, h4, h5, h6');
+const findClassManagerCloseButton = (): { titleElement: Element; closeButton: Element; parentStack: Element } | null => {
+	const titleElements = document.body.querySelectorAll('h2, h3, h4, h5, h6');
 
 	for (const el of titleElements) {
 		const text = el.textContent?.trim();
-		if (text && (text === PANEL_TITLE_TEXT || text.includes(PANEL_TITLE_TEXT))) {
-			return el;
+		if (!text || !text.includes(PANEL_TITLE_TEXT)) {
+			continue;
 		}
 
-		const svg = el.querySelector('svg');
-		const textNodes = Array.from(el.childNodes).filter(
-			(node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
-		);
-		if (svg && textNodes.length > 0) {
-			const textContent = textNodes.map((n) => n.textContent?.trim()).join(' ').trim();
-			if (textContent === PANEL_TITLE_TEXT || textContent.includes(PANEL_TITLE_TEXT)) {
-				return el;
-			}
+		let parentStack: Element | null = el.closest('.MuiStack-root');
+		if (!parentStack) {
+			continue;
+		}
+
+		const outerStack = parentStack.parentElement?.closest('.MuiStack-root');
+		if (outerStack) {
+			parentStack = outerStack;
+		}
+
+		const closeButton = parentStack.querySelector('button[aria-label="Close"]');
+		if (closeButton) {
+			console.log('[EHCC] Classes Button Injector: Found title, close button, and parent stack');
+			return { titleElement: el, closeButton, parentStack };
 		}
 	}
 
 	return null;
 };
 
-const findActionButtonsContainer = (root: Element): Element | null => {
-	const addButton = root.querySelector('[aria-label="Add variable"]');
-	const closeButton = root.querySelector('[aria-label="Close"]');
-
-	if (!addButton || !closeButton) {
-		return null;
-	}
-
-	const addParent = addButton.parentElement;
-	if (addParent && addParent.classList.contains('MuiStack-root')) {
-		if (addParent.contains(closeButton)) {
-			return addParent;
-		}
-	}
-
-	const addParentStack = addButton.closest('.MuiStack-root');
-	if (addParentStack && addParentStack.contains(closeButton)) {
-		return addParentStack;
-	}
-
-	const allStacks = root.querySelectorAll('.MuiStack-root');
-	for (const stack of allStacks) {
-		if (stack.contains(addButton) && stack.contains(closeButton)) {
-			return stack;
-		}
-	}
-
-	if (addParent && addParent.classList.contains('MuiStack-root')) {
-		return addParent;
-	}
-
-	return null;
-};
-
-const injectButton = (modalManager: ModalManager, root: Element): boolean => {
-	if (root.querySelector(`#${BUTTON_ID}`)) {
+const injectButton = (modalManager: ModalManager): boolean => {
+	if (document.getElementById(BUTTON_ID)) {
 		return false;
 	}
 
-	const titleElement = findVariablesManagerPanel(root);
-	if (!titleElement) {
+	const result = findClassManagerCloseButton();
+	if (!result) {
 		return false;
 	}
 
-	const addButton = root.querySelector('[aria-label="Add variable"]');
-	if (!addButton) {
-		return false;
-	}
-
-	const actionsContainer = findActionButtonsContainer(root);
-	if (!actionsContainer) {
-		return false;
-	}
-
-	const closeButton = actionsContainer.querySelector('[aria-label="Close"]');
-	if (!closeButton) {
-		return false;
-	}
+	const { closeButton, parentStack } = result;
 
 	try {
 		const buttonContainer = document.createElement('span');
 		buttonContainer.id = BUTTON_ID;
 		buttonContainer.style.display = 'inline-flex';
-		actionsContainer.insertBefore(buttonContainer, closeButton);
+		parentStack.insertBefore(buttonContainer, closeButton);
 
 		const rendered = renderButtonWithReact(buttonContainer, modalManager);
 		if (!rendered && buttonContainer.parentNode) {
 			buttonContainer.parentNode.removeChild(buttonContainer);
 			return false;
 		}
+		console.log('[EHCC] Classes Button Injector: Button successfully injected into MUI Stack');
 		return rendered;
 	} catch (error) {
-		console.error('[EHCC] Variables Import/Export: Error injecting button:', error);
+		console.error('[EHCC] Classes Import/Export: Error injecting button:', error);
 		return false;
 	}
 };
 
-export const initVariablesButtonInjector = (modalManager: ModalManager): void => {
+export const initClassesButtonInjector = (modalManager: ModalManager): void => {
 	let injected = false;
 	let attemptCount = 0;
 
@@ -192,18 +150,12 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 		attemptCount++;
 
 		try {
-			const titleElement = findVariablesManagerPanel(document.body);
-			const actionsContainer = findActionButtonsContainer(document.body);
-			
-			if (!titleElement || !actionsContainer) {
-				return;
-			}
-
-			if (injectButton(modalManager, document.body)) {
+			if (injectButton(modalManager)) {
 				injected = true;
+				console.log('[EHCC] Classes Button Injector: Injection successful on attempt', attemptCount);
 			}
 		} catch (error) {
-			console.error('[EHCC] Variables Import/Export: Error in tryInject:', error);
+			console.error('[EHCC] Classes Import/Export: Error in tryInject:', error);
 		}
 	};
 
@@ -224,22 +176,10 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 
 	setupObserver();
 
-	setTimeout(() => {
-		tryInject();
-	}, 500);
-
-	setTimeout(() => {
-		tryInject();
-	}, 2000);
-
-	setTimeout(() => {
-		tryInject();
-	}, 5000);
-
-	setTimeout(() => {
-		tryInject();
-	}, 10000);
-
+	setTimeout(() => { tryInject(); }, 500);
+	setTimeout(() => { tryInject(); }, 2000);
+	setTimeout(() => { tryInject(); }, 5000);
+	setTimeout(() => { tryInject(); }, 10000);
 	tryInject();
 
 	if (typeof window !== 'undefined') {
@@ -279,18 +219,12 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 						const panelsState = state?.panels;
 						const currentPanelId = panelsState?.openId || null;
 
-						if (currentPanelId === 'variables-manager' && previousPanelId !== 'variables-manager') {
+						if (currentPanelId === 'global-classes-manager' && previousPanelId !== 'global-classes-manager') {
 							injected = false;
 							attemptCount = 0;
-							setTimeout(() => {
-								tryInject();
-							}, 500);
-							setTimeout(() => {
-								tryInject();
-							}, 1000);
-							setTimeout(() => {
-								tryInject();
-							}, 2000);
+							setTimeout(() => { tryInject(); }, 500);
+							setTimeout(() => { tryInject(); }, 1000);
+							setTimeout(() => { tryInject(); }, 2000);
 						}
 
 						previousPanelId = currentPanelId;
@@ -314,7 +248,7 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 
 				checkPanelState();
 			} catch (error) {
-				console.error('[EHCC] Variables Import/Export: Error subscribing to panel store:', error);
+				console.error('[EHCC] Classes Import/Export: Error subscribing to panel store:', error);
 			}
 		}
 	}

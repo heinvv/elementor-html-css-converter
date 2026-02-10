@@ -19,6 +19,7 @@ export const ModalHeader = ({ onClose }: ModalHeaderProps) => {
 				alignItems: 'center',
 				justifyContent: 'space-between',
 				height: '50px',
+				minHeight: '50px',
 				borderBottom: 'var(--e-a-border, 1px solid #d5dade)',
 			}}
 		>

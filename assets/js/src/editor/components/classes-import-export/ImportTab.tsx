@@ -1,15 +1,14 @@
 import { getReact } from '../../utils/getReact';
 import { getElementorUI } from '../../utils/getElementorUI';
 import { AssessmentResult, ImportTabProps, ResolutionAction } from '../../types/components';
-import { reloadElementorVariablesService } from '../../utils/reloadElementorVariablesService';
-import { refreshVariablesPanel } from '../../utils/refreshVariablesPanel';
-import { parseCssVariables } from '../../utils/parseCssVariables';
-import { assessVariableConflicts } from '../../utils/assessVariableConflicts';
-import { ConflictAssessment } from './ConflictAssessment';
+import { syncElementorClassesToStore } from '../../utils/syncElementorClassesToStore';
+import { parseCssClassNames } from '../../utils/parseCssClassNames';
+import { assessClassConflicts } from '../../utils/assessClassConflicts';
+import { ClassConflictAssessment } from './ConflictAssessment';
 
 type ImportPhase = 'input' | 'assessing' | 'importing';
 
-export const ImportTab = ({
+export const ClassesImportTab = ({
 	apiUrl,
 	isLoading,
 	setIsLoading,
@@ -30,7 +29,13 @@ export const ImportTab = ({
 	const [importText, setImportText] = useState('');
 	const [phase, setPhase] = useState<ImportPhase>('input');
 	const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
-	const [importedVariables, setImportedVariables] = useState<Record<string, { name: string; value: string }> | null>(null);
+	const [importStats, setImportStats] = useState(null as {
+		detected: number;
+		converted: number;
+		registered: number;
+		skipped: number;
+		updated: number;
+	} | null);
 
 	const {
 		Stack: StackComponent,
@@ -45,12 +50,15 @@ export const ImportTab = ({
 		setIsLoading(true);
 		setStatusMessage(null);
 		setStatusType(null);
+		setImportStats(null);
 		setPhase('importing');
 
 		try {
-			const fullUrl = apiUrl + 'import-variables';
+			const fullUrl = apiUrl + 'import-classes';
 			const payload = {
 				css: importText.trim(),
+				update_mode: 'create_new',
+				context: 'preview',
 				resolutions,
 				rename_map: renameMap,
 			};
@@ -66,31 +74,30 @@ export const ImportTab = ({
 			const data = await response.json();
 
 			if (data.success) {
-				const createdCount = data.created || 0;
-				const reusedCount = data.reused || 0;
-				const updatedCount = data.updated || 0;
-				const reactivatedCount = data.reactivated || 0;
+				const stats = data.statistics || {};
+				setImportStats(stats);
 
 				const parts: string[] = [];
-				if (createdCount > 0) parts.push(`${createdCount} created`);
-				if (reusedCount > 0) parts.push(`${reusedCount} reused`);
-				if (updatedCount > 0) parts.push(`${updatedCount} updated`);
-				if (reactivatedCount > 0) parts.push(`${reactivatedCount} reactivated`);
+				if (stats.registered > 0) parts.push(`${stats.registered} created`);
+				if (stats.skipped > 0) parts.push(`${stats.skipped} reused`);
+				if (stats.updated > 0) parts.push(`${stats.updated} updated`);
+
+				const overflowCount = data.overflow?.length || 0;
+				if (overflowCount > 0) {
+					parts.push(`${overflowCount} skipped (limit reached)`);
+				}
 
 				setStatusMessage(`Import complete: ${parts.join(', ')}.`);
 				setStatusType('success');
 				setImportText('');
-				setImportedVariables(data.variables || null);
 
-				await reloadElementorVariablesService();
-				window.dispatchEvent(new Event('variables:updated'));
-				refreshVariablesPanel();
+				await syncElementorClassesToStore(apiUrl);
+				window.dispatchEvent(new Event('classes:updated'));
 			} else {
 				setStatusMessage(data.error || data.message || 'Import failed.');
 				setStatusType('error');
 			}
 		} catch (error) {
-			console.error('[EHCC] Import: Error:', error);
 			setStatusMessage(
 				'Import failed: ' + (error instanceof Error ? error.message : 'Unknown error')
 			);
@@ -104,24 +111,24 @@ export const ImportTab = ({
 
 	const handleImportClick = () => {
 		if (!importText.trim()) {
-			setStatusMessage('Please paste CSS variables to import.');
+			setStatusMessage('Please paste CSS classes to import.');
 			setStatusType('error');
 			return;
 		}
 
 		setStatusMessage(null);
 		setStatusType(null);
-		setImportedVariables(null);
+		setImportStats(null);
 
-		const parsed = parseCssVariables(importText);
+		const parsed = parseCssClassNames(importText);
 
 		if (parsed.length === 0) {
-			setStatusMessage('No CSS variables found in the input.');
+			setStatusMessage('No CSS classes found in the input.');
 			setStatusType('error');
 			return;
 		}
 
-		const result = assessVariableConflicts(parsed);
+		const result = assessClassConflicts(parsed);
 
 		if (result.hasConflicts) {
 			setAssessment(result);
@@ -143,7 +150,7 @@ export const ImportTab = ({
 
 	if (phase === 'assessing' && assessment) {
 		return (
-			<ConflictAssessment
+			<ClassConflictAssessment
 				assessment={assessment}
 				onConfirm={handleAssessmentConfirm}
 				onCancel={handleAssessmentCancel}
@@ -152,28 +159,23 @@ export const ImportTab = ({
 		);
 	}
 
-	const importSucceeded = statusType === 'success' && importedVariables;
+	const importSucceeded = statusType === 'success' && importStats;
 
 	return (
 		<StackComponent direction="column" spacing={2} sx={{ padding: '20px' }}>
-		{!importSucceeded && TypographyComponent && (
-		<>
-			<TypographyComponent variant="body2" color="text.secondary">
-				Paste CSS custom properties below to import them as variables.
-			</TypographyComponent>
-			<TypographyComponent variant="body2" sx={{ color: 'error.main' }}>
-				Note: It would be great to also integrate the JSON import / export functionality here.
-			</TypographyComponent>
-		</>
-		)}
+			{!importSucceeded && TypographyComponent && (
+				<TypographyComponent variant="body2" color="text.secondary">
+					Paste CSS class definitions below to import them as global classes.
+				</TypographyComponent>
+			)}
 			{!importSucceeded && (
 				<TextFieldComponent
 					fullWidth
 					multiline
-					rows={6}
+					rows={10}
 					value={importText}
 					onChange={(e: any) => setImportText(e.target.value)}
-					placeholder={`--primary-color: #ff0000;\n--spacing-large: 24px;`}
+					placeholder={`.btn-primary {\n\tbackground-color: #6200ee;\n\tcolor: #ffffff;\n\tpadding: 12px 24px;\n\tborder-radius: 4px;\n}`}
 					disabled={isLoading}
 					sx={{
 						'& .MuiInputBase-input': {
@@ -198,7 +200,7 @@ export const ImportTab = ({
 						},
 					}}
 				>
-					{isLoading ? 'Importing...' : 'Import Variables'}
+					{isLoading ? 'Importing...' : 'Import Classes'}
 				</ButtonComponent>
 			)}
 			{statusMessage && (
@@ -213,7 +215,7 @@ export const ImportTab = ({
 									{statusMessage}
 								</TypographyComponent>
 							)}
-							{importSucceeded && (
+							{importSucceeded && importStats && (
 								<BoxComponent
 									component="ul"
 									sx={{
@@ -222,15 +224,18 @@ export const ImportTab = ({
 										listStyleType: 'disc',
 									}}
 								>
-									{Object.entries(importedVariables).map(([label, variable]) => (
-										<BoxComponent
-											component="li"
-											key={label}
-											sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
-										>
-											{variable.name}: {variable.value}
-										</BoxComponent>
-									))}
+									<BoxComponent
+										component="li"
+										sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
+									>
+										Detected: {importStats.detected} classes
+									</BoxComponent>
+									<BoxComponent
+										component="li"
+										sx={{ fontFamily: 'monospace', fontSize: '13px', paddingBlock: '2px' }}
+									>
+										Converted: {importStats.converted} classes
+									</BoxComponent>
 								</BoxComponent>
 							)}
 						</StackComponent>
@@ -245,7 +250,7 @@ export const ImportTab = ({
 						onClick={() => {
 							setStatusMessage(null);
 							setStatusType(null);
-							setImportedVariables(null);
+							setImportStats(null);
 						}}
 						sx={{ width: '50%' }}
 					>

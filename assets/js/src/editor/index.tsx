@@ -1,6 +1,8 @@
 import { createModalManager } from './utils/modalManager';
 import { createVariablesModalManager } from './utils/variablesModalManager';
 import { initVariablesButtonInjector } from './utils/variablesButtonInjector';
+import { createClassesModalManager } from './utils/classesModalManager';
+import { initClassesButtonInjector } from './utils/classesButtonInjector';
 
 let retryCount = 0;
 const MAX_RETRIES = 200;
@@ -42,6 +44,16 @@ function waitForReact() {
 
 		if (typeof window !== 'undefined') {
 			(window as any).ehccVariablesImportExport = variablesModalManager;
+		}
+
+		const classesModalManager = createClassesModalManager();
+		classesModalManager.init();
+		console.log('[EHCC] Classes Import/Export: Initializing button injector');
+		initClassesButtonInjector(classesModalManager);
+
+		if (typeof window !== 'undefined') {
+			(window as any).ehccClassesImportExport = classesModalManager;
+			console.log('[EHCC] Classes Import/Export: Modal manager available at window.ehccClassesImportExport');
 		}
 	} catch (error) {
 		console.error('[EHCC] Variables Import/Export: Initialization error:', error);
