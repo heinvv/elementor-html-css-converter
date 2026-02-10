@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
 use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Fallback_Substitutor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -20,7 +21,7 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 		return $this->get_supported_properties_list();
 	}
 
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
@@ -38,11 +39,17 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 
 			$resolved = Variable_Resolver::resolve( $value, $variable_type );
 
-			if ( null === $resolved ) {
-				return null;
+			if ( null !== $resolved ) {
+				return $this->wrap_resolved_variable( $resolved, $property );
 			}
 
-			return $this->wrap_resolved_variable( $resolved, $property );
+			$variable_fallback = $context['variable_fallback'] ?? [];
+			$substituted = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
+			if ( $substituted !== $value ) {
+				return $this->convert_value( $property, $substituted );
+			}
+
+			return $this->convert_value( $property, $value );
 		}
 
 		return $this->convert_value( $property, $value );

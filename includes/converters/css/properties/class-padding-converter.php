@@ -38,7 +38,7 @@ class Padding_Converter extends Property_Converter_Base {
 		return self::OUTPUT_PROPERTY;
 	}
 
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
@@ -51,6 +51,15 @@ class Padding_Converter extends Property_Converter_Base {
 
 		if ( null === $dimensions_data ) {
 			return null;
+		}
+
+		if ( 'padding' === $property ) {
+			$existing_dimensions = $context['existing_dimensions'] ?? [];
+			$dimensions_data = array_diff_key( $dimensions_data, $existing_dimensions );
+		}
+
+		if ( empty( $dimensions_data ) ) {
+			return Dimensions_Prop_Type::generate( [] );
 		}
 
 		return Dimensions_Prop_Type::generate( $dimensions_data );

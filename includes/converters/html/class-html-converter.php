@@ -497,7 +497,8 @@ class Html_Converter {
 			return [ 'imported' => [], 'renames' => [] ];
 		}
 
-		$converted = Variable_Conversion_Service::convert_to_editor_variables( $raw_vars );
+		$conversion_result = Variable_Conversion_Service::convert_to_editor_variables( $raw_vars );
+		$converted         = $conversion_result['converted'] ?? [];
 
 		if ( empty( $converted ) ) {
 			return [ 'imported' => [], 'renames' => [] ];

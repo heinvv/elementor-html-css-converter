@@ -49,7 +49,7 @@ class Border_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
