@@ -74,7 +74,7 @@ export const assessVariableConflicts = (parsed: ParsedCssVariable[]): Assessment
 			continue;
 		}
 
-		const normalizedIncoming = normalizeVariableValue(parsedVar.value, match.variable.type);
+		const normalizedIncoming = normalizeVariableValue(parsedVar.value, match.variable.type, parsedVar.name);
 
 		if (match.variable.value === normalizedIncoming) {
 			autoResolutions[parsedVar.name] = 'skip';

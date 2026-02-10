@@ -16,14 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Length_Size_Viewport_Variable_Convertor
  *
- * Handles values with units: px, pt, em, rem, vh, vw, etc.
+ * Handles values with units: px, em, rem, vh, vw, etc.
  */
 class Length_Size_Viewport_Variable_Convertor extends Abstract_Variable_Convertor {
 
 	/**
 	 * Regex pattern for length values.
 	 */
-	private const LENGTH_PATTERN = '/^([+-]?(?:\d*\.)?\d+)(px|pt|em|rem|ch|vh|vw|svh|svw|vmin|vmax)$/i';
+	private const LENGTH_PATTERN = '/^([+-]?(?:\d*\.)?\d+)(px|em|rem|ch|vh|vw|svh|svw|vmin|vmax)$/i';
 
 	/**
 	 * Check if this convertor supports the value.

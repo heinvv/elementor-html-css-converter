@@ -783,7 +783,7 @@ Variables are imported based on their CSS value format. The following value type
 | **Colors** | Hex, RGB, RGBA, HSL, HSLA | `#ff0000`, `rgb(255,0,0)`, `rgba(255,0,0,0.5)`, `hsl(0,100%,50%)`, `hsla(0,100%,50%,0.5)` |
 | **Colors** | Named colors | `red`, `dodgerblue`, `transparent` |
 | **Colors** | `color-mix()` function | `color-mix(in srgb, #fff 50%, #000)` |
-| **Sizes** | Viewport and length units | `16px`, `1rem`, `1.5em`, `50vw`, `100vh`, `12pt`, `5ch`, `10vmin`, `20vmax` |
+| **Sizes** | Viewport and length units | `16px`, `1rem`, `1.5em`, `50vw`, `100vh`, `5ch`, `10vmin`, `20vmax` |
 | **Sizes** | Percentages | `50%`, `100%` |
 | **Sizes** | CSS math functions | `calc(100% - 40px)`, `min(100vw, 1200px)`, `max(50vw, 300px)`, `clamp(1rem, 2.5vw, 2rem)` |
 | **Sizes** | Opacity (name contains "opacity", value 0–1) | `--opacity-dim: 0.5` |
@@ -797,6 +797,7 @@ Variables whose values do not match any of the supported formats above are **not
 | Unsupported type | Examples |
 | ---------------- | -------- |
 | Time and duration | `0.3s`, `300ms` |
+| Unsupported length units | `12pt` |
 | Shorthand values | `1px solid #ccc`, `0 2px 4px rgba(0,0,0,0.1)` |
 | CSS functions (non-color, non-math) | `var(--other)`, `linear-gradient(...)`, `url(...)` |
 | Unitless numbers (non-opacity, non–line-height) | `--z-index: 10`, `--scale: 2` |
