@@ -61,7 +61,7 @@ class Transform_Converter extends Property_Converter_Base {
 		return null;
 	}
 
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}

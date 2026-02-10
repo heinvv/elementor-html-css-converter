@@ -23,6 +23,7 @@ class Import_Rest_API {
 	private const REQUEST_TOKEN_EXPIRY = 3600;
 	private const GITHUB_REPO = 'heinvv/elementor-playwright-scraper';
 	private const VERCEL_ENDPOINT = 'https://elementor-scraper-connect.vercel.app/api/trigger';
+	private const SCRAPER_REQUEST_TIMEOUT = 600;
 
 	public function __construct() {
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
@@ -175,40 +176,44 @@ class Import_Rest_API {
 			],
 		];
 
-		$vercel_response = wp_remote_post(
-			self::VERCEL_ENDPOINT,
+		$scraper_endpoint = defined( 'EHCC_SCRAPER_ENDPOINT' ) && ! empty( constant( 'EHCC_SCRAPER_ENDPOINT' ) )
+			? constant( 'EHCC_SCRAPER_ENDPOINT' )
+			: self::VERCEL_ENDPOINT;
+
+		$scraper_response = wp_remote_post(
+			$scraper_endpoint,
 			[
 				'headers' => [
 					'Content-Type' => 'application/json',
 				],
 				'body'    => wp_json_encode( $payload ),
-				'timeout' => 30,
+				'timeout' => self::SCRAPER_REQUEST_TIMEOUT,
 			]
 		);
 
-		if ( is_wp_error( $vercel_response ) ) {
+		if ( is_wp_error( $scraper_response ) ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'Failed to trigger GitHub workflow: ' . $vercel_response->get_error_message(),
+					'message' => 'Failed to trigger scraper: ' . $scraper_response->get_error_message(),
 					'job_id'  => $job_id,
 				],
 				500
 			);
 		}
 
-		$response_code = wp_remote_retrieve_response_code( $vercel_response );
-		$response_body = wp_remote_retrieve_body( $vercel_response );
+		$response_code = wp_remote_retrieve_response_code( $scraper_response );
+		$response_body = wp_remote_retrieve_body( $scraper_response );
 		$response_data = json_decode( $response_body, true );
 
 		if ( $response_code !== 200 ) {
-			$error_message = $response_data['message'] ?? 'Unknown error from Vercel endpoint';
+			$error_message = $response_data['message'] ?? $response_data['error'] ?? 'Unknown error from scraper endpoint';
 			return new WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'Vercel endpoint error: ' . $error_message,
+					'message' => 'Scraper endpoint error: ' . $error_message,
 					'job_id'  => $job_id,
-					'vercel_response' => $response_data,
+					'scraper_response' => $response_data,
 				],
 				$response_code
 			);
@@ -217,7 +222,7 @@ class Import_Rest_API {
 		return new WP_REST_Response(
 			[
 				'success'     => true,
-				'message'     => $response_data['message'] ?? 'GitHub Actions workflow triggered',
+				'message'     => $response_data['message'] ?? 'Scraper triggered',
 				'job_id'      => $job_id,
 				'github_repo' => $github_repo,
 				'webhook_url' => $webhook_url,

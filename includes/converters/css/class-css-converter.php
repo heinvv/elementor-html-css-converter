@@ -92,17 +92,24 @@ class Css_Converter {
 			}
 
 			$value = $this->sanitize_css_value( $value );
-			$value = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
 
 			$converter = $this->get_converter_for_property( $property );
 			if ( null === $converter ) {
-				$unsupported[ $property ] = $value;
+				$unsupported[ $property ] = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
 				continue;
 			}
 
-			$converted = $converter->convert( $property, $value );
+			$output_property = $converter->get_output_property( $property );
+			$existing_dimensions = [];
+			if ( 'padding' === $output_property && isset( $props[ $output_property ]['value'] ) && is_array( $props[ $output_property ]['value'] ) ) {
+				$existing_dimensions = $props[ $output_property ]['value'];
+			}
+			$converted = $converter->convert( $property, $value, [
+				'variable_fallback'   => $variable_fallback,
+				'existing_dimensions' => $existing_dimensions,
+			] );
 			if ( null === $converted ) {
-				$unsupported[ $property ] = $value;
+				$unsupported[ $property ] = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
 				continue;
 			}
 
@@ -111,7 +118,6 @@ class Css_Converter {
 					$props[ $expanded_property ] = $this->merge_props( $props[ $expanded_property ] ?? null, $expanded_value );
 				}
 			} else {
-				$output_property = $converter->get_output_property( $property );
 				$props[ $output_property ] = $this->merge_props( $props[ $output_property ] ?? null, $converted );
 			}
 		}

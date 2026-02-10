@@ -32,7 +32,7 @@ class Box_Shadow_Converter extends Property_Converter_Base {
 	/**
 	 * Override convert to handle complex shadow parsing with CSS variables.
 	 */
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}

@@ -41,7 +41,7 @@ class Padding_Converter extends Property_Converter_Base {
 	 * Override convert to handle shorthand properties with multiple values.
 	 * Each value needs individual variable resolution.
 	 */
-	public function convert( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
 		if ( ! $this->supports( $property ) ) {
 			return null;
 		}
