@@ -40,13 +40,13 @@ class Css_Converter {
 		$variable_fallback = $params['variable_fallback'] ?? [];
 
 		$properties = $this->parse_css_string( $css_string );
-		$result     = $this->convert_properties_to_atomic( $properties, $variable_fallback );
+		$result     = $this->convert_properties_to_atomic( $properties, $variable_fallback, [] );
 
 		return $result;
 	}
 
-	public function convert_properties( array $properties, array $variable_fallback = [] ): array {
-		return $this->convert_properties_to_atomic( $properties, $variable_fallback );
+	public function convert_properties( array $properties, array $variable_fallback = [], array $options = [] ): array {
+		return $this->convert_properties_to_atomic( $properties, $variable_fallback, $options );
 	}
 
 	private function parse_css_string( string $css_string ): array {
@@ -82,9 +82,16 @@ class Css_Converter {
 		return $sanitized;
 	}
 
-	private function convert_properties_to_atomic( array $properties, array $variable_fallback = [] ): array {
+	private function convert_properties_to_atomic( array $properties, array $variable_fallback = [], array $options = [] ): array {
 		$props       = [];
 		$unsupported = [];
+
+		$converter_context = [
+			'variable_fallback'   => $variable_fallback,
+			'existing_dimensions' => [],
+			'variable_repository' => $options['variable_repository'] ?? null,
+			'unsupported_fonts_collector' => $options['unsupported_fonts_collector'] ?? null,
+		];
 
 		foreach ( $properties as $property => $value ) {
 			if ( $this->is_blocked_css_property( $property ) ) {
@@ -104,10 +111,8 @@ class Css_Converter {
 			if ( 'padding' === $output_property && isset( $props[ $output_property ]['value'] ) && is_array( $props[ $output_property ]['value'] ) ) {
 				$existing_dimensions = $props[ $output_property ]['value'];
 			}
-			$converted = $converter->convert( $property, $value, [
-				'variable_fallback'   => $variable_fallback,
-				'existing_dimensions' => $existing_dimensions,
-			] );
+			$converter_context['existing_dimensions'] = $existing_dimensions;
+			$converted = $converter->convert( $property, $value, $converter_context );
 			if ( null === $converted ) {
 				$unsupported[ $property ] = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
 				continue;

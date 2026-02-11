@@ -2,6 +2,7 @@
 namespace ElementorHtmlCssConverter\Converters\Css\Properties;
 
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Base;
+use ElementorHtmlCssConverter\Converters\Variables\Unsupported_Font_Variable_Service;
 use Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -31,7 +32,35 @@ class Font_Family_Converter extends Property_Converter_Base {
 		return self::SUPPORTED_PROPERTIES;
 	}
 
-	protected function convert_value( string $property, $value ): ?array {
+	public function convert( string $property, $value, array $context = [] ): ?array {
+		if ( ! $this->supports( $property ) ) {
+			return null;
+		}
+
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
+			return null;
+		}
+
+		$variable_fallback = $context['variable_fallback'] ?? [];
+		if ( \ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver::is_css_variable( $value ) ) {
+			$variable_type = $this->get_variable_type();
+			if ( null !== $variable_type ) {
+				$resolved = \ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver::resolve( $value, $variable_type );
+				if ( null !== $resolved ) {
+					return $this->wrap_resolved_variable( $resolved, $property );
+				}
+			}
+			$substituted = \ElementorHtmlCssConverter\Converters\Variables\Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
+			if ( $substituted !== $value ) {
+				return $this->convert_value( $property, $substituted, $context );
+			}
+			return $this->convert_value( $property, $value, $context );
+		}
+
+		return $this->convert_value( $property, $value, $context );
+	}
+
+	protected function convert_value( string $property, $value, array $context = [] ): ?array {
 		if ( $this->is_css_keyword_to_skip( $value ) ) {
 			return null;
 		}
@@ -42,7 +71,32 @@ class Font_Family_Converter extends Property_Converter_Base {
 			return null;
 		}
 
-		return String_Prop_Type::generate( $parsed['full_value'] );
+		$primary_font = $this->extract_primary_font( $parsed );
+
+		if ( $this->is_generic_font_family( $primary_font ) || $this->is_registered_font( $primary_font ) ) {
+			return String_Prop_Type::generate( $parsed['full_value'] );
+		}
+
+		$repository = $context['variable_repository'] ?? null;
+		if ( null !== $repository && class_exists( '\Elementor\Plugin' ) ) {
+			$service = new Unsupported_Font_Variable_Service();
+			$result = $service->get_or_create_variable( $parsed['full_value'], $repository );
+			if ( null !== $result ) {
+				$collector = $context['unsupported_fonts_collector'] ?? null;
+				if ( is_array( $collector ) ) {
+					$collector[] = [
+						'font'     => $result['font'],
+						'variable' => '--' . $result['label'],
+					];
+				}
+				return [
+					'$$type' => 'global-font-variable',
+					'value'  => $result['id'],
+				];
+			}
+		}
+
+		return null;
 	}
 
 	private function parse_font_family_value( string $value ): array {
@@ -130,6 +184,10 @@ class Font_Family_Converter extends Property_Converter_Base {
 	private function is_registered_font( string $font_name ): bool|string {
 		$normalized = $this->normalize_font_name( $font_name );
 		return \Elementor\Fonts::get_font_type( $normalized );
+	}
+
+	protected function get_variable_type(): ?string {
+		return 'font';
 	}
 }
 

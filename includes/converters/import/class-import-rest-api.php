@@ -9,6 +9,7 @@
 
 namespace ElementorHtmlCssConverter\Converters\Import;
 
+use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -30,6 +31,17 @@ class Import_Rest_API {
 	}
 
 	public function register_routes() {
+		register_rest_route(
+			self::NAMESPACE,
+			'/breakpoints',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_breakpoints' ],
+				'permission_callback' => '__return_true',
+				'args'                => [],
+			]
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			'/trigger-import',
@@ -128,6 +140,36 @@ class Import_Rest_API {
 		return filter_var( $param, FILTER_VALIDATE_URL ) !== false;
 	}
 
+	public function get_breakpoints( WP_REST_Request $request ): WP_REST_Response {
+		$breakpoints = $this->get_breakpoint_config_for_scraper();
+		return new WP_REST_Response( [ 'breakpoints' => $breakpoints ], 200 );
+	}
+
+	private function get_breakpoint_config_for_scraper(): array {
+		$matcher   = new Breakpoint_Matcher();
+		$config    = $matcher->get_breakpoints_config();
+		$breakpoints = [];
+
+		foreach ( $config as $name => $bp_config ) {
+			if ( ! isset( $bp_config['is_enabled'] ) || ! $bp_config['is_enabled'] ) {
+				continue;
+			}
+
+			$width = $bp_config['value'] ?? 0;
+			if ( ( $bp_config['direction'] ?? 'max' ) === 'max' && $width > 0 ) {
+				$breakpoints[] = [
+					'name'      => $name,
+					'width'     => $width,
+					'direction' => 'max',
+				];
+			}
+		}
+
+		usort( $breakpoints, fn( $a, $b ) => $b['width'] <=> $a['width'] );
+
+		return $breakpoints;
+	}
+
 	public function trigger_import( WP_REST_Request $request ): WP_REST_Response {
 		$github_repo = self::GITHUB_REPO;
 
@@ -162,7 +204,7 @@ class Import_Rest_API {
 		);
 
 		$payload = [
-			'event_type'    => 'run-scrape',
+			'event_type'     => 'run-scrape',
 			'client_payload' => [
 				'url'                => $url,
 				'selectors'          => $selectors,
@@ -172,7 +214,8 @@ class Import_Rest_API {
 				'job_id'             => $job_id,
 				'request_token'      => $request_token,
 				'post_id'            => 0,
-				'save_as_template'  => true,
+				'save_as_template'   => true,
+				'breakpoints'        => $this->get_breakpoint_config_for_scraper(),
 			],
 		];
 

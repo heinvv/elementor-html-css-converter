@@ -159,6 +159,7 @@ class Variable_Resolver {
 		$type_map = [
 			'global-color-variable' => 'global-color-variable',
 			'global-size-variable'  => 'global-size-variable',
+			'global-font-variable'  => 'global-font-variable',
 		];
 
 		if ( 'color' === $expected_type && 'global-color-variable' === $variable_type ) {
@@ -167,6 +168,10 @@ class Variable_Resolver {
 
 		if ( 'size' === $expected_type && 'global-size-variable' === $variable_type ) {
 			return 'global-size-variable';
+		}
+
+		if ( 'font' === $expected_type && 'global-font-variable' === $variable_type ) {
+			return 'global-font-variable';
 		}
 
 		return $type_map[ $variable_type ] ?? null;

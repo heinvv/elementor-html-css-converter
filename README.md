@@ -926,7 +926,19 @@ elementor-html-css-converter/
 | `POST .../add-widget-to-post` | Add a styled widget to an existing Elementor post                                                         |
 | `POST .../import-classes`   | CSS class definitions → Elementor Global Classes (`css` or `url`, `update_mode`: `create_new` | `update`) |
 | `POST .../import-variables` | CSS variable definitions → Elementor global variables                                                     |
+| `GET .../breakpoints`       | Elementor breakpoint config for scraper (enabled max-width breakpoints). Used when the scraper needs responsive viewport values. |
+| `POST .../trigger-import`   | Triggers external scraper workflow; passes `breakpoints` from Elementor config in the payload. See [Scraper integration](#scraper-integration-breakpoints). |
 
+
+### Scraper integration (breakpoints)
+
+When the [elementor-playwright-scraper](https://github.com/heinvv/elementor-playwright-scraper) runs, it needs Elementor's breakpoint values to capture responsive styles. The converter provides these in two ways:
+
+1. **`POST .../trigger-import`** — Includes `breakpoints` in the `client_payload` sent to the scraper workflow. Breakpoints are read from `Plugin::$instance->breakpoints->get_breakpoints_config()` (enabled max-width only, sorted descending by width).
+
+2. **`GET .../breakpoints`** — Returns `{ "breakpoints": [ { "name": "tablet", "width": 1024, "direction": "max" }, ... ] }`. Used when the scraper runs locally or via CLI with `ELEMENTOR_BASE_URL` set and no `--breakpoints` argument.
+
+Breakpoint values match the site's Elementor → Settings → Style → Responsive Breakpoints configuration.
 
 ### CSS variables (convert-html)
 

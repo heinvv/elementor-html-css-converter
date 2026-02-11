@@ -20,6 +20,8 @@ class Color_Value_Parser {
 			return self::TRANSPARENT_RGBA;
 		}
 
+		$value = self::normalize_modern_rgb_syntax( $value );
+
 		if ( self::is_supported_color_format( $value ) ) {
 			return $value;
 		}
@@ -62,6 +64,21 @@ class Color_Value_Parser {
 		$is_valid_length = 4 === $hex_length || 7 === $hex_length;
 
 		return $is_valid_length && ctype_xdigit( substr( $value, 1 ) );
+	}
+
+	private static function normalize_modern_rgb_syntax( string $value ): string {
+		$rgb_space_slash = '/^rgb\(\s*(\d+)\s+(\d+)\s+(\d+)(?:\s*\/\s*([\d.]+))?\s*\)$/i';
+
+		if ( preg_match( $rgb_space_slash, $value, $matches ) ) {
+			$r = (int) $matches[1];
+			$g = (int) $matches[2];
+			$b = (int) $matches[3];
+			$a = isset( $matches[4] ) ? (float) $matches[4] : 1.0;
+
+			return sprintf( 'rgba(%d, %d, %d, %s)', $r, $g, $b, $a );
+		}
+
+		return $value;
 	}
 
 	private static function is_rgb_or_hsl_function( string $value ): bool {

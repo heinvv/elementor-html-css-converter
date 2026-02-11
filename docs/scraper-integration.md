@@ -55,9 +55,9 @@ Add the following secret to your GitHub repository:
 
 ## API Endpoints
 
-### 1. Trigger Scrape
+### 1. Trigger Scrape (trigger-import)
 
-**Endpoint:** `POST /wp-json/html-css-converter/v1/trigger-scrape`
+**Endpoint:** `POST /wp-json/html-css-converter/v1/trigger-import`
 
 **Authentication:** None (publicly accessible)
 
@@ -79,37 +79,45 @@ Add the following secret to your GitHub repository:
 - `elementor_base_url` (optional): Elementor converter base URL
 - `wordpress_website_url` (required): WordPress website URL where results should be sent (e.g., `https://mysite.com`)
 
-**Note:** The webhook URL is constructed from `wordpress_website_url` + `/wp-json/html-css-converter/v1/scraper-results`. Results will be sent to the specified WordPress website.
+**Note:** The webhook URL is constructed from `wordpress_website_url` + `/wp-json/html-css-converter/v1/import-results`. Results will be sent to the specified WordPress website.
+
+**Breakpoints:** The endpoint automatically adds a `breakpoints` array to the payload sent to the scraper. Breakpoints are read from Elementor's configuration (enabled max-width breakpoints only). This enables the scraper to capture responsive styles at tablet and mobile viewports. Format: `[ { "name": "tablet", "width": 1024, "direction": "max" }, ... ]`.
 
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Payload prepared. GitHub API integration will be handled later.",
+  "message": "Scraper triggered",
   "job_id": "wp-1234567890-abc12345",
   "github_repo": "owner/repo",
-  "webhook_url": "https://yoursite.com/wp-json/html-css-converter/v1/scraper-results",
-  "payload": {
-    "event_type": "run-scrape",
-    "client_payload": {
-      "url": "https://external-site.com/page-url",
-      "selectors": ".hero, .card",
-      "timeout": "60",
-      "elementor_base_url": "",
-      "webhook_url": "https://yoursite.com/wp-json/html-css-converter/v1/scraper-results",
-      "job_id": "wp-1234567890-abc12345",
-      "request_token": "generated-token-here"
-    }
-  },
-  "api_url": "https://api.github.com/repos/owner/repo/dispatches"
+  "webhook_url": "https://yoursite.com/wp-json/html-css-converter/v1/import-results",
+  "actions_url": "https://github.com/owner/repo/actions"
 }
 ```
 
-**Note**: The endpoint returns the payload that should be sent to GitHub API. GitHub API integration will be handled later.
+The endpoint POSTs to the configured scraper endpoint (e.g. Vercel), which triggers the GitHub Actions workflow. The `client_payload` includes `breakpoints` from Elementor's configuration for responsive scraping.
 
-### 2. Receive Results (Webhook)
+### 2. Breakpoints (for scraper)
 
-**Endpoint:** `POST /wp-json/html-css-converter/v1/scraper-results`
+**Endpoint:** `GET /wp-json/html-css-converter/v1/breakpoints`
+
+**Authentication:** None
+
+**Response:**
+```json
+{
+  "breakpoints": [
+    { "name": "tablet", "width": 1024, "direction": "max" },
+    { "name": "mobile", "width": 767, "direction": "max" }
+  ]
+}
+```
+
+When the scraper runs locally with `ELEMENTOR_BASE_URL` set, it fetches breakpoints from this endpoint to enable responsive style capture. Values match Elementor → Settings → Style → Responsive Breakpoints.
+
+### 3. Receive Results (Webhook)
+
+**Endpoint:** `POST /wp-json/html-css-converter/v1/import-results`
 
 **Authentication:** None (publicly accessible)
 
@@ -128,9 +136,9 @@ Add the following secret to your GitHub repository:
 }
 ```
 
-### 3. Get Results
+### 4. Get Results
 
-**Endpoint:** `GET /wp-json/html-css-converter/v1/scraper-results/{job_id}`
+**Endpoint:** `GET /wp-json/html-css-converter/v1/import-results/{job_id}`
 
 **Authentication:** None (publicly accessible)
 
@@ -154,7 +162,7 @@ Add the following secret to your GitHub repository:
 ### JavaScript/TypeScript
 
 ```javascript
-const response = await fetch('/wp-json/html-css-converter/v1/trigger-scrape', {
+const response = await fetch('/wp-json/html-css-converter/v1/trigger-import', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -173,7 +181,7 @@ const jobId = data.job_id;
 // Poll for results
 const checkResults = async () => {
   const resultResponse = await fetch(
-    `/wp-json/html-css-converter/v1/scraper-results/${jobId}`
+    `/wp-json/html-css-converter/v1/import-results/${jobId}`
   );
   
   if (resultResponse.ok) {
@@ -190,7 +198,7 @@ checkResults();
 ### PHP
 
 ```php
-$response = wp_remote_post(rest_url('html-css-converter/v1/trigger-scrape'), [
+$response = wp_remote_post(rest_url('html-css-converter/v1/trigger-import'), [
     'headers' => [
         'Content-Type' => 'application/json',
     ],
@@ -207,7 +215,7 @@ $job_id = $data['job_id'];
 
 // Get results
 $results_response = wp_remote_get(
-    rest_url("html-css-converter/v1/scraper-results/{$job_id}")
+    rest_url("html-css-converter/v1/import-results/{$job_id}")
 );
 
 $results = json_decode(wp_remote_retrieve_body($results_response), true);
@@ -232,7 +240,7 @@ $results = json_decode(wp_remote_retrieve_body($results_response), true);
 - Request token validation for request-response binding
 
 **Results Storage**:
-- Results stored in WordPress options table (`ehcc_scraper_results`)
+- Results stored in WordPress options table (`ehcc_import_results`)
 - Can be retrieved by job ID using the GET endpoint
 
 ## Troubleshooting

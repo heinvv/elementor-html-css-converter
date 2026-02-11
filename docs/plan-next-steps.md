@@ -33,17 +33,22 @@
 ## Playwright Scraper
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
 - [x] Clean up CSS properties + dimensions
-- [ ] Support variables.
+- [x] Support variables.
 - [ ] Support classes.
-- [ ] Support responsiveness.
+- [x] Support responsiveness.
+- [ ] Add GCP deployment
 
-## External Frontend
-- [ ] Create endpoint to trigger external UI.
-- [ ] Create NextJS frontend.
+## Bugs: 
+-- Rem
+-- Images
+-- Tailwind colours like : --color-primary-500: 255 98 1;
+-- 500 server when variables is full
+-- font-family: system-ui, sans-serif; > unsupported font family import
+-- v4 flexbox styling mixed v3 container
 
 ## Integrate Playwright workflow back into Elementor
-- [ ] Create import screen.
-- [ ] Create variables import screen.
-- [ ] Create variables export screen.
+- [x] Create import screen.
+- [x] Create variables import screen.
+- [x] Create variables export screen.
 
 

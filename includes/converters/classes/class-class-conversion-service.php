@@ -11,6 +11,8 @@ namespace ElementorHtmlCssConverter\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Css\Css_Converter;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
+use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
+use Elementor\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -44,17 +46,24 @@ class Class_Conversion_Service {
 	 *
 	 * @param array $breakpoint_classes Array of breakpoint-aware class definitions.
 	 *                                  Format: ['class-name' => ['desktop' => [...], 'tablet' => [...]]]
-	 * @return array Converted classes with atomic props per breakpoint.
+	 * @return array{classes: array, unsupported_fonts_created: array} Converted classes and unsupported fonts metadata.
 	 */
 	public function convert_to_atomic( array $breakpoint_classes ): array {
 		$converted = [];
+		$unsupported_fonts = [];
+
+		$variable_repository = $this->get_variable_repository();
+		$options = [
+			'variable_repository'         => $variable_repository,
+			'unsupported_fonts_collector' => &$unsupported_fonts,
+		];
 
 		foreach ( $breakpoint_classes as $class_name => $breakpoint_data ) {
 			$breakpoint_props = [];
 
 			foreach ( $breakpoint_data as $breakpoint => $class_data ) {
-				if ( 'desktop' === $breakpoint || 'tablet' === $breakpoint || 'mobile' === $breakpoint || 
-					 'mobile_extra' === $breakpoint || 'tablet_extra' === $breakpoint || 
+				if ( 'desktop' === $breakpoint || 'tablet' === $breakpoint || 'mobile' === $breakpoint ||
+					 'mobile_extra' === $breakpoint || 'tablet_extra' === $breakpoint ||
 					 'laptop' === $breakpoint || 'widescreen' === $breakpoint ) {
 					$properties = $class_data['properties'] ?? [];
 
@@ -62,7 +71,7 @@ class Class_Conversion_Service {
 						continue;
 					}
 
-					$result = $this->css_converter->convert_properties( $properties );
+					$result = $this->css_converter->convert_properties( $properties, [], $options );
 
 					$breakpoint_props[ $breakpoint ] = [
 						'atomic_props' => $result['props'] ?? [],
@@ -80,7 +89,36 @@ class Class_Conversion_Service {
 			}
 		}
 
-		return $converted;
+		$seen = [];
+		$unique_unsupported = [];
+		foreach ( $unsupported_fonts as $item ) {
+			$key = ( $item['font'] ?? '' ) . '|' . ( $item['variable'] ?? '' );
+			if ( ! isset( $seen[ $key ] ) ) {
+				$seen[ $key ] = true;
+				$unique_unsupported[] = $item;
+			}
+		}
+
+		return [
+			'classes'                  => $converted,
+			'unsupported_fonts_created' => $unique_unsupported,
+		];
+	}
+
+	private function get_variable_repository(): ?Variables_Repository {
+		if ( ! class_exists( '\Elementor\Plugin' ) ) {
+			return null;
+		}
+
+		try {
+			$kit = Plugin::$instance->kits_manager->get_active_kit();
+			if ( null === $kit ) {
+				return null;
+			}
+			return new Variables_Repository( $kit );
+		} catch ( \Exception $e ) {
+			return null;
+		}
 	}
 
 	/**

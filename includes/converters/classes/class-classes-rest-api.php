@@ -11,6 +11,7 @@ namespace ElementorHtmlCssConverter\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use ElementorHtmlCssConverter\Converters\Classes\Atomic_To_Css_Converter;
+use ElementorHtmlCssConverter\Converters\Variables\Variable_Resolver;
 use Elementor\Modules\GlobalClasses\Global_Classes_Repository;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -313,7 +314,13 @@ class Classes_Rest_API {
 		}
 
 		$conversion_service = new Class_Conversion_Service( $this->registry );
-		$converted_classes  = $conversion_service->convert_to_atomic( $extracted_classes );
+		$conversion_result  = $conversion_service->convert_to_atomic( $extracted_classes );
+		$converted_classes  = $conversion_result['classes'] ?? [];
+		$unsupported_fonts  = $conversion_result['unsupported_fonts_created'] ?? [];
+
+		if ( ! empty( $unsupported_fonts ) ) {
+			Variable_Resolver::clear_cache();
+		}
 
 		if ( empty( $converted_classes ) ) {
 			return new WP_REST_Response(
@@ -359,16 +366,17 @@ class Classes_Rest_API {
 
 		return new WP_REST_Response(
 			[
-				'success'    => true,
-				'classes'    => $result['classes'],
-				'statistics' => [
+				'success'                   => true,
+				'classes'                   => $result['classes'],
+				'statistics'                => [
 					'detected'   => count( $extracted_classes ),
 					'converted'  => count( $converted_classes ),
 					'registered' => $result['registered'],
 					'skipped'    => $result['skipped'],
 					'updated'    => $result['updated'],
 				],
-				'overflow'   => $result['overflow'],
+				'overflow'                  => $result['overflow'],
+				'unsupported_fonts_created'  => $unsupported_fonts,
 			],
 			200
 		);
