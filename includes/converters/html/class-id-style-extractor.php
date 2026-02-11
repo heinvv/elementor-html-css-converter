@@ -86,36 +86,116 @@ class Id_Style_Extractor {
 	/**
 	 * Parse CSS declarations string into property-value pairs.
 	 *
+	 * Splits on declaration separators (;) only when not inside url(), quotes, or parentheses,
+	 * so values like url("data:image/svg+xml;charset=utf-8,...") are preserved intact.
+	 *
 	 * @param string $declarations CSS declarations (e.g., "color: red; font-size: 16px").
 	 * @return array Property-value pairs.
 	 */
 	private function parse_declarations( string $declarations ): array {
-		$styles = [];
-		$parts  = explode( ';', $declarations );
+		$styles  = [];
+		$len     = strlen( $declarations );
+		$current = '';
+		$depth   = 0;
+		$in_double_quote = false;
+		$in_single_quote = false;
+		$prev_char = '';
 
-		foreach ( $parts as $part ) {
-			$part = trim( $part );
-			if ( empty( $part ) ) {
+		for ( $i = 0; $i < $len; $i++ ) {
+			$char = $declarations[ $i ];
+
+			if ( $in_double_quote ) {
+				$current .= $char;
+				if ( '"' === $char && '\\' !== $prev_char ) {
+					$in_double_quote = false;
+				}
+				$prev_char = $char;
 				continue;
 			}
 
-			$colon_pos = strpos( $part, ':' );
-			if ( false === $colon_pos ) {
+			if ( $in_single_quote ) {
+				$current .= $char;
+				if ( "'" === $char && '\\' !== $prev_char ) {
+					$in_single_quote = false;
+				}
+				$prev_char = $char;
 				continue;
 			}
 
-			$property = trim( substr( $part, 0, $colon_pos ) );
-			$value    = trim( substr( $part, $colon_pos + 1 ) );
-
-			if ( ! empty( $property ) && '' !== $value ) {
-				$value = preg_replace( self::REGEX_IMPORTANT_FLAG_REMOVAL, '', $value );
-				$value = trim( $value );
-
-				$styles[ $property ] = $value;
+			if ( '"' === $char ) {
+				$current .= $char;
+				$in_double_quote = true;
+				$prev_char = $char;
+				continue;
 			}
+
+			if ( "'" === $char ) {
+				$current .= $char;
+				$in_single_quote = true;
+				$prev_char = $char;
+				continue;
+			}
+
+			if ( '(' === $char ) {
+				$current .= $char;
+				++$depth;
+				$prev_char = $char;
+				continue;
+			}
+
+			if ( ')' === $char ) {
+				$current .= $char;
+				--$depth;
+				$prev_char = $char;
+				continue;
+			}
+
+			if ( ';' === $char && 0 === $depth ) {
+				$this->add_parsed_declaration( trim( $current ), $styles );
+				$current   = '';
+				$prev_char = $char;
+				continue;
+			}
+
+			$current   .= $char;
+			$prev_char = $char;
+		}
+
+		$trimmed = trim( $current );
+		if ( '' !== $trimmed ) {
+			$this->add_parsed_declaration( $trimmed, $styles );
 		}
 
 		return $styles;
+	}
+
+	/**
+	 * Parse a single CSS declaration and add to styles array.
+	 *
+	 * @param string $declaration Single declaration (e.g., "color: red").
+	 * @param array  $styles      Styles array to mutate.
+	 */
+	private function add_parsed_declaration( string $declaration, array &$styles ): void {
+		if ( '' === $declaration ) {
+			return;
+		}
+
+		$colon_pos = strpos( $declaration, ':' );
+		if ( false === $colon_pos ) {
+			return;
+		}
+
+		$property = trim( substr( $declaration, 0, $colon_pos ) );
+		$value    = trim( substr( $declaration, $colon_pos + 1 ) );
+
+		if ( '' === $property || '' === $value ) {
+			return;
+		}
+
+		$value = preg_replace( self::REGEX_IMPORTANT_FLAG_REMOVAL, '', $value );
+		$value = trim( $value );
+
+		$styles[ $property ] = $value;
 	}
 
 	/**

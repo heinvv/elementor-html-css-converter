@@ -35,7 +35,11 @@ class Flex_Grow_Converter extends Property_Converter_Base {
 		}
 
 		return Flex_Prop_Type::generate( [
-			'flexGrow' => Number_Prop_Type::generate( $number ),
+			'flexGrow'  => Number_Prop_Type::generate( $number ),
+			'flexBasis' => \Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type::generate( [
+				'size' => 'auto',
+				'unit' => 'custom',
+			] ),
 		] );
 	}
 }

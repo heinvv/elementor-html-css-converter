@@ -49,7 +49,7 @@ class Atomic_Widget_Settings_Preparer {
 	 *
 	 * @var bool
 	 */
-	private bool $import_images = false;
+	private bool $import_images = true;
 
 	/**
 	 * Warnings collected during settings preparation.
@@ -63,7 +63,7 @@ class Atomic_Widget_Settings_Preparer {
 	 *
 	 * @param bool $import_images Whether to import external images during preparation.
 	 */
-	public function __construct( bool $import_images = false ) {
+	public function __construct( bool $import_images = true ) {
 		$this->widget_mapper = new HTML_To_Atomic_Widget_Mapper();
 		$this->import_images = $import_images;
 
@@ -259,7 +259,9 @@ class Atomic_Widget_Settings_Preparer {
 			];
 		}
 
-		$local_id = $this->extract_attachment_id_from_src( $src );
+		$resolved_src = Image_Url_Helper::resolve_image_url( $src );
+
+		$local_id = $this->extract_attachment_id_from_src( $resolved_src );
 
 		if ( $local_id ) {
 			return [
@@ -271,8 +273,8 @@ class Atomic_Widget_Settings_Preparer {
 			];
 		}
 
-		if ( $this->import_images && $this->image_import_service && Image_Url_Helper::is_external_url( $src ) ) {
-			$imported = $this->image_import_service->import_image_url( $src );
+		if ( $this->import_images && $this->image_import_service && Image_Url_Helper::is_external_url( $resolved_src ) ) {
+			$imported = $this->image_import_service->import_image_url( $resolved_src );
 			if ( $imported && isset( $imported['id'] ) ) {
 				return [
 					'$$type' => 'image-src',
@@ -283,11 +285,10 @@ class Atomic_Widget_Settings_Preparer {
 				];
 			}
 		}
-
 		return [
 			'$$type' => 'image-src',
 			'value'  => [
-				'url' => $src,
+				'url' => $resolved_src,
 				'id'  => null,
 			],
 		];

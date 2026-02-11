@@ -90,6 +90,9 @@ class Atomic_Data_Parser {
 		'footer',
 		'main',
 		'nav',
+		'ul',
+		'ol',
+		'li',
 	];
 
 	/**
@@ -293,6 +296,13 @@ class Atomic_Data_Parser {
 			}
 			if ( $svg_child && count( $element_children ) === 1 ) {
 				return $this->extract_svg_from_link( $element, $svg_child );
+			}
+		}
+
+		if ( in_array( $tag_name, [ 'ul', 'ol' ], true ) ) {
+			$detector = new List_Element_Detector();
+			if ( ! $detector->is_layout_list( $element ) ) {
+				return null;
 			}
 		}
 		

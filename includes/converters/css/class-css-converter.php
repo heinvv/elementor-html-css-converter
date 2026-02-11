@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Css_Converter {
+
 	private const PATTERN_CSS_DECLARATION = '/([a-zA-Z0-9-]+)\s*:\s*([^;]+);?/';
 
 	private const PLACEHOLDER_IMAGE_URL = 'none';

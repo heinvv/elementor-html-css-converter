@@ -52,6 +52,14 @@ abstract class Property_Converter_Base implements Property_Converter_Interface {
 			return $this->convert_value( $property, $value );
 		}
 
+		$variable_fallback = $context['variable_fallback'] ?? [];
+		if ( ! empty( $variable_fallback ) ) {
+			$substituted = Variable_Fallback_Substitutor::substitute_in_value( $value, $variable_fallback );
+			if ( $substituted !== $value ) {
+				return $this->convert_value( $property, $substituted );
+			}
+		}
+
 		return $this->convert_value( $property, $value );
 	}
 

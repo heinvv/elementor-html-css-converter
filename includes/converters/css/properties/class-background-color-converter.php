@@ -359,14 +359,30 @@ class Background_Color_Converter extends Property_Converter_Base {
 		return null;
 	}
 
-	private function parse_image( string $value ): ?array {
+	private function extract_first_image_url( string $value ): ?string {
 		if ( ! preg_match( self::REGEX_URL_EXTRACTION, $value, $matches ) ) {
 			return null;
 		}
 
-		$url = $matches[1];
+		$url = trim( $matches[1] );
 
-		if ( empty( $url ) ) {
+		if ( '' === $url ) {
+			return null;
+		}
+
+		$decoded = rawurldecode( $url );
+
+		if ( str_starts_with( $decoded, '#' ) ) {
+			return null;
+		}
+
+		return $url;
+	}
+
+	private function parse_image( string $value ): ?array {
+		$url = $this->extract_first_image_url( $value );
+
+		if ( null === $url ) {
 			return null;
 		}
 

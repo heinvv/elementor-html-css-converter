@@ -20,6 +20,43 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Image_Url_Helper {
 
+	private const NEXT_JS_IMAGE_PATH = '/_next/image';
+	private const NEXT_JS_IMAGE_QUERY_PARAM = 'url';
+
+	public static function resolve_image_url( string $url ): string {
+		if ( empty( $url ) ) {
+			return $url;
+		}
+
+		$parsed = wp_parse_url( $url );
+		if ( ! $parsed ) {
+			return $url;
+		}
+
+		$path = $parsed['path'] ?? '';
+		if ( strpos( $path, self::NEXT_JS_IMAGE_PATH ) === false ) {
+			return $url;
+		}
+
+		$query = $parsed['query'] ?? '';
+		if ( empty( $query ) ) {
+			return $url;
+		}
+
+		parse_str( $query, $params );
+		$resolved = $params[ self::NEXT_JS_IMAGE_QUERY_PARAM ] ?? null;
+		if ( empty( $resolved ) || ! is_string( $resolved ) ) {
+			return $url;
+		}
+
+		$decoded = urldecode( $resolved );
+		if ( filter_var( $decoded, FILTER_VALIDATE_URL ) ) {
+			return $decoded;
+		}
+
+		return $url;
+	}
+
 	/**
 	 * Check if a URL is external (not from the current WordPress site).
 	 *

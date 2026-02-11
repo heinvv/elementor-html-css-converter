@@ -39,7 +39,7 @@ class Atomic_Widget_JSON_Creator {
 	 *
 	 * @param bool $import_images Whether to import images during widget creation.
 	 */
-	public function __construct( bool $import_images = false ) {
+	public function __construct( bool $import_images = true ) {
 		$this->widget_mapper     = new HTML_To_Atomic_Widget_Mapper();
 		$this->settings_preparer = new Atomic_Widget_Settings_Preparer( $import_images );
 	}

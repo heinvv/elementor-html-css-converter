@@ -572,4 +572,4 @@ if ( $result['success'] ) {
 - **Duplicate Detection**: Elementor's import system uses hash-based duplicate detection - the same image URL imported twice will reuse the existing attachment
 - **Local URLs**: URLs that are already local (from the same WordPress site) are detected and use existing attachment IDs without re-importing
 - **Error Handling**: If import fails (network error, invalid URL, etc.), the conversion continues with the original external URL
-- **Default Behavior**: `import_images` defaults to `false` - external URLs are displayed directly without import
+- **Default Behavior**: `import_images` defaults to `true` - external URLs are imported into the media library

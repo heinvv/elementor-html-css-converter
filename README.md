@@ -891,6 +891,36 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-classe
 - `button` -> `e-button`
 - `img` -> `e-image`
 - `span` -> `e-span`
+- `ul`, `ol`, `li` -> `e-div-block` (layout lists only; see [Known Limitations](#known-limitations))
+
+---
+
+## Known Limitations
+
+Elementor v4 (Alpha) does not yet support certain HTML/CSS features. These are documented here for clarity.
+
+### List Elements (`ul`, `ol`, `li`)
+
+**Layout lists** (containing block-level elements like `<div>`, `<section>`, `<button>`) are converted to container widgets (`e-div-block`).
+
+**Semantic lists** (containing only text and inline elements) are not supported and will be skipped during conversion. Elementor v4 does not have a native list widget; when list atoms are introduced, semantic lists will be supported.
+
+```html
+<!-- Supported: Layout list -->
+<ul class="flex">
+  <li><div class="card">...</div></li>
+</ul>
+
+<!-- Not supported: Semantic list -->
+<ul>
+  <li>Bullet point 1</li>
+  <li>Bullet point 2</li>
+</ul>
+```
+
+### Pseudo-elements (`::before`, `::after`)
+
+Pseudo-element selectors are not yet supported. CSS containing pseudo-elements will be preserved in the `custom_css` field but will not generate atomic styling. See [Development Roadmap](docs/plan-next-steps.md) for planned features.
 
 ---
 

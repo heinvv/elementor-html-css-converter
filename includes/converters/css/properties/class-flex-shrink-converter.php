@@ -36,6 +36,10 @@ class Flex_Shrink_Converter extends Property_Converter_Base {
 
 		return Flex_Prop_Type::generate( [
 			'flexShrink' => Number_Prop_Type::generate( $number ),
+			'flexBasis'  => \Elementor\Modules\AtomicWidgets\PropTypes\Size_Prop_Type::generate( [
+				'size' => 'auto',
+				'unit' => 'custom',
+			] ),
 		] );
 	}
 }

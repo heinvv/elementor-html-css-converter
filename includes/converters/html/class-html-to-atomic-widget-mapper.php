@@ -65,6 +65,9 @@ class HTML_To_Atomic_Widget_Mapper {
 		'aside'      => [ 'type' => 'e-div-block' ],
 		'span'       => [ 'type' => 'e-div-block' ],
 		'nav'        => [ 'type' => 'e-div-block' ],
+		'ul'         => [ 'type' => 'e-div-block' ],
+		'ol'         => [ 'type' => 'e-div-block' ],
+		'li'         => [ 'type' => 'e-div-block' ],
 	];
 
 	/**
