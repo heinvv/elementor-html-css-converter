@@ -148,7 +148,6 @@ The implementation uses a **two-layer security approach**:
 
 **Optional:**
 - `timeout` - Page load timeout in seconds (default: 60)
-- `elementor_base_url` - Elementor converter base URL
 
 **Note:** The `request_token` is automatically generated and handled internally. You don't need to provide it.
 

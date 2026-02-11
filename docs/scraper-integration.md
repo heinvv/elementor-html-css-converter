@@ -62,9 +62,7 @@ Add the following secret to your GitHub repository:
 {
   "url": "https://external-site.com/page-url",
   "selectors": ".hero, .card",
-  "timeout": "60",
-  "elementor_base_url": "http://elementor.local/",
-  "wordpress_website_url": "https://mysite.com"
+  "timeout": "60"
 }
 ```
 
@@ -72,10 +70,8 @@ Add the following secret to your GitHub repository:
 - `url` (required): External website URL to scrape (e.g., `https://external-site.com/page-url`)
 - `selectors` (required): Comma-separated CSS selectors
 - `timeout` (optional): Page load timeout in seconds (default: 60)
-- `elementor_base_url` (optional): Elementor converter base URL
-- `wordpress_website_url` (required): WordPress website URL where results should be sent (e.g., `https://mysite.com`)
 
-**Note:** The webhook URL is constructed from `wordpress_website_url` + `/wp-json/html-css-converter/v1/import-results`. Results will be sent to the specified WordPress website.
+**Note:** The webhook URL is derived from `home_url()` so the scraper sends results back to the same WordPress site.
 
 **Breakpoints:** The endpoint automatically adds a `breakpoints` array to the payload sent to the scraper. Breakpoints are read from Elementor's configuration (enabled max-width breakpoints only). This enables the scraper to capture responsive styles at tablet and mobile viewports. Format: `[ { "name": "tablet", "width": 1024, "direction": "max" }, ... ]`.
 
@@ -166,8 +162,7 @@ const response = await fetch('/wp-json/html-css-converter/v1/trigger-import', {
   body: JSON.stringify({
     url: 'https://external-site.com/page-url',
     selectors: '.hero, .card',
-    timeout: '60',
-    wordpress_website_url: 'https://mysite.com'
+    timeout: '60'
   })
 });
 
@@ -202,7 +197,6 @@ $response = wp_remote_post(rest_url('html-css-converter/v1/trigger-import'), [
         'url' => 'https://external-site.com/page-url',
         'selectors' => '.hero, .card',
         'timeout' => '60',
-        'wordpress_website_url' => 'https://mysite.com',
     ]),
 ]);
 

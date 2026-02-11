@@ -67,19 +67,6 @@ class Import_Rest_API {
 						'default'           => '60',
 						'sanitize_callback' => 'sanitize_text_field',
 					],
-					'elementor_base_url'   => [
-						'type'              => 'string',
-						'required'          => false,
-						'default'           => '',
-						'sanitize_callback' => 'esc_url_raw',
-					],
-					'wordpress_website_url' => [
-						'type'              => 'string',
-						'required'          => false,
-						'sanitize_callback' => 'esc_url_raw',
-						'validate_callback' => [ $this, 'validate_url' ],
-						'default'           => '',
-					],
 					'post_id'              => [
 						'type'              => 'integer',
 						'required'          => false,
@@ -173,25 +160,15 @@ class Import_Rest_API {
 	public function trigger_import( WP_REST_Request $request ): WP_REST_Response {
 		$github_repo = self::GITHUB_REPO;
 
-		$url                  = $request->get_param( 'url' );
-		$selectors            = $request->get_param( 'selectors' );
-		$timeout              = $request->get_param( 'timeout' );
-		$elementor_base_url   = $request->get_param( 'elementor_base_url' );
-		$wordpress_website_url = $request->get_param( 'wordpress_website_url' );
-		$post_id              = $request->get_param( 'post_id' );
-		$job_id               = 'wp-' . time() . '-' . wp_generate_password( 8, false );
-		$request_token        = wp_generate_password( 32, false );
+		$url          = $request->get_param( 'url' );
+		$selectors    = $request->get_param( 'selectors' );
+		$timeout      = $request->get_param( 'timeout' );
+		$post_id      = $request->get_param( 'post_id' );
+		$job_id       = 'wp-' . time() . '-' . wp_generate_password( 8, false );
+		$request_token = wp_generate_password( 32, false );
 
-		if ( empty( $wordpress_website_url ) ) {
-			$wordpress_website_url = home_url();
-		}
-
-		if ( empty( $elementor_base_url ) ) {
-			$elementor_base_url = home_url();
-		}
-
-		$wordpress_website_url = trailingslashit( $wordpress_website_url );
-		$webhook_url = $wordpress_website_url . 'wp-json/' . self::NAMESPACE . '/import-results';
+		$site_url  = trailingslashit( home_url() );
+		$webhook_url = $site_url . 'wp-json/' . self::NAMESPACE . '/import-results';
 
 		set_transient(
 			'ehcc_import_token_' . $job_id,
@@ -205,7 +182,7 @@ class Import_Rest_API {
 				'url'                => $url,
 				'selectors'          => $selectors,
 				'timeout'            => $timeout,
-				'elementor_base_url' => $elementor_base_url,
+				'elementor_base_url' => $site_url,
 				'webhook_url'        => $webhook_url,
 				'job_id'             => $job_id,
 				'request_token'      => $request_token,

@@ -34,8 +34,6 @@ export const useImportSubmit = ({
 					url: url.trim(),
 					selectors: selectors.trim(),
 					timeout: timeout || '60',
-					elementor_base_url: window.location.origin,
-					wordpress_website_url: window.location.origin,
 					post_id: postId || null,
 				}),
 			});
