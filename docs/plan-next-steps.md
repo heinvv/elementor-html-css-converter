@@ -14,11 +14,11 @@
 - [x] Test custom css.
 - [x] Study images support.
 - [x] Study svg support.
+- [ ] Handle Elementor v4 base styles.
 - [ ] Suppport pseudo classes as :hover() and :focus()
 - [ ] Support v4 inline editor > strong / bold / italic etc.
 - [x] Support for Google font-family styles.
 - [x] Study responsive support.
-- [ ] Handle Elementor v4 base styles.
 - [ ] Handle class priority.
 - [ ] Handle reset styles.
 - [ ] Support core and pro features.
@@ -34,17 +34,17 @@
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
 - [x] Clean up CSS properties + dimensions
 - [x] Support variables.
-- [ ] Support classes.
+- [x] Support classes.
 - [x] Support responsiveness.
 - [ ] Add GCP deployment
 
 ## Bugs: 
--- Rem
--- Images
--- Tailwind colours like : --color-primary-500: 255 98 1;
--- 500 server when variables is full
--- font-family: system-ui, sans-serif; > unsupported font family import
--- v4 flexbox styling mixed v3 container
+-- [x] Rem
+-- [x] Images
+-- [x] Tailwind colours like : --color-primary-500: 255 98 1;
+-- [ ] 500 server when variables is full
+-- [ ] font-family: system-ui, sans-serif; > unsupported font family import
+-- [x] v4 flexbox styling mixed v3 container
 
 ## Integrate Playwright workflow back into Elementor
 - [x] Create import screen.
