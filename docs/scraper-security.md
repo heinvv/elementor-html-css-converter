@@ -9,10 +9,8 @@ The webhook secret is a shared authentication string between WordPress and GitHu
 **Where is it defined?**
 
 1. **WordPress**: 
-   - **WordPress constant**: `EHCC_WEBHOOK_SECRET` (defined in `wp-config.php`)
-   - **OR environment variable**: `EHCC_WEBHOOK_SECRET`
+   - **Environment variable**: `EHCC_WEBHOOK_SECRET`
    - **Not stored in WordPress database** (more secure)
-   - **Example in wp-config.php**: `define( 'EHCC_WEBHOOK_SECRET', 'your-secret-here' );`
 
 2. **GitHub**: Stored as repository secret `WEBHOOK_SECRET`
    - Configured in: Repository → Settings → Secrets and variables → Actions
@@ -21,13 +19,13 @@ The webhook secret is a shared authentication string between WordPress and GitHu
 **How it works:**
 
 ```
-WordPress (EHCC_WEBHOOK_SECRET constant/env)  ←→  GitHub (WEBHOOK_SECRET)
+WordPress (EHCC_WEBHOOK_SECRET env)  ←→  GitHub (WEBHOOK_SECRET)
          (must match exactly)
          
 When GitHub Actions sends results:
 1. Includes header: X-Webhook-Secret: <WEBHOOK_SECRET>
 2. WordPress reads secret from constant/env variable (not database)
-3. WordPress validates: Does header value match EHCC_WEBHOOK_SECRET?
+3. WordPress validates: Does header value match EHCC_WEBHOOK_SECRET env?
 4. If yes → Request authenticated
 5. If no → Request rejected (401 Unauthorized)
 ```
@@ -50,17 +48,15 @@ Configure this in **WordPress Admin → Settings → Scraper Settings**:
 **Secrets must be configured via WordPress constants or environment variables:**
 
 1. **GitHub Token** (`EHCC_GITHUB_TOKEN`) (required)
-   - **Where defined**: WordPress constant or environment variable (NOT stored in database)
-   - **Option 1**: Add to `wp-config.php`: `define( 'EHCC_GITHUB_TOKEN', 'your-token-here' );`
-   - **Option 2**: Set as environment variable: `EHCC_GITHUB_TOKEN=your-token-here`
+   - **Where defined**: Environment variable (NOT stored in database)
+   - Set as environment variable: `EHCC_GITHUB_TOKEN=your-token-here`
    - **What it is**: Personal Access Token with `repo` scope
    - **Create at**: https://github.com/settings/tokens
    - **Purpose**: Authenticates GitHub API calls to trigger workflows
 
 2. **Webhook Secret** (`EHCC_WEBHOOK_SECRET`) (required)
-   - **Where defined**: WordPress constant or environment variable (NOT stored in database)
-   - **Option 1**: Add to `wp-config.php`: `define( 'EHCC_WEBHOOK_SECRET', 'your-secret-here' );`
-   - **Option 2**: Set as environment variable: `EHCC_WEBHOOK_SECRET=your-secret-here`
+   - **Where defined**: Environment variable (NOT stored in database)
+   - Set as environment variable: `EHCC_WEBHOOK_SECRET=your-secret-here`
    - **What it is**: A shared secret string used to authenticate webhook requests from GitHub Actions
    - **Value**: Strong random string (recommended: 32+ characters)
    - **Generate**: Use `openssl rand -hex 32` or similar tool
@@ -86,13 +82,13 @@ The implementation uses a **two-layer security approach**:
 ### Layer 1: Static Webhook Secret (GitHub → WordPress)
 
 - **Where defined**: 
-  - WordPress: Constant `EHCC_WEBHOOK_SECRET` (defined in `wp-config.php`) OR environment variable `EHCC_WEBHOOK_SECRET`
+  - WordPress: Environment variable `EHCC_WEBHOOK_SECRET`
   - **Not stored in WordPress database**
   - GitHub: Repository secret `WEBHOOK_SECRET` (Settings → Secrets and variables → Actions)
 - **How it works**: 
   - GitHub Actions sends `X-Webhook-Secret` header with the secret value
-  - WordPress reads secret from constant/environment variable (not database)
-  - WordPress validates header value matches the constant/env variable
+  - WordPress reads secret from environment variable (not database)
+  - WordPress validates header value matches the environment variable
   - If values don't match, request is rejected with 401 Unauthorized
 - **Purpose**: Provides basic authentication for webhook responses
 - **Code location**: Validated in `check_webhook_permissions()` method in `class-scraper-rest-api.php`
@@ -184,12 +180,11 @@ The implementation uses a **two-layer security approach**:
 
 ### "Invalid webhook secret" error
 
-**What it means**: The `X-Webhook-Secret` header value doesn't match the WordPress `EHCC_WEBHOOK_SECRET` constant or environment variable.
+**What it means**: The `X-Webhook-Secret` header value doesn't match the WordPress `EHCC_WEBHOOK_SECRET` environment variable.
 
 **Where to check**:
 1. **WordPress**: 
-   - Check `wp-config.php` for `define( 'EHCC_WEBHOOK_SECRET', '...' );`
-   - OR check environment variables for `EHCC_WEBHOOK_SECRET`
+   - Check environment variables for `EHCC_WEBHOOK_SECRET`
    - Verify the value is set (not stored in database)
    - Check for any whitespace or special characters
    - Go to Settings → Scraper Settings to see if it shows "Configured"
@@ -204,7 +199,7 @@ The implementation uses a **two-layer security approach**:
 **Common issues**:
 - Values don't match exactly (case-sensitive, whitespace differences)
 - Secret not set in GitHub repository secrets
-- Secret not defined in `wp-config.php` or as environment variable
+- Secret not defined as environment variable
 - Encoding issues (special characters, line breaks)
 - WordPress constant/env variable not accessible (permissions, server config)
 

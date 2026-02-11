@@ -23,7 +23,7 @@ class Import_Rest_API {
 	private const RESULTS_STORAGE_OPTION = 'ehcc_import_results';
 	private const REQUEST_TOKEN_EXPIRY = 3600;
 	private const GITHUB_REPO = 'heinvv/elementor-playwright-scraper';
-	private const VERCEL_ENDPOINT = 'https://elementor-scraper-connect.vercel.app/api/trigger';
+	private const DEFAULT_SCRAPER_ENDPOINT = 'https://playwright-scraper-542363463421.europe-west1.run.app';
 	private const SCRAPER_REQUEST_TIMEOUT = 600;
 
 	public function __construct() {
@@ -186,10 +186,6 @@ class Import_Rest_API {
 			$wordpress_website_url = home_url();
 		}
 
-		if ( defined( 'EHCC_WEBHOOK_BASE_URL' ) && ! empty( constant( 'EHCC_WEBHOOK_BASE_URL' ) ) ) {
-			$wordpress_website_url = constant( 'EHCC_WEBHOOK_BASE_URL' );
-		}
-
 		if ( empty( $elementor_base_url ) ) {
 			$elementor_base_url = home_url();
 		}
@@ -219,12 +215,8 @@ class Import_Rest_API {
 			],
 		];
 
-		$scraper_endpoint = defined( 'EHCC_SCRAPER_ENDPOINT' ) && ! empty( constant( 'EHCC_SCRAPER_ENDPOINT' ) )
-			? constant( 'EHCC_SCRAPER_ENDPOINT' )
-			: self::VERCEL_ENDPOINT;
-
 		$scraper_response = wp_remote_post(
-			$scraper_endpoint,
+			self::DEFAULT_SCRAPER_ENDPOINT,
 			[
 				'headers' => [
 					'Content-Type' => 'application/json',

@@ -15,20 +15,16 @@ The integration allows you to:
 
 #### Secrets (Not Stored in WordPress)
 
-**Secrets must be configured via WordPress constants or environment variables** (not stored in WordPress database):
+**Secrets must be configured via environment variables** (not stored in WordPress database):
 
 1. **GitHub Token** (`EHCC_GITHUB_TOKEN`)
-   - **Where to set**: 
-     - **Option 1**: Add to `wp-config.php`: `define( 'EHCC_GITHUB_TOKEN', 'your-token-here' );`
-     - **Option 2**: Set as environment variable: `EHCC_GITHUB_TOKEN=your-token-here`
+   - **Where to set**: Environment variable: `EHCC_GITHUB_TOKEN=your-token-here`
    - **What it is**: Personal Access Token with `repo` scope
    - **Create at**: https://github.com/settings/tokens
    - **Purpose**: Authenticates GitHub API calls to trigger workflows
 
 2. **Webhook Secret** (`EHCC_WEBHOOK_SECRET`)
-   - **Where to set**:
-     - **Option 1**: Add to `wp-config.php`: `define( 'EHCC_WEBHOOK_SECRET', 'your-secret-here' );`
-     - **Option 2**: Set as environment variable: `EHCC_WEBHOOK_SECRET=your-secret-here`
+   - **Where to set**: Environment variable: `EHCC_WEBHOOK_SECRET=your-secret-here`
    - **What it is**: Shared secret string (32+ characters recommended)
    - **Generate**: Use `openssl rand -hex 32` or similar tool
    - **Purpose**: Authenticates webhook requests from GitHub Actions
