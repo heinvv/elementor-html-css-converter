@@ -180,6 +180,15 @@ class Atomic_Widget_Settings_Preparer {
 
 			case 'e-flexbox':
 				break;
+
+			case 'e-div-block':
+				if ( isset( $attributes['is_link_container'] ) && $attributes['is_link_container'] ) {
+					$settings['tag'] = $this->create_atomic_prop( 'string', 'a' );
+					if ( isset( $attributes['href'] ) ) {
+						$settings['link'] = $this->create_link_prop( $attributes['href'], $attributes );
+					}
+				}
+				break;
 		}
 
 		return $settings;
@@ -324,7 +333,7 @@ class Atomic_Widget_Settings_Preparer {
 	 */
 	private function filter_attributes( array $attributes, string $widget_type = '' ): array {
 		$filtered            = [];
-		$excluded_attributes = [ 'style', 'class', 'id', 'href', 'src', 'alt', 'original_tag', 'svg_content' ];
+		$excluded_attributes = [ 'style', 'class', 'id', 'href', 'src', 'alt', 'original_tag', 'svg_content', 'is_link_container' ];
 
 		if ( 'e-svg' !== $widget_type ) {
 			$excluded_attributes[] = 'width';

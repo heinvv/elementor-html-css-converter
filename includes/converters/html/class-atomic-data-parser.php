@@ -351,9 +351,15 @@ class Atomic_Data_Parser {
 
 		$attributes['original_tag'] = $tag_name;
 
+		$final_widget_type = $widget_config['type'];
+		if ( 'a' === $tag_name && ! empty( $children ) ) {
+			$final_widget_type = 'e-div-block';
+			$attributes['is_link_container'] = true;
+		}
+
 		return [
 			'tag'              => $tag_name,
-			'widget_type'      => $widget_config['type'],
+			'widget_type'      => $final_widget_type,
 			'widget_config'    => $widget_config,
 			'breakpoint_props' => $breakpoint_props,
 			'element_classes'  => $element_classes,
@@ -723,6 +729,14 @@ class Atomic_Data_Parser {
 		$has_children    = ! empty( $element['children'] );
 
 		if ( $has_direct_text ) {
+			$content_from_single_child = $this->is_content_solely_from_single_child( $element );
+			if ( $content_from_single_child ) {
+				$element['content'] = '';
+				$has_direct_text     = false;
+			}
+		}
+
+		if ( $has_direct_text ) {
 			$paragraph_element = [
 				'tag'             => 'p',
 				'widget_type'     => 'e-paragraph',
@@ -750,6 +764,18 @@ class Atomic_Data_Parser {
 		}
 
 		return $element;
+	}
+
+	private function is_content_solely_from_single_child( array $element ): bool {
+		if ( count( $element['children'] ) !== 1 ) {
+			return false;
+		}
+
+		$child         = $element['children'][0];
+		$parent_content = trim( $element['content'] ?? '' );
+		$child_content  = trim( $child['content'] ?? '' );
+
+		return $parent_content !== '' && $parent_content === $child_content;
 	}
 
 	/**
