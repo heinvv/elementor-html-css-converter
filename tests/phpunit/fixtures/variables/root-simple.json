@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --primary-color: #ff5733;\n  --spacing-md: 16px;\n}\n"
+}

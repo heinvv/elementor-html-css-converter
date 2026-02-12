@@ -1,0 +1,3 @@
+{
+  "html": "<style>\n:root {\n  --gap: 12px;\n  --cell-bg: #e8e8e8;\n}\n.grid {\n  display: grid;\n  gap: var(--gap);\n  grid-template-columns: 1fr 1fr 1fr;\n  grid-template-rows: auto 100px;\n}\n.cell {\n  background-color: var(--cell-bg);\n}\n</style>\n<div class=\"grid\"><div class=\"cell\">A</div><div class=\"cell\">B</div><div class=\"cell\">C</div></div>"
+}

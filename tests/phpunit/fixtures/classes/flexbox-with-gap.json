@@ -1,0 +1,3 @@
+{
+  "html": "<style>\n:root {\n  --gap: 16px;\n  --item-bg: #f0f0f0;\n}\n.flex-container {\n  display: flex;\n  gap: var(--gap);\n  flex-direction: row;\n}\n.flex-item {\n  background-color: var(--item-bg);\n}\n</style>\n<div class=\"flex-container\"><div class=\"flex-item\">Item 1</div><div class=\"flex-item\">Item 2</div></div>"
+}

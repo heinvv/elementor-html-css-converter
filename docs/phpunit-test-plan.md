@@ -10,14 +10,15 @@ Achieve 80% code coverage with a mix of unit tests and integration tests. Focus 
 
 | Area | Test Files | Coverage |
 |------|------------|----------|
-| Variables convertors | 5 files | Font_Family, Line_Height, Opacity, Css_Function, Unsupported_Font_Variable_Service |
-| Classes | 0 | None |
-| CSS / Breakpoints | 0 | None |
-| HTML converter | 0 | None |
+| Variables convertors | 13 files | Color_Hex, Color_Rgb, Color_Rgba, Color_Hsl, Color_Hsla, Color_Named, Percentage, Length_Size_Viewport, Font_Family, Line_Height, Opacity, Css_Function, Unsupported_Font_Variable_Service |
+| Variables pipeline | 4 files | Variable_Extractor, Variable_Conversion_Service, Variable_Convertor_Registry, Variable_Fallback_Substitutor |
+| Classes | 3 files | Class_Extractor, Class_Conversion_Service, Converter_Registry |
+| HTML converter | 3 files | Atomic_Data_Parser, Html_Converter, Widget_Styles_Integrator |
+| CSS / Breakpoints | 4 files | Breakpoint_Matcher, Media_Query_Parser, Id_Style_Extractor, Css_Converter |
 | REST APIs | 0 | None |
 | Import | 0 | None |
 
-**Total**: ~111 unit tests, 13 skipped (require Elementor). Most plugin code is untested.
+**Total**: ~251 unit tests, 16 skipped (require Elementor). Phase 2 complete (variables, CSS, classes, HTML).
 
 ---
 
@@ -233,9 +234,11 @@ Payload fixtures should cover:
 ```bash
 composer test                    # Unit tests only (no WP)
 composer test:integration        # Integration tests (requires test:install)
-composer test:install            # Install WP test lib + Elementor
+composer test:install            # Install WP test lib + Elementor (interactive)
 composer run coverage            # Generate coverage report
 ```
+
+**First time setup:** See [phpunit-setup.md](phpunit-setup.md) for detailed instructions, especially for Local by Flywheel configuration.
 
 ---
 

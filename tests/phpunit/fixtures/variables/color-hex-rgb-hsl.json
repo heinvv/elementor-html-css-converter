@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --hex: #ff0000;\n  --hex-short: #f00;\n  --rgb: rgb(255, 0, 0);\n  --rgba: rgba(255, 0, 0, 0.5);\n  --hsl: hsl(0, 100%, 50%);\n  --hsla: hsla(0, 100%, 50%, 0.5);\n}\n"
+}

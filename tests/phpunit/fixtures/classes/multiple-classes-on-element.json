@@ -1,0 +1,3 @@
+{
+  "html": "<style>\n:root {\n  --brand-blue: #0066cc;\n  --text-lg: 24px;\n}\n.heading {\n  color: var(--brand-blue);\n}\n.large {\n  font-size: var(--text-lg);\n}\n</style>\n<h1 class=\"heading large\">Big Blue Heading</h1>"
+}

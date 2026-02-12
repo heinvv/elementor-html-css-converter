@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --gap: 16px;\n  --width: calc(100% - 2 * var(--gap));\n}\n"
+}

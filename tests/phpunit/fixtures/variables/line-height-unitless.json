@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --line-tight: 1.2;\n  --line-normal: 1.5;\n  --line-loose: 2;\n}\n"
+}

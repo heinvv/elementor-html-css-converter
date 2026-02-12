@@ -74,8 +74,42 @@ export const useImportPolling = ({
 					clearInterval(interval);
 					pollIntervalRef.current = null;
 
-					const templateId = data.results?.converter?.template_id;
-						
+					const scrapeData = data.results.scrape;
+					const elementCount = scrapeData?.elements?.length ?? 0;
+
+					if (elementCount === 0) {
+						setStatusMessage('No elements matched the selectors. Check the URL and CSS selectors.');
+						setStatusType('error');
+						setIsLoading(false);
+						return;
+					}
+
+					setStatusMessage('Scrape complete. Converting to Elementor...');
+					setStatusType('info');
+
+					try {
+						const convertResponse = await fetch(apiUrl + 'convert-html', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({
+								html: data.results.html,
+								save_as_template: true,
+								import_variables: true,
+								import_classes: false,
+							}),
+						});
+
+						if (!convertResponse.ok) {
+							const errorText = await convertResponse.text();
+							setStatusMessage(`Failed to convert: ${errorText}`);
+							setStatusType('error');
+							setIsLoading(false);
+							return;
+						}
+
+						const convertData = await convertResponse.json();
+						const templateId = convertData.template_id;
+
 						if (templateId) {
 							const elementorCommon = (window as any).elementorCommon;
 							const $e = (window as any).$e;
@@ -123,10 +157,15 @@ export const useImportPolling = ({
 								setIsLoading(false);
 							}
 						} else {
-							setStatusMessage('Import completed but no template ID found');
+							setStatusMessage('Template created but failed to retrieve ID');
 							setStatusType('error');
 							setIsLoading(false);
 						}
+					} catch (error) {
+						setStatusMessage('Failed to convert scraped content: ' + (error instanceof Error ? error.message : 'Unknown error'));
+						setStatusType('error');
+						setIsLoading(false);
+					}
 				}
 			} catch (error) {
 				clearInterval(interval);

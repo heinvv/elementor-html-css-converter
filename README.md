@@ -1073,8 +1073,40 @@ Response includes imported images:
 
 ---
 
+## Testing
+
+### Quick Start
+
+```bash
+composer install
+composer test                    # Unit tests (fast, no WordPress)
+composer test:install            # One-time setup for integration tests
+composer test:integration        # Integration tests (needs WordPress)
+```
+
+### Setup Guide
+
+For detailed setup instructions, especially for Local by Flywheel:
+- **[PHPUnit Setup Guide](docs/phpunit-setup.md)** - Prerequisites, troubleshooting, Local by Flywheel configuration
+
+### Test Commands
+
+| Command | Description |
+|---------|--------------|
+| `composer test` | Run unit tests (no WordPress) |
+| `composer test:integration` | Run integration tests (requires `test:install` first) |
+| `composer test:install` | Install WP test lib, Elementor, and symlink plugin (prompts for DB credentials) |
+| `composer run coverage` | Generate code coverage report (requires phpdbg) |
+
+### Test Plan
+
+See [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) for the full test plan and 80% coverage roadmap.
+
+---
+
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Claude Code context file
 - [docs/](docs/) - Architecture overview ([ARCHITECTURE.md](docs/ARCHITECTURE.md)), plans ([docs/archive/planning/](docs/archive/planning/)), API details and Elementor parity references ([docs/archive/](docs/archive/))
+- [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) - PHPUnit test plan and 80% coverage roadmap
 

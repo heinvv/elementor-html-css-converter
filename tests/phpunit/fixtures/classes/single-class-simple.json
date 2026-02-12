@@ -1,0 +1,3 @@
+{
+  "html": "<style>\n:root {\n  --primary: #ff5733;\n  --pad: 16px;\n}\n.card {\n  background-color: var(--primary);\n  padding: var(--pad);\n}\n</style>\n<div class=\"card\">Card content</div>"
+}

@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --font: sans-serif;\n  --heading-font: serif;\n  --code-font: monospace;\n}\n"
+}

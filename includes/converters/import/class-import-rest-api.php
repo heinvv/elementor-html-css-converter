@@ -166,14 +166,11 @@ class Import_Rest_API {
 			$payload = [
 				'event_type'     => 'run-scrape',
 				'client_payload' => [
-					'url'                => $url,
-					'selectors'          => $selectors,
-					'timeout'            => $timeout,
-					'elementor_base_url' => $site_url,
-					'job_id'             => $job_id,
-					'post_id'            => 0,
-					'save_as_template'   => true,
-					'breakpoints'        => $this->get_breakpoint_config_for_scraper(),
+					'url'        => $url,
+					'selectors'  => $selectors,
+					'timeout'    => $timeout,
+					'job_id'     => $job_id,
+					'breakpoints' => $this->get_breakpoint_config_for_scraper(),
 				],
 			];
 

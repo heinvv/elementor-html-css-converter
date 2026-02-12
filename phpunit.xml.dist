@@ -8,7 +8,19 @@
 >
 	<testsuites>
 		<testsuite name="elementor-html-css-converter">
-			<directory prefix="test-" suffix=".php">./tests/phpunit/</directory>
+			<directory prefix="test-" suffix=".php">./tests/phpunit/converters</directory>
 		</testsuite>
 	</testsuites>
+	<coverage>
+		<report>
+			<clover outputFile="coverage-report/clover.xml"/>
+			<html outputDirectory="coverage-report/html"/>
+		</report>
+		<include>
+			<directory suffix=".php">./includes</directory>
+		</include>
+		<exclude>
+			<file>./includes/autoloader.php</file>
+		</exclude>
+	</coverage>
 </phpunit>

@@ -1,0 +1,6 @@
+{
+  "html": "<style>#header { display: flex; padding: 20px 40px; }\n#hero { padding: 80px 20px; }\n@media (max-width: 1024px) { #header { padding: 15px 30px; } #hero { padding: 60px 20px; } }\n@media (max-width: 767px) { #header { flex-direction: column; } #hero { padding: 40px 15px; } }\n.card { padding: 30px; background: #fff; }</style><header id=\"header\"><div id=\"logo\">Brand</div></header><section id=\"hero\">Hero</section><div class=\"card\">Card</div>",
+  "import_variables": true,
+  "import_classes": true,
+  "update_mode": "create_new"
+}

@@ -1,0 +1,3 @@
+{
+  "css": ":root {\n  --spacing-rem: 1rem;\n  --spacing-em: 1.5em;\n  --spacing-px: 16px;\n  --size-vw: 10vw;\n  --size-vh: 50vh;\n}\n"
+}

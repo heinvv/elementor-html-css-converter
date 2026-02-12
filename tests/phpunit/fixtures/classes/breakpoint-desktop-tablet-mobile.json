@@ -1,0 +1,3 @@
+{
+  "html": "<style>\n.box {\n  padding: 20px;\n  font-size: 16px;\n}\n@media (max-width: 1024px) {\n  .box {\n    padding: 15px;\n    font-size: 14px;\n  }\n}\n@media (max-width: 767px) {\n  .box {\n    padding: 10px;\n    font-size: 12px;\n  }\n}\n</style>\n<div class=\"box\">Responsive box</div>"
+}
