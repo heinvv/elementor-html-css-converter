@@ -40,10 +40,11 @@ tests_add_filter( 'pre_option_active_plugins', function () {
 	return [
 		'elementor-html-css-converter/elementor-html-css-converter.php',
 	];
-}, 1 );
+}, 9999 );
 
 tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir ) {
-	$elementor_file = $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
+	$elementor_file = getenv( 'WP_TESTS_ELEMENTOR_DIR' )
+		?: $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
 	if ( file_exists( $elementor_file ) ) {
 		require_once $elementor_file;
 	}
