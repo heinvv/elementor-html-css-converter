@@ -962,9 +962,9 @@ elementor-html-css-converter/
 
 ### Scraper integration (breakpoints)
 
-When the [elementor-playwright-scraper](https://github.com/heinvv/elementor-playwright-scraper) runs, it needs Elementor's breakpoint values to capture responsive styles. The converter provides these in two ways:
+When the [elementor-playwright-scraper](https://github.com/heinvv/elementor-playwright-scraper) runs, it needs Elementor's breakpoint values to capture responsive styles. The flow is **polling-based**: WordPress POSTs to the scraper to start a scrape, receives `job_id` and `scraper_endpoint`, then polls `GET {scraper_endpoint}/results/{job_id}` until the result is ready. This works from local development (e.g. `elementor.local`) without webhooks.
 
-1. **`POST .../trigger-import`** — Includes `breakpoints` in the `client_payload` sent to the scraper workflow. Breakpoints are read from `Plugin::$instance->breakpoints->get_breakpoints_config()` (enabled max-width only, sorted descending by width).
+1. **`POST .../trigger-import`** — Sends `breakpoints` in the payload to the scraper and returns `job_id` and `scraper_endpoint`. Breakpoints are from `Plugin::$instance->breakpoints->get_breakpoints_config()` (enabled max-width only, sorted descending by width).
 
 2. **`GET .../breakpoints`** — Returns `{ "breakpoints": [ { "name": "tablet", "width": 1024, "direction": "max" }, ... ] }`. Used when the scraper runs locally or via CLI with `ELEMENTOR_BASE_URL` set and no `--breakpoints` argument.
 

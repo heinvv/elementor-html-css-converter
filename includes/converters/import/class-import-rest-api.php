@@ -21,8 +21,6 @@ class Import_Rest_API {
 
 	private const NAMESPACE = 'html-css-converter/v1';
 	private const RESULTS_STORAGE_OPTION = 'ehcc_import_results';
-	private const REQUEST_TOKEN_EXPIRY = 3600;
-	private const GITHUB_REPO = 'heinvv/elementor-playwright-scraper';
 	private const DEFAULT_SCRAPER_ENDPOINT = 'https://playwright-scraper-542363463421.europe-west1.run.app';
 	private const SCRAPER_REQUEST_TIMEOUT = 600;
 
@@ -158,23 +156,11 @@ class Import_Rest_API {
 	}
 
 	public function trigger_import( WP_REST_Request $request ): WP_REST_Response {
-		$github_repo = self::GITHUB_REPO;
-
-		$url          = $request->get_param( 'url' );
-		$selectors    = $request->get_param( 'selectors' );
-		$timeout      = $request->get_param( 'timeout' );
-		$post_id      = $request->get_param( 'post_id' );
-		$job_id       = 'wp-' . time() . '-' . wp_generate_password( 8, false );
-		$request_token = wp_generate_password( 32, false );
-
+		$url       = $request->get_param( 'url' );
+		$selectors = $request->get_param( 'selectors' );
+		$timeout   = $request->get_param( 'timeout' );
+		$job_id    = 'wp-' . time() . '-' . wp_generate_password( 8, false );
 		$site_url  = trailingslashit( home_url() );
-		$webhook_url = $site_url . 'wp-json/' . self::NAMESPACE . '/import-results';
-
-		set_transient(
-			'ehcc_import_token_' . $job_id,
-			$request_token,
-			self::REQUEST_TOKEN_EXPIRY
-		);
 
 		$payload = [
 			'event_type'     => 'run-scrape',
@@ -183,9 +169,7 @@ class Import_Rest_API {
 				'selectors'          => $selectors,
 				'timeout'            => $timeout,
 				'elementor_base_url' => $site_url,
-				'webhook_url'        => $webhook_url,
 				'job_id'             => $job_id,
-				'request_token'      => $request_token,
 				'post_id'            => 0,
 				'save_as_template'   => true,
 				'breakpoints'        => $this->get_breakpoint_config_for_scraper(),
@@ -233,17 +217,18 @@ class Import_Rest_API {
 
 		return new WP_REST_Response(
 			[
-				'success'     => true,
-				'message'     => $response_data['message'] ?? 'Scraper triggered',
-				'job_id'      => $job_id,
-				'github_repo' => $github_repo,
-				'webhook_url' => $webhook_url,
-				'actions_url' => $response_data['actions_url'] ?? '',
+				'success'          => true,
+				'message'          => $response_data['message'] ?? 'Scraper triggered',
+				'job_id'           => $job_id,
+				'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
 			],
 			200
 		);
 	}
 
+	/**
+	 * @deprecated Use polling of Cloud Run GET /results/:jobId instead. Kept for backwards compatibility.
+	 */
 	public function receive_results( WP_REST_Request $request ): WP_REST_Response {
 		$body = $request->get_body();
 		$data = json_decode( $body, true );
@@ -339,6 +324,9 @@ class Import_Rest_API {
 		);
 	}
 
+	/**
+	 * @deprecated Use polling of Cloud Run GET /results/:jobId instead. Kept for backwards compatibility.
+	 */
 	public function get_results( WP_REST_Request $request ): WP_REST_Response {
 		$job_id = $request->get_param( 'job_id' );
 

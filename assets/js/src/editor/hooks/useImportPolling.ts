@@ -30,10 +30,11 @@ export const useImportPolling = ({
 		}
 	}, [isOpen, setStatusMessage, setStatusType, setIsLoading]);
 
-	const startPolling = (jobId: string) => {
+	const startPolling = (jobId: string, scraperEndpoint: string) => {
 		let attempts = 0;
 		const maxAttempts = 60;
 		const pollInterval = 3000;
+		const resultsUrl = scraperEndpoint.replace(/\/+$/, '') + '/results/' + jobId;
 
 		const interval = setInterval(async () => {
 			attempts++;
@@ -48,7 +49,7 @@ export const useImportPolling = ({
 			}
 
 			try {
-				const response = await fetch(apiUrl + 'import-results/' + jobId);
+				const response = await fetch(resultsUrl);
 
 				if (!response.ok) {
 					return;
@@ -60,12 +61,20 @@ export const useImportPolling = ({
 					return;
 				}
 
-				if (data.status === 'complete' && data.data) {
+				if (data.status === 'error') {
+					clearInterval(interval);
+					pollIntervalRef.current = null;
+					setStatusMessage(data.error || 'Import failed');
+					setStatusType('error');
+					setIsLoading(false);
+					return;
+				}
+
+				if (data.status === 'success' && data.results) {
 					clearInterval(interval);
 					pollIntervalRef.current = null;
 
-					if (data.data.status === 'success') {
-						const templateId = data.data.results?.converter?.template_id;
+					const templateId = data.results?.converter?.template_id;
 						
 						if (templateId) {
 							const elementorCommon = (window as any).elementorCommon;
@@ -118,11 +127,6 @@ export const useImportPolling = ({
 							setStatusType('error');
 							setIsLoading(false);
 						}
-					} else if (data.data.status === 'error') {
-						setStatusMessage(data.data.error || 'Import failed');
-						setStatusType('error');
-						setIsLoading(false);
-					}
 				}
 			} catch (error) {
 				clearInterval(interval);

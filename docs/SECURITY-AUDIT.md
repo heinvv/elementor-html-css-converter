@@ -13,7 +13,18 @@ Several input sanitization gaps have been resolved during this audit:
 - CSS-specific attack vectors (`expression()`, `url(javascript:)`, `behavior`, `-moz-binding`, `@import`) are now blocked in `Css_Converter`
 - `widgetSettings` is now recursively sanitized via `wp_strip_all_tags()`
 - SVG content is sanitized at extraction, import, and storage layers
-- `/import-results` webhook now rejects payloads containing `<script>`, stores only sanitized fields, and auto-deletes results after retrieval
+- Webhook endpoints `/import-results` (POST) and `/import-results/{job_id}` (GET) are deprecated; the plugin now uses polling of Cloud Run `GET /results/:jobId`
+
+---
+
+## Polling Architecture Security
+
+The import flow uses a polling model: WordPress triggers a scrape on Cloud Run, receives a `job_id`, then polls `GET {scraper_endpoint}/results/{job_id}` until the result is ready.
+
+- **No authentication on GET /results** — Cloud Run's results endpoint is unauthenticated. The `job_id` acts as a capability URL (format: `wp-{timestamp}-{8-char-random}` provides ~2^48 combinations, making enumeration infeasible).
+- **Immediate deletion** — After WordPress retrieves the result, Cloud Run deletes the file from Cloud Storage. Results are not persisted.
+- **1-day lifecycle rule** — Orphaned files (e.g. if WordPress crashes mid-poll) are deleted by GCS lifecycle after 1 day.
+- **Recommendation:** For higher security requirements, consider signed URLs or Cloud Run authentication.
 
 ---
 
@@ -40,7 +51,7 @@ Every single permission callback in the plugin returns `true`, granting unauthen
 - Trigger external scraper workflows
 - Store arbitrary data in the `wp_options` table
 
-**Fix:** All endpoints must check `current_user_can( 'edit_posts' )` at minimum. The `/import-results` webhook endpoint should use its existing token-based auth (which it does), but the remaining endpoints need WordPress capability checks.
+**Fix:** All endpoints must check `current_user_can( 'edit_posts' )` at minimum.
 
 ---
 
@@ -134,15 +145,9 @@ SVG content is sanitized at four defense layers:
 
 ---
 
-### `/import-results` Webhook Sanitization
+### Deprecated Webhook Endpoints
 
-The `receive_results()` handler in `class-import-rest-api.php` now applies three security measures:
-
-1. **Script rejection** -- the entire payload is serialized and checked for `<script` (case-insensitive). If found, the request is rejected with a `400` error before anything is stored.
-2. **Sanitized storage** -- only three fields are extracted and sanitized before storage: `status` (`sanitize_text_field`), `error` (`sanitize_text_field`), and `results.converter.template_id` (`absint`). The raw scraper payload is discarded.
-3. **Auto-cleanup** -- `get_results()` deletes the job entry from `wp_options` immediately after returning the data to the frontend, preventing accumulation of stale results.
-
-**Future improvement:** The `wp_options` storage should be removed entirely. The current webhook-and-poll pattern creates database overhead that is unnecessary. A future refactor should eliminate the intermediate storage step so that scraper results flow directly into Elementor templates without persisting raw data in the database.
+`receive_results()` and `get_results()` in `class-import-rest-api.php` are deprecated. The plugin now uses polling of Cloud Run's `GET /results/:jobId`. The deprecated endpoints remain for backwards compatibility and retain the same security measures (script rejection, sanitized storage, auto-cleanup).
 
 ---
 
@@ -171,8 +176,8 @@ The CSS parser regex in `class-css-converter.php` provides implicit protection:
 | `POST /import-variables` | NONE | `sanitize_textarea_field` on css | CRITICAL (auth) |
 | `POST /import-classes` | NONE | `sanitize_textarea_field` on css | CRITICAL (auth) |
 | `POST /trigger-import` | NONE | `esc_url_raw` + `sanitize_text_field` | CRITICAL (auth) |
-| `POST /import-results` | Token | Script rejection, sanitized fields only | LOW |
-| `GET /import-results/{job_id}` | NONE | `sanitize_text_field` on job_id, auto-deletes after retrieval | MEDIUM (auth) |
+| `POST /import-results` (deprecated) | Token | Script rejection, sanitized fields only | LOW |
+| `GET /import-results/{job_id}` (deprecated) | NONE | `sanitize_text_field` on job_id, auto-deletes after retrieval | MEDIUM (auth) |
 | `DELETE /template/{id}` | NONE | `absint` on id | CRITICAL (auth) |
 
 ---
@@ -201,5 +206,5 @@ public function check_permissions(): bool {
 
 5. **Validate `widgetType`** against a whitelist of known Elementor widget types.
 
-6. **Add `GET /import-results/{job_id}` authentication** so scraped results are not publicly readable.
+6. **Cloud Run GET /results/{job_id}**: Currently unauthenticated; job_id acts as capability URL. Consider signed URLs or auth headers for stronger security.
 

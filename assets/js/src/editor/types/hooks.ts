@@ -17,5 +17,5 @@ export type UseImportSubmitParams = {
 	setIsLoading: (loading: boolean) => void;
 	setStatusMessage: (message: string | null) => void;
 	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
-	startPolling: (jobId: string) => void;
+	startPolling: (jobId: string, scraperEndpoint: string) => void;
 };

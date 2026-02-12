@@ -40,12 +40,16 @@ export const useImportSubmit = ({
 
 			const data = await response.json();
 
-			if (data.success && data.job_id) {
+			if (data.success && data.job_id && data.scraper_endpoint) {
 				setStatusMessage('Import started. Waiting for results...');
 				setStatusType('info');
-				startPolling(data.job_id);
+				startPolling(data.job_id, data.scraper_endpoint);
 			} else {
-				setStatusMessage(data.message || 'Failed to start import');
+				setStatusMessage(
+					!data.scraper_endpoint
+						? 'Invalid scraper response. Please update the plugin.'
+						: data.message || 'Failed to start import'
+				);
 				setStatusType('error');
 				setIsLoading(false);
 			}
