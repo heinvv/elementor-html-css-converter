@@ -36,14 +36,16 @@ $GLOBALS['wp_tests_options'] = [
 
 require_once $_tests_dir . '/includes/functions.php';
 
+tests_add_filter( 'pre_option_active_plugins', function () {
+	return [
+		'elementor-html-css-converter/elementor-html-css-converter.php',
+	];
+}, 1 );
+
 tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir ) {
 	$elementor_file = $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
 	if ( file_exists( $elementor_file ) ) {
-		require $elementor_file;
-	}
-	$converter_file = WP_PLUGIN_DIR . '/elementor-html-css-converter/elementor-html-css-converter.php';
-	if ( file_exists( $converter_file ) ) {
-		require $converter_file;
+		require_once $elementor_file;
 	}
 }, 1 );
 
