@@ -14,6 +14,13 @@ if ( empty( $_tests_dir ) || ! is_dir( $_tests_dir ) ) {
 	die( 'Run bin/install-wp-tests-local.sh first. Set WP_TESTS_DIR if using custom path.' );
 }
 
+$wp_core_dir = getenv( 'WP_CORE_DIR' )
+	? rtrim( getenv( 'WP_CORE_DIR' ), '/' )
+	: ( dirname( $_tests_dir ) . '/wordpress' );
+if ( ! is_dir( $wp_core_dir ) ) {
+	$wp_core_dir = '/tmp/wordpress';
+}
+
 define( 'EHCC_TESTS', true );
 
 $active_plugins = [
@@ -28,6 +35,17 @@ $GLOBALS['wp_tests_options'] = [
 ];
 
 require_once $_tests_dir . '/includes/functions.php';
+
+tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir ) {
+	$elementor_file = $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
+	if ( file_exists( $elementor_file ) ) {
+		require $elementor_file;
+	}
+	$converter_file = WP_PLUGIN_DIR . '/elementor-html-css-converter/elementor-html-css-converter.php';
+	if ( file_exists( $converter_file ) ) {
+		require $converter_file;
+	}
+}, 1 );
 
 tests_add_filter( 'shutdown', 'drop_tables', 999999 );
 
@@ -51,3 +69,4 @@ $elementor_instance = class_exists( '\Elementor\Plugin' )
 do_action( 'init' );
 do_action( 'wp_loaded' );
 do_action( 'rest_api_init' );
+
