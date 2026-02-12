@@ -76,9 +76,13 @@ export const useImportPolling = ({
 
 					const scrapeData = data.results.scrape;
 					const elementCount = scrapeData?.elements?.length ?? 0;
+					const hasHtml = typeof data.results.html === 'string' && data.results.html.trim().length > 0;
 
-					if (elementCount === 0) {
-						setStatusMessage('No elements matched the selectors. Check the URL and CSS selectors.');
+					if (elementCount === 0 && !hasHtml) {
+						setStatusMessage(
+							'No elements matched the selectors. Check the URL and CSS selectors. ' +
+								'Try inspecting the page to verify the selector exists, or use a broader selector (e.g. header, main).'
+						);
 						setStatusType('error');
 						setIsLoading(false);
 						return;
