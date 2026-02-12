@@ -24,10 +24,10 @@ if ( ! is_dir( $wp_core_dir ) ) {
 define( 'EHCC_TESTS', true );
 define( 'ELEMENTOR_TESTS', true );
 
-$active_plugins = [
-	'elementor/elementor.php',
-	'elementor-html-css-converter/elementor-html-css-converter.php',
-];
+$elementor_plugin_path = 'elementor/elementor.php';
+$converter_plugin_path = 'elementor-html-css-converter/elementor-html-css-converter.php';
+
+$active_plugins = [ $elementor_plugin_path, $converter_plugin_path ];
 
 $GLOBALS['wp_tests_options'] = [
 	'active_plugins' => $active_plugins,
@@ -37,17 +37,16 @@ $GLOBALS['wp_tests_options'] = [
 
 require_once $_tests_dir . '/includes/functions.php';
 
-tests_add_filter( 'pre_option_active_plugins', function () {
-	return [];
-}, 9999 );
-
-tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir ) {
+tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir, $plugin_root ) {
 	$elementor_file = getenv( 'WP_TESTS_ELEMENTOR_DIR' )
 		?: $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
+	
 	if ( file_exists( $elementor_file ) ) {
-		require_once $elementor_file;
+		require $elementor_file;
 	}
-}, 1 );
+	
+	require $plugin_root . '/elementor-html-css-converter.php';
+} );
 
 tests_add_filter( 'shutdown', 'drop_tables', 999999 );
 
@@ -64,16 +63,7 @@ if ( ! defined( 'WP_ADMIN' ) ) {
 
 \Elementor\Plugin::instance();
 
-do_action( 'init' );
-
-$converter_file = $plugin_root . '/elementor-html-css-converter.php';
-if ( file_exists( $converter_file ) ) {
-	require_once $converter_file;
-}
-
 do_action( 'plugins_loaded' );
-
-\Elementor\Plugin::$instance->init_common();
-
-do_action( 'rest_api_init' );
+do_action( 'init' );
+do_action( 'wp_loaded' );
 
