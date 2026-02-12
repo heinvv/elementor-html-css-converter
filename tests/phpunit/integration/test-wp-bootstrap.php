@@ -21,4 +21,18 @@ class Test_Wp_Bootstrap extends TestCase {
 		$this->assertTrue( class_exists( '\ElementorHtmlCssConverter\Plugin' ) );
 	}
 
+	public function test_convert_html_returns_response(): void {
+		$request = new \WP_REST_Request( 'POST', '/html-css-converter/v1/convert-html' );
+		$request->set_param( 'html', '<div>test</div>' );
+		$request->set_param( 'import_images', false );
+
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status(), 'Status: ' . $response->get_status() . ', Data: ' . wp_json_encode( $data ) );
+		$this->assertIsArray( $data );
+		$this->assertArrayHasKey( 'success', $data, 'Keys: ' . implode( ', ', array_keys( $data ) ) );
+		$this->assertTrue( $data['success'], 'success=false, response: ' . wp_json_encode( $data ) );
+	}
+
 }

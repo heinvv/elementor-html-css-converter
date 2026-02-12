@@ -1,0 +1,14 @@
+<phpunit
+	bootstrap="tests/bootstrap-integration.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+>
+	<testsuites>
+		<testsuite name="elementor-html-css-converter-minimal">
+			<file>./tests/phpunit/integration/test-wp-bootstrap.php</file>
+		</testsuite>
+	</testsuites>
+</phpunit>
