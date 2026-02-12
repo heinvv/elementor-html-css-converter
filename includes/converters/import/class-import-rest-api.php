@@ -156,74 +156,86 @@ class Import_Rest_API {
 	}
 
 	public function trigger_import( WP_REST_Request $request ): WP_REST_Response {
-		$url       = $request->get_param( 'url' );
-		$selectors = $request->get_param( 'selectors' );
-		$timeout   = $request->get_param( 'timeout' );
-		$job_id    = 'wp-' . time() . '-' . wp_generate_password( 8, false );
-		$site_url  = trailingslashit( home_url() );
+		try {
+			$url       = $request->get_param( 'url' );
+			$selectors = $request->get_param( 'selectors' );
+			$timeout   = $request->get_param( 'timeout' );
+			$job_id    = 'wp-' . time() . '-' . wp_generate_password( 8, false );
+			$site_url  = trailingslashit( home_url() );
 
-		$payload = [
-			'event_type'     => 'run-scrape',
-			'client_payload' => [
-				'url'                => $url,
-				'selectors'          => $selectors,
-				'timeout'            => $timeout,
-				'elementor_base_url' => $site_url,
-				'job_id'             => $job_id,
-				'post_id'            => 0,
-				'save_as_template'   => true,
-				'breakpoints'        => $this->get_breakpoint_config_for_scraper(),
-			],
-		];
-
-		$scraper_response = wp_remote_post(
-			self::DEFAULT_SCRAPER_ENDPOINT,
-			[
-				'headers' => [
-					'Content-Type' => 'application/json',
+			$payload = [
+				'event_type'     => 'run-scrape',
+				'client_payload' => [
+					'url'                => $url,
+					'selectors'          => $selectors,
+					'timeout'            => $timeout,
+					'elementor_base_url' => $site_url,
+					'job_id'             => $job_id,
+					'post_id'            => 0,
+					'save_as_template'   => true,
+					'breakpoints'        => $this->get_breakpoint_config_for_scraper(),
 				],
-				'body'    => wp_json_encode( $payload ),
-				'timeout' => self::SCRAPER_REQUEST_TIMEOUT,
-			]
-		);
+			];
 
-		if ( is_wp_error( $scraper_response ) ) {
+			$scraper_response = wp_remote_post(
+				self::DEFAULT_SCRAPER_ENDPOINT,
+				[
+					'headers'   => [
+						'Content-Type' => 'application/json',
+					],
+					'body'      => wp_json_encode( $payload ),
+					'timeout'   => self::SCRAPER_REQUEST_TIMEOUT,
+					'sslverify' => apply_filters( 'ehcc_scraper_ssl_verify', true ),
+				]
+			);
+
+			if ( is_wp_error( $scraper_response ) ) {
+				return new WP_REST_Response(
+					[
+						'success' => false,
+						'message' => 'Failed to trigger scraper: ' . $scraper_response->get_error_message(),
+						'job_id'  => $job_id,
+					],
+					500
+				);
+			}
+
+			$response_code = wp_remote_retrieve_response_code( $scraper_response );
+			$response_body = wp_remote_retrieve_body( $scraper_response );
+			$response_data = json_decode( $response_body, true );
+
+			if ( $response_code !== 200 ) {
+				$error_message = $response_data['error'] ?? $response_data['message'] ?? 'Unknown error from scraper endpoint';
+				return new WP_REST_Response(
+					[
+						'success'          => false,
+						'message'          => 'Scraper error: ' . $error_message,
+						'job_id'           => $job_id,
+						'scraper_response'  => $response_data,
+					],
+					200
+				);
+			}
+
+			return new WP_REST_Response(
+				[
+					'success'          => true,
+					'message'          => $response_data['message'] ?? 'Scraper triggered',
+					'job_id'           => $job_id,
+					'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
+				],
+				200
+			);
+		} catch ( \Throwable $e ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'Failed to trigger scraper: ' . $scraper_response->get_error_message(),
-					'job_id'  => $job_id,
+					'message'  => 'Import error: ' . $e->getMessage(),
+					'job_id'   => '',
 				],
 				500
 			);
 		}
-
-		$response_code = wp_remote_retrieve_response_code( $scraper_response );
-		$response_body = wp_remote_retrieve_body( $scraper_response );
-		$response_data = json_decode( $response_body, true );
-
-		if ( $response_code !== 200 ) {
-			$error_message = $response_data['message'] ?? $response_data['error'] ?? 'Unknown error from scraper endpoint';
-			return new WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'Scraper endpoint error: ' . $error_message,
-					'job_id'  => $job_id,
-					'scraper_response' => $response_data,
-				],
-				$response_code
-			);
-		}
-
-		return new WP_REST_Response(
-			[
-				'success'          => true,
-				'message'          => $response_data['message'] ?? 'Scraper triggered',
-				'job_id'           => $job_id,
-				'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
-			],
-			200
-		);
 	}
 
 	/**
