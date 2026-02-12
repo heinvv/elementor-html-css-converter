@@ -412,7 +412,7 @@ $css = Fixture_Loader::load_file( 'variables/root-simple.css' );
 **Effort**: 2 hours
 **Impact**: High - Validates test quality
 
-**Status**: Partial. Infection PHP 0.28 installed via `composer require --dev infection/infection --ignore-platform-req=php`. Created `infection.json5` (source: includes/, bootstrap: tests/bootstrap.php). Composer scripts: `mutation`, `mutation:no-cache`, `mutation:covered` (--only-covered). Full run exhausts memory on large codebase; use `composer mutation:covered` for covered code only. Requires PHP 8.1+ (use --ignore-platform-req=php if platform is 7.4).
+**Status**: Partial. Infection PHP 0.28 not in default deps (CI uses PHP 7.4 platform). To add: `composer require --dev infection/infection --ignore-platform-req=php`. Config `infection.json5` exists (source: includes/, bootstrap: tests/bootstrap.php). Composer scripts `mutation`, `mutation:covered` available when Infection installed. Requires PHP 8.1+.
 
 **Tasks**:
 - [x] Install Infection PHP

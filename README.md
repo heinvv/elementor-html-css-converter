@@ -1100,8 +1100,7 @@ For detailed setup instructions, especially for Local by Flywheel:
 | `composer test:performance` | Run performance baseline tests |
 | `composer test:install` | Install WP test lib, Elementor, and symlink plugin (prompts for DB credentials) |
 | `composer run coverage` | Generate code coverage report (requires phpdbg) |
-| `composer mutation` | Run mutation testing with Infection (requires phpdbg, PHP 8.1+) |
-| `composer mutation:covered` | Mutation testing on covered code only |
+| `composer mutation` | Run mutation testing (requires `composer require infection/infection --ignore-platform-req=php` first; PHP 8.1+) |
 
 ### Test Plan
 
