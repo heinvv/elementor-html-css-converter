@@ -22,6 +22,7 @@ if ( ! is_dir( $wp_core_dir ) ) {
 }
 
 define( 'EHCC_TESTS', true );
+define( 'ELEMENTOR_TESTS', true );
 
 $active_plugins = [
 	'elementor/elementor.php',
@@ -63,12 +64,9 @@ if ( ! defined( 'WP_ADMIN' ) ) {
 	define( 'WP_ADMIN', true );
 }
 
+\Elementor\Plugin::instance();
+
 do_action( 'plugins_loaded' );
-
-$elementor_instance = class_exists( '\Elementor\Plugin' )
-	? \Elementor\Plugin::$instance
-	: null;
-
 do_action( 'init' );
 do_action( 'wp_loaded' );
 do_action( 'rest_api_init' );

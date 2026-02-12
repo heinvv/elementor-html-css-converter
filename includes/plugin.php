@@ -25,6 +25,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Debug: Log when Elementor filters/removes custom_css from atomic widget styles.
+ * Hook into elementor/atomic_widgets/editor_data/element_styles (runs when styles are prepared for frontend).
+ */
+add_filter( 'elementor/atomic_widgets/editor_data/element_styles', function ( $filtered_styles, $original_styles ) {
+	if ( defined( 'EHCC_DEBUG_CUSTOM_CSS' ) && EHCC_DEBUG_CUSTOM_CSS ) {
+		$had_custom_css = 0;
+		$now_has_custom_css = 0;
+		foreach ( (array) $original_styles as $style_id => $style ) {
+			if ( ! empty( $style['variants'] ) ) {
+				foreach ( $style['variants'] as $v ) {
+					if ( ! empty( $v['custom_css'] ) ) {
+						$had_custom_css++;
+						break;
+					}
+				}
+			}
+		}
+		foreach ( (array) $filtered_styles as $style_id => $style ) {
+			if ( ! empty( $style['variants'] ) ) {
+				foreach ( $style['variants'] as $v ) {
+					if ( ! empty( $v['custom_css'] ) ) {
+						$now_has_custom_css++;
+						break;
+					}
+				}
+			}
+		}
+		$stripped = $had_custom_css > $now_has_custom_css ? ' (STRIPPED by Elementor)' : '';
+		error_log( sprintf( '[EHCC custom_css TRACE] Elementor post_styles filter: original had custom_css in %d styles, after filter %d%s', $had_custom_css, $now_has_custom_css, $stripped ) );
+	}
+	return $filtered_styles;
+}, 5, 2 );
+
+/**
  * Class Plugin
  *
  * Main plugin orchestration class using singleton pattern.
