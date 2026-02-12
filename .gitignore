@@ -3,6 +3,8 @@ vendor/
 tmp/
 coverage-report/
 *.log
+infection.log
+infection-log.json
 .DS_Store
 dist/
 build/

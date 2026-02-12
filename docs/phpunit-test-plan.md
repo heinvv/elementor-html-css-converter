@@ -12,13 +12,14 @@ Achieve 80% code coverage with a mix of unit tests and integration tests. Focus 
 |------|------------|----------|
 | Variables convertors | 13 files | Color_Hex, Color_Rgb, Color_Rgba, Color_Hsl, Color_Hsla, Color_Named, Percentage, Length_Size_Viewport, Font_Family, Line_Height, Opacity, Css_Function, Unsupported_Font_Variable_Service |
 | Variables pipeline | 4 files | Variable_Extractor, Variable_Conversion_Service, Variable_Convertor_Registry, Variable_Fallback_Substitutor |
-| Classes | 3 files | Class_Extractor, Class_Conversion_Service, Converter_Registry |
+| Classes | 4 files | Class_Extractor, Class_Conversion_Service, Converter_Registry, Atomic_To_Css_Converter |
 | HTML converter | 3 files | Atomic_Data_Parser, Html_Converter, Widget_Styles_Integrator |
-| CSS / Breakpoints | 4 files | Breakpoint_Matcher, Media_Query_Parser, Id_Style_Extractor, Css_Converter |
-| REST APIs | 0 | None |
-| Import | 0 | None |
+| CSS / Breakpoints | 5 files | Breakpoint_Matcher, Media_Query_Parser, Id_Style_Extractor, Css_Converter, Css_Property_Converters |
+| REST APIs | 10 files | Integration tests for convert-html, css-to-atomic, import-variables, breakpoints, trigger-import |
+| Import | 1 file | Atomic_To_Css_Converter (classes-to-CSS) |
+| Performance | 1 file | Variable_Extractor, Variable_Conversion_Service baselines |
 
-**Total**: ~251 unit tests, 16 skipped (require Elementor). Phase 2 complete (variables, CSS, classes, HTML).
+**Total**: ~291 unit tests, 28 skipped (require Elementor). Integration tests for REST endpoints. See [test improvement plan](../tests/phpunit/docs/test-improvement.md) for full phase status.
 
 ---
 

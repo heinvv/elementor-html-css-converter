@@ -43,7 +43,7 @@ class Test_Css_Converter extends TestCase {
 	}
 
 	public function test_convert__parses_css_string(): void {
-		$registry = new Converter_Registry();
+		$registry  = new Converter_Registry();
 		$converter = new Css_Converter( $registry );
 
 		$result = $converter->convert( [
@@ -54,5 +54,27 @@ class Test_Css_Converter extends TestCase {
 		$this->assertArrayHasKey( 'customCss', $result );
 	}
 
+	public function test_convert__empty_css_returns_valid_structure(): void {
+		$registry  = new Converter_Registry();
+		$converter = new Css_Converter( $registry );
+
+		$result = $converter->convert( [ 'cssString' => '' ] );
+
+		$this->assertArrayHasKey( 'props', $result );
+		$this->assertIsArray( $result['props'] );
+		$this->assertEmpty( $result['props'] );
+	}
+
+	public function test_convert_properties__empty_array_returns_valid_structure(): void {
+		$registry  = new Converter_Registry();
+		$converter = new Css_Converter( $registry );
+
+		$result = $converter->convert_properties( [] );
+
+		$this->assertArrayHasKey( 'props', $result );
+		$this->assertEmpty( $result['props'] );
+	}
+
 }
+
 

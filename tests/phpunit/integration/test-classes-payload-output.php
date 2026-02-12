@@ -2,10 +2,10 @@
 
 namespace ElementorHtmlCssConverter\Tests\Integration;
 
+use ElementorHtmlCssConverter\Tests\TestCase\Base_Test_Case;
 use ElementorHtmlCssConverter\Tests\TestCase\Fixture_Loader;
-use PHPUnit\Framework\TestCase;
 
-class Test_Classes_Payload_Output extends TestCase {
+class Test_Classes_Payload_Output extends Base_Test_Case {
 
 	public function test_single_class_produces_widget_with_styles(): void {
 		$fixture = Fixture_Loader::load_json( 'classes/single-class-simple.json' );
@@ -16,9 +16,7 @@ class Test_Classes_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertArrayHasKey( 'widgets', $data );
-		$this->assertNotEmpty( $data['widgets'] );
+		$this->assertSuccessfulConversion( $data );
 
 		$widget = $data['widgets'][0];
 		$this->assertArrayHasKey( 'styles', $widget );
@@ -34,8 +32,7 @@ class Test_Classes_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertNotEmpty( $data['widgets'] );
+		$this->assertSuccessfulConversion( $data );
 
 		$has_styles = false;
 		foreach ( $data['widgets'] as $widget ) {
@@ -56,8 +53,7 @@ class Test_Classes_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertNotEmpty( $data['widgets'] );
+		$this->assertSuccessfulConversion( $data );
 	}
 
 }

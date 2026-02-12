@@ -15,7 +15,7 @@ class Fixture_Loader {
 	}
 
 	public static function load_json( string $relative_path ): array {
-		$base = self::$fixtures_path ?? dirname( __DIR__, 2 ) . '/fixtures';
+		$base = self::$fixtures_path ?? dirname( __DIR__ ) . '/fixtures';
 		$path = $base . '/' . ltrim( $relative_path, '/' );
 		if ( ! file_exists( $path ) ) {
 			throw new \RuntimeException( "Fixture not found: $path" );
@@ -29,7 +29,7 @@ class Fixture_Loader {
 	}
 
 	public static function get_fixtures_path(): string {
-		return self::$fixtures_path ?? dirname( __DIR__, 2 ) . '/fixtures';
+		return self::$fixtures_path ?? dirname( __DIR__ ) . '/fixtures';
 	}
 
 }

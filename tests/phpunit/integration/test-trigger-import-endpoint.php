@@ -2,9 +2,10 @@
 
 namespace ElementorHtmlCssConverter\Tests\Integration;
 
-use PHPUnit\Framework\TestCase;
+use ElementorHtmlCssConverter\Tests\TestCase\Base_Test_Case;
+use ElementorHtmlCssConverter\Tests\TestCase\Test_Constants;
 
-class Test_Trigger_Import_Endpoint extends TestCase {
+class Test_Trigger_Import_Endpoint extends Base_Test_Case {
 
 	public function test_post_trigger_import_accepts_payload(): void {
 		$request = new \WP_REST_Request( 'POST', '/html-css-converter/v1/trigger-import' );
@@ -14,7 +15,7 @@ class Test_Trigger_Import_Endpoint extends TestCase {
 
 		$response = rest_do_request( $request );
 
-		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( Test_Constants::HTTP_OK, $response->get_status() );
 		$data = $response->get_data();
 		$this->assertIsArray( $data );
 		$this->assertArrayHasKey( 'success', $data );
@@ -33,6 +34,20 @@ class Test_Trigger_Import_Endpoint extends TestCase {
 		if ( ! empty( $data['job_id'] ) ) {
 			$this->assertStringStartsWith( 'wp-', $data['job_id'] );
 		}
+	}
+
+	public function test_trigger_import_response_has_required_keys(): void {
+		$request = new \WP_REST_Request( 'POST', '/html-css-converter/v1/trigger-import' );
+		$request->set_param( 'url', 'https://example.com/' );
+		$request->set_param( 'selectors', '#main' );
+
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( Test_Constants::HTTP_OK, $response->get_status() );
+		$this->assertArrayHasKey( 'success', $data );
+		$this->assertArrayHasKey( 'message', $data );
+		$this->assertArrayHasKey( 'job_id', $data );
 	}
 
 }

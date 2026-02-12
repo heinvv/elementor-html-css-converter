@@ -1093,14 +1093,20 @@ For detailed setup instructions, especially for Local by Flywheel:
 
 | Command | Description |
 |---------|--------------|
-| `composer test` | Run unit tests (no WordPress) |
-| `composer test:integration` | Run integration tests (requires `test:install` first) |
+| `composer test` | Run unit tests (~1s, no WordPress) |
+| `composer test:unit` | Same as test |
+| `composer test:integration` | Run integration tests (requires `test:install` first, needs WP+Elementor) |
+| `composer test:all` | Run unit then integration |
+| `composer test:performance` | Run performance baseline tests |
 | `composer test:install` | Install WP test lib, Elementor, and symlink plugin (prompts for DB credentials) |
 | `composer run coverage` | Generate code coverage report (requires phpdbg) |
+| `composer mutation` | Run mutation testing with Infection (requires phpdbg, PHP 8.1+) |
+| `composer mutation:covered` | Mutation testing on covered code only |
 
 ### Test Plan
 
-See [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) for the full test plan and 80% coverage roadmap.
+- [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) - PHPUnit test plan and 80% coverage roadmap
+- [tests/phpunit/docs/test-improvement.md](tests/phpunit/docs/test-improvement.md) - Phase-by-phase improvement plan and status
 
 ---
 
@@ -1109,4 +1115,5 @@ See [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) for the full test pla
 - [CLAUDE.md](CLAUDE.md) - Claude Code context file
 - [docs/](docs/) - Architecture overview ([ARCHITECTURE.md](docs/ARCHITECTURE.md)), plans ([docs/archive/planning/](docs/archive/planning/)), API details and Elementor parity references ([docs/archive/](docs/archive/))
 - [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) - PHPUnit test plan and 80% coverage roadmap
+- [tests/phpunit/docs/test-improvement.md](tests/phpunit/docs/test-improvement.md) - Test improvement plan with phase status
 

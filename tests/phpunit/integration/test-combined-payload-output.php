@@ -2,10 +2,11 @@
 
 namespace ElementorHtmlCssConverter\Tests\Integration;
 
+use ElementorHtmlCssConverter\Tests\TestCase\Base_Test_Case;
 use ElementorHtmlCssConverter\Tests\TestCase\Fixture_Loader;
-use PHPUnit\Framework\TestCase;
+use ElementorHtmlCssConverter\Tests\TestCase\Test_Constants;
 
-class Test_Combined_Payload_Output extends TestCase {
+class Test_Combined_Payload_Output extends Base_Test_Case {
 
 	public function test_full_html_css_ids_classes_root_media(): void {
 		$fixture = Fixture_Loader::load_json( 'integration/full-import-payload.json' );
@@ -18,8 +19,8 @@ class Test_Combined_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertArrayHasKey( 'widgets', $data );
+		$this->assertSame( Test_Constants::HTTP_OK, $response->get_status() );
+		$this->assertSuccessfulConversion( $data );
 		$this->assertGreaterThanOrEqual( 1, count( $data['widgets'] ) );
 
 		$widget_ids = array_column( $data['widgets'], 'id' );
@@ -35,12 +36,10 @@ class Test_Combined_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
+		$this->assertSame( Test_Constants::HTTP_OK, $response->get_status() );
+		$this->assertSuccessfulConversion( $data );
 		foreach ( $data['widgets'] as $widget ) {
-			$this->assertArrayHasKey( 'id', $widget );
-			$this->assertArrayHasKey( 'elType', $widget );
-			$this->assertArrayHasKey( 'widgetType', $widget );
-			$this->assertArrayHasKey( 'settings', $widget );
+			$this->assertValidWidgetStructure( $widget );
 		}
 	}
 

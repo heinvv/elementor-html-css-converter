@@ -2,10 +2,10 @@
 
 namespace ElementorHtmlCssConverter\Tests\Integration;
 
+use ElementorHtmlCssConverter\Tests\TestCase\Base_Test_Case;
 use ElementorHtmlCssConverter\Tests\TestCase\Fixture_Loader;
-use PHPUnit\Framework\TestCase;
 
-class Test_Breakpoints_Payload_Output extends TestCase {
+class Test_Breakpoints_Payload_Output extends Base_Test_Case {
 
 	public function test_media_queries_produce_breakpoint_props(): void {
 		$fixture = Fixture_Loader::load_json( 'integration/responsive-hero.json' );
@@ -16,14 +16,13 @@ class Test_Breakpoints_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertNotEmpty( $data['widgets'] );
+		$this->assertSuccessfulConversion( $data );
 
 		$has_breakpoint_styles = false;
 		foreach ( $data['widgets'] as $widget ) {
 			if ( ! empty( $widget['styles'] ) ) {
 				foreach ( $widget['styles'] as $style_def ) {
-					$variants = $style_def['variants'] ?? [];
+					$variants    = $style_def['variants'] ?? [];
 					$breakpoints = array_filter( array_column( $variants, 'breakpoint' ) );
 					if ( count( $breakpoints ) > 1 ) {
 						$has_breakpoint_styles = true;
@@ -46,9 +45,7 @@ class Test_Breakpoints_Payload_Output extends TestCase {
 		$response = rest_do_request( $request );
 		$data     = $response->get_data();
 
-		$this->assertTrue( $data['success'] );
-		$this->assertArrayHasKey( 'widgets', $data );
-		$this->assertNotEmpty( $data['widgets'] );
+		$this->assertSuccessfulConversion( $data );
 	}
 
 }

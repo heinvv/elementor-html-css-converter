@@ -18,47 +18,57 @@ class Test_Color_Hex_Variable_Convertor extends TestCase {
 		$this->convertor = new Color_Hex_Variable_Convertor();
 	}
 
-	public function test_supports__hex3_shorthand(): void {
-		$this->assertTrue( $this->convertor->supports( '--color', '#fff' ) );
-		$this->assertTrue( $this->convertor->supports( '--color', '#f00' ) );
-		$this->assertTrue( $this->convertor->supports( '--color', '#abc' ) );
+	public function hex_supports_valid_provider(): array {
+		return [
+			'hex3_fff' => [ '#fff' ],
+			'hex3_f00' => [ '#f00' ],
+			'hex3_abc' => [ '#abc' ],
+			'hex6_ffffff' => [ '#ffffff' ],
+			'hex6_ff0000' => [ '#ff0000' ],
+			'hex6_uppercase' => [ '#ABCDEF' ],
+			'hex8_with_alpha' => [ '#ffffff80' ],
+		];
 	}
 
-	public function test_supports__hex6_full(): void {
-		$this->assertTrue( $this->convertor->supports( '--color', '#ffffff' ) );
-		$this->assertTrue( $this->convertor->supports( '--color', '#ff0000' ) );
-		$this->assertTrue( $this->convertor->supports( '--color', '#ABCDEF' ) );
+	/**
+	 * @dataProvider hex_supports_valid_provider
+	 */
+	public function test_supports__accepts_valid_hex( string $value ): void {
+		$this->assertTrue( $this->convertor->supports( '--color', $value ) );
 	}
 
-	public function test_supports__hex8_with_alpha(): void {
-		$this->assertTrue( $this->convertor->supports( '--color', '#ffffff80' ) );
+	public function hex_supports_invalid_provider(): array {
+		return [
+			'invalid_chars' => [ '#gg' ],
+			'wrong_length' => [ '#12345' ],
+			'rgb_not_hex' => [ 'rgb(0,0,0)' ],
+			'empty_string' => [ '' ],
+		];
 	}
 
-	public function test_supports__rejects_invalid_hex(): void {
-		$this->assertFalse( $this->convertor->supports( '--color', '#gg' ) );
-		$this->assertFalse( $this->convertor->supports( '--color', '#12345' ) );
-		$this->assertFalse( $this->convertor->supports( '--color', 'rgb(0,0,0)' ) );
-		$this->assertFalse( $this->convertor->supports( '--color', '' ) );
+	/**
+	 * @dataProvider hex_supports_invalid_provider
+	 */
+	public function test_supports__rejects_invalid_hex( string $value ): void {
+		$this->assertFalse( $this->convertor->supports( '--color', $value ) );
 	}
 
-	public function test_convert__normalizes_hex3_to_hex6(): void {
-		$result = $this->convertor->convert( '--color', '#fff' );
-		$this->assertSame( '#ffffff', $result['value'] );
+	public function hex_convert_normalizes_provider(): array {
+		return [
+			'hex3_to_hex6' => [ '#fff', '#ffffff' ],
+			'hex6_unchanged' => [ '#ff5733', '#ff5733' ],
+			'hex8_preserved' => [ '#ffffff80', '#ffffff80' ],
+			'uppercase_lowercased' => [ '#FFF', '#ffffff' ],
+			'hex3_f00' => [ '#f00', '#ff0000' ],
+		];
 	}
 
-	public function test_convert__normalizes_hex6_unchanged(): void {
-		$result = $this->convertor->convert( '--color', '#ff5733' );
-		$this->assertSame( '#ff5733', $result['value'] );
-	}
-
-	public function test_convert__preserves_hex8(): void {
-		$result = $this->convertor->convert( '--color', '#ffffff80' );
-		$this->assertSame( '#ffffff80', $result['value'] );
-	}
-
-	public function test_convert__lowercases_output(): void {
-		$result = $this->convertor->convert( '--color', '#FFF' );
-		$this->assertSame( '#ffffff', $result['value'] );
+	/**
+	 * @dataProvider hex_convert_normalizes_provider
+	 */
+	public function test_convert__normalizes_hex_value( string $input, string $expected_value ): void {
+		$result = $this->convertor->convert( '--color', $input );
+		$this->assertSame( $expected_value, $result['value'] );
 	}
 
 	public function test_get_type__returns_color_hex(): void {

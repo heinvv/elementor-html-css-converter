@@ -69,4 +69,26 @@ class Test_Variable_Extractor extends TestCase {
 		$this->assertStringContainsString( 'var(--gap)', $result[1]['value'] );
 	}
 
+	public function test_extract_from_css__malformed_css_returns_empty_array(): void {
+		$malformed = '--color: ; --incomplete';
+		$result = $this->extractor->extract_from_css( $malformed );
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
+	}
+
+	public function test_extract_from_css__only_semicolon_no_match(): void {
+		$css = '; ; ;';
+		$result = $this->extractor->extract_from_css( $css );
+
+		$this->assertSame( [], $result );
+	}
+
+	public function test_extract_from_css__name_without_value_skipped(): void {
+		$css = '--broken: ;';
+		$result = $this->extractor->extract_from_css( $css );
+
+		$this->assertEmpty( $result );
+	}
+
 }

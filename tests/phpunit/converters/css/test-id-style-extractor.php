@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Tests\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
 use ElementorHtmlCssConverter\Converters\Html\Id_Style_Extractor;
+use ElementorHtmlCssConverter\Tests\TestCase\Test_Constants;
 use PHPUnit\Framework\TestCase;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -54,7 +55,7 @@ class Test_Id_Style_Extractor extends TestCase {
 
 	public function test_parse_id_rules__media_blocks_skipped_without_elementor(): void {
 		$css = '#hero { padding: 80px; }
-@media (max-width: 1024px) { #hero { padding: 60px; } }';
+@media (max-width: ' . Test_Constants::DESKTOP_TO_TABLET_BREAKPOINT . 'px) { #hero { padding: 60px; } }';
 		$result = $this->extractor->parse_id_rules( $css, $this->matcher );
 
 		$this->assertArrayHasKey( 'hero', $result );

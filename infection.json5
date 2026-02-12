@@ -1,0 +1,15 @@
+{
+  "source": {
+    "directories": ["includes"],
+    "excludes": ["autoloader.php"]
+  },
+  "timeout": 30,
+  "logs": {
+    "text": "infection.log"
+  },
+  "phpUnit": {
+    "configDir": "."
+  },
+  "testFramework": "phpunit",
+  "bootstrap": "tests/bootstrap.php"
+}

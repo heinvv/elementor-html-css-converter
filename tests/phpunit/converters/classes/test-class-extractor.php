@@ -4,6 +4,7 @@ namespace ElementorHtmlCssConverter\Tests\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Classes\Class_Extractor;
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+use ElementorHtmlCssConverter\Tests\TestCase\Test_Constants;
 use PHPUnit\Framework\TestCase;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -69,7 +70,7 @@ class Test_Class_Extractor extends TestCase {
 
 	public function test_extract_from_css__media_blocks_skipped_without_elementor(): void {
 		$css = '.box { padding: 20px; }
-@media (max-width: 1024px) { .box { padding: 15px; } }';
+@media (max-width: ' . Test_Constants::DESKTOP_TO_TABLET_BREAKPOINT . 'px) { .box { padding: 15px; } }';
 		$result = $this->extractor->extract_from_css( $css, $this->matcher );
 
 		$this->assertArrayHasKey( 'box', $result );

@@ -3,6 +3,7 @@
 namespace ElementorHtmlCssConverter\Tests\Converters\Css;
 
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+use ElementorHtmlCssConverter\Tests\TestCase\Test_Constants;
 use PHPUnit\Framework\TestCase;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,14 +26,14 @@ class Test_Breakpoint_Matcher extends TestCase {
 	}
 
 	public function test_match_css_to_elementor_breakpoint__returns_null_without_elementor(): void {
-		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( 1024, 'max' ) );
-		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( 767, 'max' ) );
-		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( 768, 'min' ) );
+		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( Test_Constants::DESKTOP_TO_TABLET_BREAKPOINT, 'max' ) );
+		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( Test_Constants::TABLET_TO_MOBILE_BREAKPOINT, 'max' ) );
+		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( Test_Constants::MIN_WIDTH_SAMPLE, 'min' ) );
 	}
 
 	public function test_match_css_to_elementor_breakpoint__accepts_direction_param(): void {
-		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( 1024, 'min' ) );
-		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( 1024, 'max' ) );
+		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( Test_Constants::DESKTOP_TO_TABLET_BREAKPOINT, 'min' ) );
+		$this->assertNull( $this->matcher->match_css_to_elementor_breakpoint( Test_Constants::DESKTOP_TO_TABLET_BREAKPOINT, 'max' ) );
 	}
 
 }
