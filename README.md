@@ -31,6 +31,15 @@ See the [Endpoints](#endpoints) section below for all available endpoints.
 | `postTitle`        | string  | `"Converted HTML"` | Title for auto-created post                                 |
 | `postStatus`       | string  | `"draft"`          | Status for auto-created post                                |
 
+### Debugging: custom_css
+
+To log whenever the plugin adds `custom_css` (unsupported CSS passed through to widget settings), add to `wp-config.php`:
+
+```php
+define( 'EHCC_DEBUG_CUSTOM_CSS', true );
+```
+
+When `WP_DEBUG` is true, this is enabled by default. Logs appear in PHP `error_log` with source (e.g. `Css_Converter`, `Widget_Styles_Integrator`) and the CSS content.
 
 ---
 
@@ -970,6 +979,8 @@ When the [elementor-playwright-scraper](https://github.com/heinvv/elementor-play
 
 Breakpoint values match the site's Elementor → Settings → Style → Responsive Breakpoints configuration.
 
+**Selector examples** (for the Import from URL modal): CSS (`.hero`, `[aria-label="Producten"]`), `label:Zoeken` (aria-label shorthand), `xpath://a[contains(text(),"Vacatures")]` for text-based selection. See [scraper intelligent selectors](https://github.com/heinvv/elementor-playwright-scraper/blob/main/docs/intelligent-selectors.md).
+
 ### CSS variables (convert-html)
 
 - **From HTML:** `import_variables: true` (default) extracts variables from `:root` (and other selectors) in `<style>` tags.
@@ -1115,4 +1126,3 @@ For detailed setup instructions, especially for Local by Flywheel:
 - [docs/](docs/) - Architecture overview ([ARCHITECTURE.md](docs/ARCHITECTURE.md)), plans ([docs/archive/planning/](docs/archive/planning/)), API details and Elementor parity references ([docs/archive/](docs/archive/))
 - [docs/phpunit-test-plan.md](docs/phpunit-test-plan.md) - PHPUnit test plan and 80% coverage roadmap
 - [tests/phpunit/docs/test-improvement.md](tests/phpunit/docs/test-improvement.md) - Test improvement plan with phase status
-

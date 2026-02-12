@@ -48,6 +48,7 @@ tests_add_filter( 'muplugins_loaded', function () use ( $wp_core_dir ) {
 		?: $wp_core_dir . '/wp-content/plugins/elementor/elementor.php';
 	if ( file_exists( $elementor_file ) ) {
 		require_once $elementor_file;
+		\Elementor\Plugin::instance();
 	}
 }, 1 );
 
@@ -64,10 +65,7 @@ if ( ! defined( 'WP_ADMIN' ) ) {
 	define( 'WP_ADMIN', true );
 }
 
-\Elementor\Plugin::instance();
+\Elementor\Plugin::$instance->init_common();
 
-do_action( 'plugins_loaded' );
-do_action( 'init' );
-do_action( 'wp_loaded' );
 do_action( 'rest_api_init' );
 
