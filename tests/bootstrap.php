@@ -23,5 +23,17 @@ if ( ! function_exists( 'wp_rand' ) ) {
 	}
 }
 
+if ( ! function_exists( 'str_starts_with' ) ) {
+	function str_starts_with( string $haystack, string $needle ): bool {
+		return 0 === strncmp( $haystack, $needle, strlen( $needle ) );
+	}
+}
+
+if ( ! function_exists( 'str_ends_with' ) ) {
+	function str_ends_with( string $haystack, string $needle ): bool {
+		return '' === $needle || ( strlen( $needle ) <= strlen( $haystack ) && substr_compare( $haystack, $needle, -strlen( $needle ) ) === 0 );
+	}
+}
+
 require_once $plugin_root . '/includes/autoloader.php';
 ElementorHtmlCssConverter\Autoloader::register();

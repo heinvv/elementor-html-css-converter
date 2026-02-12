@@ -81,6 +81,9 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
       - name: Install WordPress, Elementor and test suite
         run: |
           bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:${{ job.services.mysql.ports['3306'] }} latest true
