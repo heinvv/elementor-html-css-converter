@@ -70,6 +70,10 @@ class Transform_Converter extends Property_Converter_Base {
 			return null;
 		}
 
+		if ( $this->contains_css_variable( $value ) ) {
+			return null;
+		}
+
 		switch ( $property ) {
 			case 'transform':
 				return $this->parse_transform_value( $value );
@@ -86,6 +90,10 @@ class Transform_Converter extends Property_Converter_Base {
 
 	private function is_valid_string_value( $value ): bool {
 		return is_string( $value ) && '' !== trim( $value );
+	}
+
+	private function contains_css_variable( string $value ): bool {
+		return strpos( $value, 'var(' ) !== false;
 	}
 
 	private function parse_transform_value( string $value ): ?array {

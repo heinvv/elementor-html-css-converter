@@ -270,13 +270,6 @@ class Atomic_Data_Parser {
 				}
 			}
 			
-			if ( ! $svg_content && ! empty( $svg_map ) ) {
-				$first_svg = reset( $svg_map );
-				if ( strpos( $first_svg, '<svg' ) !== false ) {
-					$svg_content = $first_svg;
-				}
-			}
-			
 			if ( $svg_content ) {
 				return $this->extract_svg_from_link_with_content( $element, $svg_content );
 			}
