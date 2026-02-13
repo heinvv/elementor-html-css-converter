@@ -61,7 +61,13 @@ if ( ! defined( 'WP_ADMIN' ) ) {
 	define( 'WP_ADMIN', true );
 }
 
-update_option( 'elementor_experiment-e_atomic_elements', 'active' );
+add_action( 'elementor/experiments/feature-registered', function ( $experiments_manager, $experimental_data ) {
+	$exclude = [];
+	if ( ! $experimental_data['mutable'] || in_array( $experimental_data['name'], $exclude, true ) ) {
+		return;
+	}
+	$experiments_manager->set_feature_default_state( $experimental_data['name'], $experiments_manager::STATE_ACTIVE );
+}, 10, 2 );
 
 \Elementor\Plugin::instance();
 
