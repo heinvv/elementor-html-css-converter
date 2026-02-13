@@ -361,7 +361,10 @@ class Html_Converter {
 				],
 			],
 			'isLocked'        => false,
-			'editor_settings' => [],
+			'editor_settings' => [
+				'css_converter_widget' => true,
+				'disable_base_styles'  => true,
+			],
 			'elements'        => [ $widget ],
 			'styles'          => [],
 		];

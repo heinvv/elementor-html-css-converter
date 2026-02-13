@@ -111,6 +111,253 @@ final class Plugin {
 		new Import_Rest_API();
 
 		new Import_Editor();
+
+		$this->register_editor_hooks();
+		$this->register_frontend_hooks();
+	}
+
+	private function register_editor_hooks(): void {
+		add_action(
+			'elementor/editor/before_enqueue_scripts',
+			[ $this, 'enqueue_base_styles_override' ],
+			10
+		);
+	}
+
+	private function register_frontend_hooks(): void {
+		add_action(
+			'elementor/frontend/before_render',
+			[ $this, 'start_base_class_removal_buffer' ],
+			PHP_INT_MAX
+		);
+
+		add_action(
+			'elementor/frontend/after_render',
+			[ $this, 'flush_base_class_removal_buffer' ],
+			0
+		);
+
+		add_filter(
+			'elementor/widget/render_content',
+			[ $this, 'strip_base_classes_from_widget_content' ],
+			10,
+			2
+		);
+	}
+
+	public function enqueue_base_styles_override(): void {
+		if ( ! $this->should_load_base_styles_override() ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'ehcc-base-styles-override',
+			plugins_url( 'assets/js/editor/base-styles-override.js', EHCC_FILE ),
+			[ 'jquery', 'elementor-editor' ],
+			EHCC_VERSION,
+			true
+		);
+	}
+
+	private function should_load_base_styles_override(): bool {
+		$post_id = get_the_ID();
+		if ( ! $post_id ) {
+			return false;
+		}
+
+		return $this->page_has_css_converter_widgets( $post_id );
+	}
+
+	private function page_has_css_converter_widgets( int $post_id ): bool {
+		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
+			return false;
+		}
+
+		$document = \Elementor\Plugin::$instance->documents->get( $post_id );
+		if ( ! $document ) {
+			return false;
+		}
+
+		$elements_data = $document->get_elements_data();
+		return $this->traverse_elements_for_css_converter_widgets( $elements_data );
+	}
+
+	private function traverse_elements_for_css_converter_widgets( array $elements_data ): bool {
+		foreach ( $elements_data as $element_data ) {
+			if ( $this->element_has_css_converter_flag( $element_data ) ) {
+				return true;
+			}
+
+			if ( isset( $element_data['elements'] ) && is_array( $element_data['elements'] ) ) {
+				if ( $this->traverse_elements_for_css_converter_widgets( $element_data['elements'] ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private function element_has_css_converter_flag( array $element_data ): bool {
+		return isset( $element_data['editor_settings']['css_converter_widget'] )
+			&& $element_data['editor_settings']['css_converter_widget'];
+	}
+
+	private array $ob_element_ids = [];
+
+	public function start_base_class_removal_buffer( $element ): void {
+		if ( ! $this->is_converter_element( $element ) ) {
+			return;
+		}
+
+		$element_id = method_exists( $element, 'get_id' ) ? $element->get_id() : null;
+		if ( ! $element_id ) {
+			return;
+		}
+
+		$this->ob_element_ids[] = $element_id;
+		ob_start();
+	}
+
+	public function flush_base_class_removal_buffer( $element ): void {
+		$element_id = method_exists( $element, 'get_id' ) ? $element->get_id() : null;
+		if ( ! $element_id ) {
+			return;
+		}
+
+		if ( empty( $this->ob_element_ids ) || end( $this->ob_element_ids ) !== $element_id ) {
+			return;
+		}
+
+		array_pop( $this->ob_element_ids );
+		$html = ob_get_clean();
+
+		echo $this->strip_base_classes_from_first_tag( $html );
+	}
+
+	private function strip_base_classes_from_first_tag( string $html ): string {
+		return preg_replace_callback(
+			'/^(\s*<\w+\s[^>]*?)class="([^"]*)"/',
+			function ( array $matches ): string {
+				$classes = explode( ' ', $matches[2] );
+				$filtered = array_filter(
+					$classes,
+					fn( string $class ): bool => ! preg_match( '/^e-[\w-]+-base$/', trim( $class ) )
+				);
+				return $matches[1] . 'class="' . implode( ' ', $filtered ) . '"';
+			},
+			$html,
+			1
+		);
+	}
+
+	public function strip_base_classes_from_widget_content( string $content, $widget ): string {
+		if ( empty( $content ) ) {
+			return $content;
+		}
+
+		if ( ! $this->is_converter_element( $widget ) ) {
+			return $content;
+		}
+
+		return preg_replace_callback(
+			'/class="([^"]*)"/',
+			function ( array $matches ): string {
+				$classes = explode( ' ', $matches[1] );
+				$filtered = array_filter(
+					$classes,
+					fn( string $class ): bool => ! preg_match( '/^e-[\w-]+-base$/', trim( $class ) )
+				);
+				return 'class="' . implode( ' ', $filtered ) . '"';
+			},
+			$content
+		);
+	}
+
+	private function is_converter_element( $element ): bool {
+		if ( ! method_exists( $element, 'get_raw_data' ) ) {
+			return false;
+		}
+
+		$raw_data = $element->get_raw_data();
+		$editor_settings = $raw_data['editor_settings'] ?? [];
+
+		if ( is_array( $editor_settings ) ) {
+			if ( ! empty( $editor_settings['css_converter_widget'] ) ) {
+				return true;
+			}
+
+			if ( ! empty( $editor_settings['disable_base_styles'] ) ) {
+				return true;
+			}
+		}
+
+		if ( ! method_exists( $element, 'get_atomic_settings' ) ) {
+			return false;
+		}
+
+		try {
+			$settings = $element->get_atomic_settings();
+			$classes = $settings['classes'] ?? [];
+
+			if ( is_array( $classes ) ) {
+				foreach ( $classes as $class ) {
+					if ( is_string( $class ) && preg_match( '/^e-[a-f0-9]{7,8}-[a-f0-9]{7}$/', $class ) ) {
+						return true;
+					}
+				}
+			}
+		} catch ( \Throwable $e ) {
+			return false;
+		}
+
+		if ( $this->has_converter_child( $element ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private function has_converter_child( $element ): bool {
+		if ( ! method_exists( $element, 'get_children' ) ) {
+			return false;
+		}
+
+		foreach ( $element->get_children() as $child ) {
+			if ( ! method_exists( $child, 'get_raw_data' ) ) {
+				continue;
+			}
+
+			$child_raw = $child->get_raw_data();
+			$child_editor_settings = $child_raw['editor_settings'] ?? [];
+
+			if ( ! empty( $child_editor_settings['css_converter_widget'] ) || ! empty( $child_editor_settings['disable_base_styles'] ) ) {
+				return true;
+			}
+
+			if ( ! method_exists( $child, 'get_atomic_settings' ) ) {
+				continue;
+			}
+
+			try {
+				$child_settings = $child->get_atomic_settings();
+				$child_classes = $child_settings['classes'] ?? [];
+
+				if ( ! is_array( $child_classes ) ) {
+					continue;
+				}
+
+				foreach ( $child_classes as $class ) {
+					if ( is_string( $class ) && preg_match( '/^e-[a-f0-9]{7,8}-[a-f0-9]{7}$/', $class ) ) {
+						return true;
+					}
+				}
+			} catch ( \Throwable $e ) {
+				continue;
+			}
+		}
+
+		return false;
 	}
 
 	/**

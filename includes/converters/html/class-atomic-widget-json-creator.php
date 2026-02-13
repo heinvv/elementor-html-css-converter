@@ -126,7 +126,10 @@ class Atomic_Widget_JSON_Creator {
 			return $widget_builder
 				->settings( $settings )
 				->is_locked( false )
-				->editor_settings( [] )
+				->editor_settings( [
+					'css_converter_widget' => true,
+					'disable_base_styles'  => true,
+				] )
 				->build();
 
 		} catch ( \Exception $e ) {
@@ -156,7 +159,10 @@ class Atomic_Widget_JSON_Creator {
 				->settings( $settings )
 				->children( $child_widgets )
 				->is_locked( false )
-				->editor_settings( [] )
+				->editor_settings( [
+					'css_converter_widget' => true,
+					'disable_base_styles'  => true,
+				] )
 				->build();
 
 		} catch ( \Exception $e ) {
