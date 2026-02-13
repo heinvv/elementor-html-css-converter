@@ -122,9 +122,21 @@ final class Plugin {
 			[ $this, 'enqueue_base_styles_override' ],
 			10
 		);
+
+		add_action(
+			'elementor/editor/after_enqueue_styles',
+			[ $this, 'enqueue_legacy_atomic_element_override' ],
+			10
+		);
 	}
 
 	private function register_frontend_hooks(): void {
+		add_action(
+			'elementor/frontend/after_enqueue_styles',
+			[ $this, 'enqueue_legacy_atomic_element_override' ],
+			10
+		);
+
 		add_action(
 			'elementor/frontend/before_render',
 			[ $this, 'start_base_class_removal_buffer' ],
@@ -156,6 +168,15 @@ final class Plugin {
 			[ 'jquery', 'elementor-editor' ],
 			EHCC_VERSION,
 			true
+		);
+	}
+
+	public function enqueue_legacy_atomic_element_override(): void {
+		wp_enqueue_style(
+			'ehcc-legacy-atomic-element-override',
+			plugins_url( 'assets/css/legacy-atomic-element-override.css', EHCC_FILE ),
+			[],
+			EHCC_VERSION
 		);
 	}
 
