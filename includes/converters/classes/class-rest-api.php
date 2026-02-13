@@ -472,12 +472,19 @@ class Rest_Api {
 	 * @return \WP_REST_Response The REST response.
 	 */
 	public function handle_css_to_atomic_request( \WP_REST_Request $request ): \WP_REST_Response {
-		$params = $request->get_json_params();
+		$params     = $request->get_json_params() ?: $request->get_params();
+		$css_string = $params['cssString'] ?? '';
 
 		$converter = new \ElementorHtmlCssConverter\Converters\Css\Css_Converter( $this->registry );
-		$result    = $converter->convert( $params );
+		$result    = $converter->convert( [ 'cssString' => $css_string ] );
 
-		return rest_ensure_response( $result );
+		$response = [
+			'success'   => true,
+			'props'     => $result['props'] ?? [],
+			'customCss' => $result['customCss'] ?? '',
+		];
+
+		return rest_ensure_response( $response );
 	}
 
 	/**
@@ -693,7 +700,7 @@ class Rest_Api {
 		if ( 0 === $post_id ) {
 			$post_result = $this->document_service->create_post( $post_title, $post_status );
 
-			if ( ! $post_result ) {
+			if ( ! $post_result || empty( $post_result['post_id'] ) || ! is_numeric( $post_result['post_id'] ) ) {
 				return rest_ensure_response( [
 					'success' => false,
 					'error'   => 'Failed to create new Elementor page.',
@@ -701,7 +708,7 @@ class Rest_Api {
 				] );
 			}
 
-			$post_id               = $post_result['post_id'];
+			$post_id               = (int) $post_result['post_id'];
 			$result['page_created'] = true;
 		}
 

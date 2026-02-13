@@ -395,6 +395,7 @@ class Elementor_Document_Service {
 		unset( $widget );
 
 		$editor_data = $this->get_elements_raw_data( $widgets );
+
 		$json_value  = wp_slash( wp_json_encode( $editor_data ) );
 
 		if ( false === $json_value ) {

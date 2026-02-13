@@ -27,8 +27,10 @@ abstract class Base_Test_Case extends TestCase {
 		$this->assertArrayHasKey( 'styles', $widget );
 		$has_breakpoint_styles = false;
 		foreach ( $widget['styles'] ?? [] as $style_def ) {
-			$variants    = $style_def['variants'] ?? [];
-			$breakpoints = array_filter( array_column( $variants, 'breakpoint' ) );
+			$variants   = $style_def['variants'] ?? [];
+			$breakpoints = array_filter( array_map( function ( $v ) {
+				return $v['meta']['breakpoint'] ?? $v['breakpoint'] ?? null;
+			}, $variants ) );
 			if ( count( $breakpoints ) > 1 ) {
 				$has_breakpoint_styles = true;
 				break;
@@ -52,7 +54,9 @@ abstract class Base_Test_Case extends TestCase {
 		foreach ( $first['styles'] as $style_def ) {
 			$variants = $style_def['variants'] ?? [];
 			if ( count( $variants ) >= 2 ) {
-				$breakpoint_names = array_column( $variants, 'breakpoint' );
+				$breakpoint_names = array_map( function ( $v ) {
+					return $v['meta']['breakpoint'] ?? $v['breakpoint'] ?? null;
+				}, $variants );
 				$this->assertContains( 'desktop', $breakpoint_names );
 				return;
 			}

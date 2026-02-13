@@ -208,7 +208,8 @@ class Import_Rest_API {
 						'success'          => false,
 						'message'          => 'Scraper error: ' . $error_message,
 						'job_id'           => $job_id,
-						'scraper_response'  => $response_data,
+						'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
+						'scraper_response' => $response_data,
 					],
 					200
 				);

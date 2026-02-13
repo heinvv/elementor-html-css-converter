@@ -162,9 +162,10 @@ class Style_Definition_Builder {
 		$variants = [];
 
 		if ( isset( $breakpoint_props['desktop'] ) ) {
-			$desktop_data = $breakpoint_props['desktop'];
+			$desktop_data  = $breakpoint_props['desktop'];
 			$desktop_props = $desktop_data['atomic_props'] ?? ( is_array( $desktop_data ) && ! isset( $desktop_data['atomic_props'] ) ? $desktop_data : [] );
-			$desktop_css = $desktop_data['custom_css'] ?? null;
+			$desktop_css   = $desktop_data['custom_css'] ?? null;
+
 			if ( ! empty( $desktop_props ) || ! empty( $desktop_css ) ) {
 				$variants[] = $this->create_variant( $desktop_props, null, 'desktop', $desktop_css );
 			}

@@ -75,3 +75,19 @@ do_action( 'plugins_loaded' );
 do_action( 'init' );
 do_action( 'wp_loaded' );
 
+$kit_id = get_option( 'elementor_active_kit' );
+if ( ! $kit_id ) {
+	$kit_id = wp_insert_post( [
+		'post_title'   => 'Default Kit',
+		'post_type'    => 'elementor_library',
+		'post_status'  => 'publish',
+		'meta_input'   => [
+			'_elementor_edit_mode'    => 'builder',
+			'_elementor_template_type' => 'kit',
+		],
+	] );
+	if ( $kit_id && ! is_wp_error( $kit_id ) ) {
+		update_option( 'elementor_active_kit', $kit_id );
+	}
+}
+

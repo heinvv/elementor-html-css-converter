@@ -191,10 +191,8 @@ class Atomic_Data_Parser {
 	private function create_dom( string $html ): \DOMDocument {
 		$dom = new \DOMDocument();
 		libxml_use_internal_errors( true );
-		$dom->loadHTML(
-			mb_convert_encoding( '<html><body>' . $html . '</body></html>', 'HTML-ENTITIES', 'UTF-8' ),
-			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING
-		);
+		$wrapped = '<?xml encoding="UTF-8"><html><body>' . $html . '</body></html>';
+		$dom->loadHTML( $wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING );
 		libxml_clear_errors();
 
 		return $dom;
@@ -534,10 +532,12 @@ class Atomic_Data_Parser {
 	 * @return array Unified structure with 'atomic_props' and 'custom_css'.
 	 */
 	private function convert_styles_to_atomic_props( array $styles ): array {
-		$result = $this->css_converter->convert_properties( $styles, $this->variable_fallback );
+		$result     = $this->css_converter->convert_properties( $styles, $this->variable_fallback );
+		$custom_css = $result['customCss'] ?? null;
+
 		return [
 			'atomic_props' => $result['props'] ?? [],
-			'custom_css'   => $result['customCss'] ?? null,
+			'custom_css'   => $custom_css,
 		];
 	}
 

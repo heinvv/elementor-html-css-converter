@@ -52,11 +52,12 @@ class Widget_Styles_Integrator {
 	 * @return array Widget with integrated styles.
 	 */
 	public function integrate_styles_into_widget( array $widget, array $breakpoint_props ): array {
+		$widget_type = $widget['widgetType'] ?? $widget['elType'] ?? '';
+
 		if ( empty( $breakpoint_props ) ) {
 			return $widget;
 		}
 
-		$widget_type = $widget['widgetType'] ?? $widget['elType'] ?? '';
 		$class_id    = $this->class_generator->generate_class_id( $widget_type );
 
 		$styles = $this->create_styles_structure_with_breakpoints( $class_id, $breakpoint_props );

@@ -22,8 +22,10 @@ class Test_Breakpoints_Payload_Output extends Base_Test_Case {
 		foreach ( $data['widgets'] as $widget ) {
 			if ( ! empty( $widget['styles'] ) ) {
 				foreach ( $widget['styles'] as $style_def ) {
-					$variants    = $style_def['variants'] ?? [];
-					$breakpoints = array_filter( array_column( $variants, 'breakpoint' ) );
+					$variants   = $style_def['variants'] ?? [];
+					$breakpoints = array_filter( array_map( function ( $v ) {
+						return $v['meta']['breakpoint'] ?? $v['breakpoint'] ?? null;
+					}, $variants ) );
 					if ( count( $breakpoints ) > 1 ) {
 						$has_breakpoint_styles = true;
 						break 2;

@@ -37,6 +37,8 @@ export const ImportModal = ({ isOpen, onClose, apiUrl, postId }: ImportModalProp
 		setStatusMessage,
 		statusType,
 		setStatusType,
+		diagnostics,
+		setDiagnostics,
 		resetForm,
 	} = formState;
 
@@ -45,6 +47,7 @@ export const ImportModal = ({ isOpen, onClose, apiUrl, postId }: ImportModalProp
 		setStatusMessage,
 		setStatusType,
 		setIsLoading,
+		setDiagnostics,
 		onClose,
 		isOpen,
 		postId,
@@ -108,6 +111,7 @@ export const ImportModal = ({ isOpen, onClose, apiUrl, postId }: ImportModalProp
 				isLoading={isLoading}
 				statusMessage={statusMessage}
 				statusType={statusType}
+				diagnostics={diagnostics}
 				onSubmit={handleSubmit}
 			/>
 			<ModalActions

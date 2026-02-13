@@ -1,4 +1,6 @@
 import { getReact } from '../utils/getReact';
+import type { ScrapeDiagnostics } from '../types/hooks';
+
 
 export const useImportForm = () => {
 	const ReactLib = getReact();
@@ -13,6 +15,7 @@ export const useImportForm = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 	const [statusType, setStatusType] = useState<'success' | 'error' | 'info' | null>(null);
+	const [diagnostics, setDiagnostics] = useState<ScrapeDiagnostics | null>(null);
 
 	const resetForm = () => {
 		setUrl('');
@@ -20,6 +23,7 @@ export const useImportForm = () => {
 		setTimeout('60');
 		setStatusMessage(null);
 		setStatusType(null);
+		setDiagnostics(null);
 		setIsLoading(false);
 	};
 
@@ -36,6 +40,8 @@ export const useImportForm = () => {
 		setStatusMessage,
 		statusType,
 		setStatusType,
+		diagnostics,
+		setDiagnostics,
 		resetForm,
 	};
 };

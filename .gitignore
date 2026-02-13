@@ -5,6 +5,7 @@ coverage-report/
 *.log
 infection.log
 infection-log.json
+.phpunit.result.cache
 .DS_Store
 dist/
 build/

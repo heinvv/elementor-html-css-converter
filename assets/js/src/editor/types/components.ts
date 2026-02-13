@@ -2,6 +2,16 @@ export type ModalHeaderProps = {
 	onClose: () => void;
 };
 
+export type ScrapeDiagnostics = {
+	pageTitle?: string;
+	finalUrl?: string;
+	htmlPreview?: string;
+	screenshotBase64?: string;
+	consoleMessages?: string[];
+	requestedUrl?: string;
+	selectors?: string[];
+};
+
 export type ModalContentProps = {
 	url: string;
 	setUrl: (value: string) => void;
@@ -12,6 +22,7 @@ export type ModalContentProps = {
 	isLoading: boolean;
 	statusMessage: string | null;
 	statusType: 'success' | 'error' | 'info' | null;
+	diagnostics: ScrapeDiagnostics | null;
 	onSubmit: (e: any) => void;
 };
 

@@ -43,7 +43,7 @@ export const useImportSubmit = ({
 			if (data.success && data.job_id && data.scraper_endpoint) {
 				setStatusMessage('Import started. Waiting for results...');
 				setStatusType('info');
-				startPolling(data.job_id, data.scraper_endpoint);
+				startPolling(data.job_id, data.scraper_endpoint, url?.trim(), selectors?.trim());
 			} else {
 				setStatusMessage(
 					!data.scraper_endpoint

@@ -185,6 +185,8 @@ class Html_Converter {
 
 		$wrapped_widgets = $this->wrap_non_container_widgets( $widgets_with_styles );
 
+		$wrapped_widgets = $this->assign_element_ids_recursive( $wrapped_widgets );
+
 		$result = $this->build_success_result( $wrapped_widgets );
 
 		if ( ! empty( $css_variables ) || $import_variables ) {
@@ -365,6 +367,30 @@ class Html_Converter {
 		];
 
 		return $wrapper;
+	}
+
+	private function generate_element_id(): string {
+		if ( class_exists( '\Elementor\Utils' ) && method_exists( '\Elementor\Utils', 'generate_random_string' ) ) {
+			return \Elementor\Utils::generate_random_string();
+		}
+		return substr( md5( uniqid( '', true ) ), 0, 7 );
+	}
+
+	private function assign_element_ids_recursive( array $widgets ): array {
+		$result = [];
+		foreach ( $widgets as $widget ) {
+			if ( empty( $widget['id'] ) ) {
+				$widget['id'] = $this->generate_element_id();
+			}
+			if ( ! empty( $widget['elements'] ) ) {
+				$widget['elements'] = $this->assign_element_ids_recursive( $widget['elements'] );
+			}
+			if ( ! isset( $widget['widgetType'] ) && isset( $widget['elType'] ) ) {
+				$widget['widgetType'] = $widget['elType'];
+			}
+			$result[] = $widget;
+		}
+		return $result;
 	}
 
 	/**

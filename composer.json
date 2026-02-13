@@ -24,6 +24,7 @@
 		"test": "phpunit",
 		"test:unit": "phpunit",
 		"test:integration": "phpunit -c phpunit-integration.xml.dist",
+		"test:integration:minimal": "phpunit -c phpunit-integration-minimal.xml.dist",
 		"test:all": "phpunit && phpunit -c phpunit-integration.xml.dist",
 		"test:install": "bash ./bin/install-wp-tests-local.sh",
 		"coverage": "phpdbg -qrr vendor/bin/phpunit --coverage-clover coverage-report/clover.xml --coverage-html coverage-report/html",
