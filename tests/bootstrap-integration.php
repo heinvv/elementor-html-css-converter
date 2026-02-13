@@ -61,6 +61,8 @@ if ( ! defined( 'WP_ADMIN' ) ) {
 	define( 'WP_ADMIN', true );
 }
 
+update_option( 'elementor_experiment-e_atomic_elements', 'active' );
+
 \Elementor\Plugin::instance();
 
 do_action( 'plugins_loaded' );
