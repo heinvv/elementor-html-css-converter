@@ -50,7 +50,6 @@ export const VariablesImportExportModal = ({ isOpen, onClose, apiUrl }: Variable
 	} = ui;
 
 	if (!DialogComponent || !BoxComponent) {
-		console.error('[EHCC] Variables Import/Export: Required UI components not available');
 		return null;
 	}
 

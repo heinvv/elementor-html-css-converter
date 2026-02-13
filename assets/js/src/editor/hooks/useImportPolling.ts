@@ -210,15 +210,20 @@ export const useImportPolling = ({
 					setStatusType('info');
 
 					try {
+						const convertBody: Record<string, unknown> = {
+							html: data.results.html,
+							save_as_template: true,
+							import_variables: true,
+							import_classes: false,
+						};
+						const cssVariables = data.results.scrape?.cssVariables;
+						if (typeof cssVariables === 'string' && cssVariables.trim().length > 0) {
+							convertBody.css_variables = cssVariables;
+						}
 						const convertResponse = await fetch(apiUrl + 'convert-html', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({
-								html: data.results.html,
-								save_as_template: true,
-								import_variables: true,
-								import_classes: false,
-							}),
+							body: JSON.stringify(convertBody),
 						});
 
 						if (!convertResponse.ok) {

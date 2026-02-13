@@ -71,8 +71,7 @@ const renderButtonWithReact = (container: Element, modalManager: ModalManager): 
 			})
 		);
 		return true;
-	} catch (error) {
-		console.error('[EHCC] Variables Import/Export: React rendering error:', error);
+	} catch {
 		const fallbackButton = createFallbackButton(modalManager);
 		container.appendChild(fallbackButton);
 		return true;
@@ -174,22 +173,18 @@ const injectButton = (modalManager: ModalManager, root: Element): boolean => {
 			return false;
 		}
 		return rendered;
-	} catch (error) {
-		console.error('[EHCC] Variables Import/Export: Error injecting button:', error);
+	} catch {
 		return false;
 	}
 };
 
 export const initVariablesButtonInjector = (modalManager: ModalManager): void => {
 	let injected = false;
-	let attemptCount = 0;
 
 	const tryInject = () => {
 		if (injected) {
 			return;
 		}
-
-		attemptCount++;
 
 		try {
 			const titleElement = findVariablesManagerPanel(document.body);
@@ -202,8 +197,7 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 			if (injectButton(modalManager, document.body)) {
 				injected = true;
 			}
-		} catch (error) {
-			console.error('[EHCC] Variables Import/Export: Error in tryInject:', error);
+		} catch {
 		}
 	};
 
@@ -281,7 +275,6 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 
 						if (currentPanelId === 'variables-manager' && previousPanelId !== 'variables-manager') {
 							injected = false;
-							attemptCount = 0;
 							setTimeout(() => {
 								tryInject();
 							}, 500);
@@ -313,8 +306,7 @@ export const initVariablesButtonInjector = (modalManager: ModalManager): void =>
 				}
 
 				checkPanelState();
-			} catch (error) {
-				console.error('[EHCC] Variables Import/Export: Error subscribing to panel store:', error);
+			} catch {
 			}
 		}
 	}

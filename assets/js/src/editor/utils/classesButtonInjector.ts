@@ -99,7 +99,6 @@ const findClassManagerCloseButton = (): { titleElement: Element; closeButton: El
 
 		const closeButton = parentStack.querySelector('button[aria-label="Close"]');
 		if (closeButton) {
-			console.log('[EHCC] Classes Button Injector: Found title, close button, and parent stack');
 			return { titleElement: el, closeButton, parentStack };
 		}
 	}
@@ -130,32 +129,25 @@ const injectButton = (modalManager: ModalManager): boolean => {
 			buttonContainer.parentNode.removeChild(buttonContainer);
 			return false;
 		}
-		console.log('[EHCC] Classes Button Injector: Button successfully injected into MUI Stack');
 		return rendered;
-	} catch (error) {
-		console.error('[EHCC] Classes Import/Export: Error injecting button:', error);
+	} catch {
 		return false;
 	}
 };
 
 export const initClassesButtonInjector = (modalManager: ModalManager): void => {
 	let injected = false;
-	let attemptCount = 0;
 
 	const tryInject = () => {
 		if (injected) {
 			return;
 		}
 
-		attemptCount++;
-
 		try {
 			if (injectButton(modalManager)) {
 				injected = true;
-				console.log('[EHCC] Classes Button Injector: Injection successful on attempt', attemptCount);
 			}
-		} catch (error) {
-			console.error('[EHCC] Classes Import/Export: Error in tryInject:', error);
+		} catch {
 		}
 	};
 
@@ -221,7 +213,6 @@ export const initClassesButtonInjector = (modalManager: ModalManager): void => {
 
 						if (currentPanelId === 'global-classes-manager' && previousPanelId !== 'global-classes-manager') {
 							injected = false;
-							attemptCount = 0;
 							setTimeout(() => { tryInject(); }, 500);
 							setTimeout(() => { tryInject(); }, 1000);
 							setTimeout(() => { tryInject(); }, 2000);
@@ -247,8 +238,7 @@ export const initClassesButtonInjector = (modalManager: ModalManager): void => {
 				}
 
 				checkPanelState();
-			} catch (error) {
-				console.error('[EHCC] Classes Import/Export: Error subscribing to panel store:', error);
+			} catch {
 			}
 		}
 	}

@@ -69,4 +69,12 @@ class Test_Variable_Fallback_Substitutor extends TestCase {
 		$this->assertSame( '16px', $result );
 	}
 
+	public function test_substitute_in_value__tailwind_rgb_vars(): void {
+		$fallback_map = [ '--color-tertiary-500' => '38 173 231', '--tw-bg-opacity' => '1' ];
+		$value = 'rgb(var(--color-tertiary-500)/var(--tw-bg-opacity,1))';
+		$result = Variable_Fallback_Substitutor::substitute_in_value( $value, $fallback_map );
+
+		$this->assertSame( 'rgb(38 173 231/1)', $result );
+	}
+
 }

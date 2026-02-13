@@ -98,7 +98,6 @@ export const ImportTab = ({
 				setStatusType('error');
 			}
 		} catch (error) {
-			console.error('[EHCC] Import: Error:', error);
 			setStatusMessage(
 				'Import failed: ' + (error instanceof Error ? error.message : 'Unknown error')
 			);

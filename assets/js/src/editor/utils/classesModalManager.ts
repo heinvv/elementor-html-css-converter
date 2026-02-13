@@ -66,7 +66,6 @@ export const createClassesModalManager = (): ModalManager => {
 			try {
 				const ReactLib = getReact();
 				if (!ReactLib) {
-					console.error('[EHCC] Classes Import/Export: React not available');
 					return;
 				}
 
@@ -85,8 +84,7 @@ export const createClassesModalManager = (): ModalManager => {
 						return { hasError: true, error };
 					}
 
-					componentDidCatch(error: any, errorInfo: any) {
-						console.error('[EHCC] Classes Import/Export: Modal error:', error, errorInfo);
+					componentDidCatch() {
 					}
 
 					render() {
@@ -110,8 +108,7 @@ export const createClassesModalManager = (): ModalManager => {
 						})
 					)
 				);
-			} catch (error) {
-				console.error('[EHCC] Classes Import/Export: Error rendering modal:', error);
+			} catch {
 			}
 		},
 	};

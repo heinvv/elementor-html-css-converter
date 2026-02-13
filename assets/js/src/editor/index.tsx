@@ -11,7 +11,6 @@ function waitForReact() {
 	retryCount++;
 
 	if (retryCount > MAX_RETRIES) {
-		console.warn('[EHCC] Variables Import/Export: Failed to initialize - React or Elementor UI not available');
 		return;
 	}
 
@@ -48,15 +47,12 @@ function waitForReact() {
 
 		const classesModalManager = createClassesModalManager();
 		classesModalManager.init();
-		console.log('[EHCC] Classes Import/Export: Initializing button injector');
 		initClassesButtonInjector(classesModalManager);
 
 		if (typeof window !== 'undefined') {
 			(window as any).ehccClassesImportExport = classesModalManager;
-			console.log('[EHCC] Classes Import/Export: Modal manager available at window.ehccClassesImportExport');
 		}
-	} catch (error) {
-		console.error('[EHCC] Variables Import/Export: Initialization error:', error);
+	} catch {
 	}
 }
 

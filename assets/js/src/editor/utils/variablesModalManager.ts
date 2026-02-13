@@ -66,7 +66,6 @@ export const createVariablesModalManager = (): ModalManager => {
 			try {
 				const ReactLib = getReact();
 				if (!ReactLib) {
-					console.error('[EHCC] Variables Import/Export: React not available');
 					return;
 				}
 
@@ -85,8 +84,7 @@ export const createVariablesModalManager = (): ModalManager => {
 						return { hasError: true, error };
 					}
 
-					componentDidCatch(error: any, errorInfo: any) {
-						console.error('[EHCC] Variables Import/Export: Modal error:', error, errorInfo);
+					componentDidCatch() {
 					}
 
 					render() {
@@ -110,8 +108,7 @@ export const createVariablesModalManager = (): ModalManager => {
 						})
 					)
 				);
-			} catch (error) {
-				console.error('[EHCC] Variables Import/Export: Error rendering modal:', error);
+			} catch {
 			}
 		},
 	};

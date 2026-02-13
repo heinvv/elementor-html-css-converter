@@ -50,7 +50,6 @@ export const ClassesImportExportModal = ({ isOpen, onClose, apiUrl }: VariablesI
 	} = ui;
 
 	if (!DialogComponent || !BoxComponent) {
-		console.error('[EHCC] Classes Import/Export: Required UI components not available');
 		return null;
 	}
 

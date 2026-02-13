@@ -100,4 +100,25 @@ class Test_Convert_Html_Endpoint extends Base_Test_Case {
 		}
 	}
 
+	public function test_convert_html_resolves_tailwind_rgb_vars_with_css_variables(): void {
+		$fixture = Fixture_Loader::load_json( 'integration/css-variables-tailwind-rgb.json' );
+		$request = new \WP_REST_Request( 'POST', '/html-css-converter/v1/convert-html' );
+		$request->set_param( 'html', $fixture['html'] );
+		$request->set_param( 'css_variables', $fixture['css_variables'] );
+		$request->set_param( 'import_variables', false );
+		$request->set_param( 'import_classes', false );
+		$request->set_param( 'import_images', false );
+
+		$response = rest_do_request( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( Test_Constants::HTTP_OK, $response->get_status() );
+		$this->assertTrue( $data['success'] ?? false );
+		$this->assertNotEmpty( $data['widgets'] ?? [] );
+
+		$widget_json = json_encode( $data['widgets'] );
+		$this->assertStringContainsString( 'rgba(38, 173, 231, 1)', $widget_json );
+		$this->assertStringNotContainsString( 'var(--color-tertiary-500)', $widget_json );
+	}
+
 }
