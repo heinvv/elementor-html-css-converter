@@ -24,7 +24,12 @@ export const useImportSubmit = ({
 		setStatusMessage(null);
 		setStatusType(null);
 
+		const timings: Record<string, number> = {};
+		timings._start = performance.now();
+		let t0 = performance.now();
+
 		try {
+			t0 = performance.now();
 			const response = await fetch(apiUrl + 'trigger-import', {
 				method: 'POST',
 				headers: {
@@ -39,11 +44,12 @@ export const useImportSubmit = ({
 			});
 
 			const data = await response.json();
+			timings.trigger_import_ms = Math.round(performance.now() - t0);
 
 			if (data.success && data.job_id && data.scraper_endpoint) {
 				setStatusMessage('Import started. Waiting for results...');
 				setStatusType('info');
-				startPolling(data.job_id, data.scraper_endpoint, url?.trim(), selectors?.trim());
+				startPolling(data.job_id, data.scraper_endpoint, url?.trim(), selectors?.trim(), timings);
 			} else {
 				setStatusMessage(
 					!data.scraper_endpoint
@@ -54,6 +60,11 @@ export const useImportSubmit = ({
 				setIsLoading(false);
 			}
 		} catch (error) {
+			timings.trigger_import_ms = Math.round(performance.now() - t0);
+			delete timings._start;
+			if (Object.keys(timings).length > 0) {
+				console.table(timings);
+			}
 			setStatusMessage('Failed to start import: ' + (error instanceof Error ? error.message : 'Unknown error'));
 			setStatusType('error');
 			setIsLoading(false);

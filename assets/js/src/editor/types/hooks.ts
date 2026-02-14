@@ -6,6 +6,7 @@ export type ScrapeDiagnostics = {
 	consoleMessages?: string[];
 	requestedUrl?: string;
 	selectors?: string[];
+	timing?: Record<string, number>;
 	botDetection?: {
 		detected: boolean;
 		type?: 'captcha' | 'redirect' | 'access-denied' | 'rate-limit' | 'unknown';
@@ -35,5 +36,11 @@ export type UseImportSubmitParams = {
 	setIsLoading: (loading: boolean) => void;
 	setStatusMessage: (message: string | null) => void;
 	setStatusType: (type: 'success' | 'error' | 'info' | null) => void;
-	startPolling: (jobId: string, scraperEndpoint: string, url?: string, selectors?: string) => void;
+	startPolling: (
+		jobId: string,
+		scraperEndpoint: string,
+		url?: string,
+		selectors?: string,
+		timings?: Record<string, number>,
+	) => void;
 };

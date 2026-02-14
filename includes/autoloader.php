@@ -53,6 +53,9 @@ class Autoloader {
 		// Editor classes
 		'ElementorHtmlCssConverter\Editor\Import_Editor' => 'includes/editor/class-import-editor.php',
 
+		// Post types
+		'ElementorHtmlCssConverter\PostTypes\Import_Template_Post_Type' => 'includes/post-types/class-import-template-post-type.php',
+
 		// Most-used converters
 		'ElementorHtmlCssConverter\Converters\Css\Properties\Color_Converter' => 'includes/converters/css/properties/class-color-converter.php',
 		'ElementorHtmlCssConverter\Converters\Css\Properties\Background_Color_Converter' => 'includes/converters/css/properties/class-background-color-converter.php',

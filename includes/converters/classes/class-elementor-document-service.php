@@ -17,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Wraps Elementor document operations for reading and writing widget data.
  */
 class Elementor_Document_Service {
+
+	public const IMPORT_TEMPLATE_CPT = 'ehcc_import_template';
+
 	/**
 	 * Get an Elementor document by post ID.
 	 *
@@ -409,6 +412,53 @@ class Elementor_Document_Service {
 		update_post_meta( $template_id, '_elementor_version', ELEMENTOR_VERSION );
 
 		wp_set_object_terms( $template_id, 'page', 'elementor_library_type' );
+
+		return $template_id;
+	}
+
+	/**
+	 * Save widgets as an import template (custom CPT).
+	 *
+	 * @param string $title   The template title.
+	 * @param array  $widgets Array of widget data to save.
+	 * @return int|false Template ID on success, false on failure.
+	 */
+	public function save_as_import_template( string $title, array $widgets ): int|false {
+		if ( ! $this->is_elementor_available() ) {
+			return false;
+		}
+
+		$template_id = wp_insert_post( [
+			'post_title'  => $title,
+			'post_status' => 'publish',
+			'post_type'   => self::IMPORT_TEMPLATE_CPT,
+		] );
+
+		if ( is_wp_error( $template_id ) || ! $template_id ) {
+			return false;
+		}
+
+		foreach ( $widgets as &$widget ) {
+			$widget['id'] = $this->generate_element_id();
+			if ( ! empty( $widget['elements'] ) ) {
+				$widget['elements'] = $this->assign_ids_recursively( $widget['elements'] );
+			}
+		}
+		unset( $widget );
+
+		$editor_data = $this->get_elements_raw_data( $widgets );
+
+		$json_value  = wp_slash( wp_json_encode( $editor_data ) );
+
+		if ( false === $json_value ) {
+			wp_delete_post( $template_id, true );
+			return false;
+		}
+
+		update_metadata( 'post', $template_id, '_elementor_data', $json_value );
+		update_post_meta( $template_id, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $template_id, '_elementor_template_type', 'page' );
+		update_post_meta( $template_id, '_elementor_version', ELEMENTOR_VERSION );
 
 		return $template_id;
 	}

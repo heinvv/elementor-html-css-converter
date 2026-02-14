@@ -16,6 +16,7 @@ use ElementorHtmlCssConverter\Converters\Variables\Variables_Rest_Api;
 use ElementorHtmlCssConverter\Converters\Classes\Classes_Rest_API;
 use ElementorHtmlCssConverter\Converters\Import\Import_Rest_API;
 use ElementorHtmlCssConverter\Editor\Import_Editor;
+use ElementorHtmlCssConverter\PostTypes\Import_Template_Post_Type;
 use ElementorHtmlCssConverter\Converters\Css\Style_Definition_Builder;
 use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
 use ElementorHtmlCssConverter\Converters\Css\Property_Converter_Interface;
@@ -111,6 +112,8 @@ final class Plugin {
 		new Import_Rest_API();
 
 		new Import_Editor();
+
+		new Import_Template_Post_Type();
 
 		$this->register_editor_hooks();
 		$this->register_frontend_hooks();

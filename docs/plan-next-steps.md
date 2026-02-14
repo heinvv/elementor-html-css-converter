@@ -14,7 +14,7 @@
 - [x] Test custom css.
 - [x] Study images support.
 - [x] Study svg support.
-- [ ] Handle Elementor v4 base styles.
+- [x] Handle Elementor v4 base styles.
 - [ ] Suppport pseudo classes as :hover() and :focus()
 - [ ] Support v4 inline editor > strong / bold / italic etc.
 - [x] Support for Google font-family styles.
@@ -34,9 +34,9 @@
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
 - [x] Clean up CSS properties + dimensions
 - [x] Support variables.
-- [x] Support classes.
+- [ ] Support classes.
 - [x] Support responsiveness.
-- [ ] Add GCP deployment
+    - [x] Add GCP deployment
 
 ## Bugs: 
 -- [x] Rem

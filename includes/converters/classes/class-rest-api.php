@@ -9,6 +9,7 @@ namespace ElementorHtmlCssConverter\Converters\Classes;
 
 use ElementorHtmlCssConverter\Converters\Css\Widget_Style_Applicator;
 use ElementorHtmlCssConverter\Converters\Html\Html_Converter;
+use ElementorHtmlCssConverter\Converters\Import\Import_Timing_Collector;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -676,6 +677,12 @@ class Rest_Api {
 		$options['import_images']    = $import_images;
 		$options['update_mode']      = $update_mode;
 
+		$debug_timing = ( defined( 'EHCC_DEBUG_TIMING' ) && EHCC_DEBUG_TIMING ) || ( defined( 'WP_DEBUG' ) && WP_DEBUG );
+		$timing       = $debug_timing ? new Import_Timing_Collector() : null;
+		if ( $timing ) {
+			$options['timing_collector'] = $timing;
+		}
+
 		$result = $this->html_converter->convert_html_to_atomic_widgets( $html, $options );
 
 		if ( ! $result['success'] || empty( $result['widgets'] ) ) {
@@ -683,7 +690,11 @@ class Rest_Api {
 		}
 
 		if ( $save_as_template ) {
-			$template_id = $this->document_service->save_as_template( $post_title, $result['widgets'] );
+			$save_t0 = $timing ? microtime( true ) : 0;
+			$template_id = $this->document_service->save_as_import_template( $post_title, $result['widgets'] );
+			if ( $timing ) {
+				$timing->record( 'save_as_template_ms', $save_t0 );
+			}
 
 			if ( false === $template_id ) {
 				return rest_ensure_response( [
@@ -694,6 +705,9 @@ class Rest_Api {
 			}
 
 			$result['template_id'] = $template_id;
+			if ( $timing && ! empty( $timing->get_all() ) ) {
+				$result['timing'] = $timing->get_all();
+			}
 			return rest_ensure_response( $result );
 		}
 

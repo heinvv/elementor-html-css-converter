@@ -10,6 +10,7 @@
 namespace ElementorHtmlCssConverter\Converters\Import;
 
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
+use ElementorHtmlCssConverter\Converters\Classes\Elementor_Document_Service;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -174,6 +175,9 @@ class Import_Rest_API {
 				],
 			];
 
+			$debug_timing = ( defined( 'EHCC_DEBUG_TIMING' ) && EHCC_DEBUG_TIMING ) || ( defined( 'WP_DEBUG' ) && WP_DEBUG );
+			$t0 = $debug_timing ? microtime( true ) : 0;
+
 			$scraper_response = wp_remote_post(
 				self::DEFAULT_SCRAPER_ENDPOINT,
 				[
@@ -185,6 +189,8 @@ class Import_Rest_API {
 					'sslverify' => apply_filters( 'ehcc_scraper_ssl_verify', true ),
 				]
 			);
+
+			$wp_to_scraper_ms = $debug_timing ? (int) round( ( microtime( true ) - $t0 ) * 1000 ) : 0;
 
 			if ( is_wp_error( $scraper_response ) ) {
 				return new WP_REST_Response(
@@ -201,7 +207,7 @@ class Import_Rest_API {
 			$response_body = wp_remote_retrieve_body( $scraper_response );
 			$response_data = json_decode( $response_body, true );
 
-			if ( $response_code !== 200 ) {
+			if ( $response_code !== 200 && $response_code !== 202 ) {
 				$error_message = $response_data['error'] ?? $response_data['message'] ?? 'Unknown error from scraper endpoint';
 				return new WP_REST_Response(
 					[
@@ -215,15 +221,16 @@ class Import_Rest_API {
 				);
 			}
 
-			return new WP_REST_Response(
-				[
-					'success'          => true,
-					'message'          => $response_data['message'] ?? 'Scraper triggered',
-					'job_id'           => $job_id,
-					'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
-				],
-				200
-			);
+			$response_data_out = [
+				'success'          => true,
+				'message'          => $response_data['message'] ?? 'Scraper triggered',
+				'job_id'           => $job_id,
+				'scraper_endpoint' => rtrim( self::DEFAULT_SCRAPER_ENDPOINT, '/' ),
+			];
+			if ( $debug_timing && $wp_to_scraper_ms > 0 ) {
+				$response_data_out['timing'] = [ 'wp_to_scraper_ms' => $wp_to_scraper_ms ];
+			}
+			return new WP_REST_Response( $response_data_out, 200 );
 		} catch ( \Throwable $e ) {
 			return new WP_REST_Response(
 				[
@@ -381,11 +388,12 @@ class Import_Rest_API {
 			);
 		}
 
-		if ( 'elementor_library' !== $post->post_type ) {
+		$allowed_post_types = [ 'elementor_library', Elementor_Document_Service::IMPORT_TEMPLATE_CPT ];
+		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'Post is not an Elementor template',
+					'message' => 'Post is not an import template',
 				],
 				400
 			);

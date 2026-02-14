@@ -88,11 +88,27 @@ export const useImportPolling = ({
 		}
 	}, [isOpen, setStatusMessage, setStatusType, setDiagnostics, setIsLoading]);
 
-	const startPolling = (jobId: string, scraperEndpoint: string, url?: string, selectors?: string) => {
+	function logTimings(t: Record<string, number> | undefined) {
+		if (!t) return;
+		const copy = { ...t };
+		delete copy._start;
+		if (Object.keys(copy).length > 0) {
+			console.table(copy);
+		}
+	}
+
+	const startPolling = (
+		jobId: string,
+		scraperEndpoint: string,
+		url?: string,
+		selectors?: string,
+		timings?: Record<string, number>,
+	) => {
 		let attempts = 0;
 		const maxAttempts = 60;
 		const pollInterval = 3000;
 		const resultsUrl = scraperEndpoint.replace(/\/+$/, '') + '/results/' + jobId;
+		const pollingStart = performance.now();
 
 		const interval = setInterval(async () => {
 			attempts++;
@@ -100,6 +116,12 @@ export const useImportPolling = ({
 			if (attempts > maxAttempts) {
 				clearInterval(interval);
 				pollIntervalRef.current = null;
+				if (timings) {
+					timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+					timings.poll_attempts = attempts;
+					delete timings._start;
+					logTimings(timings);
+				}
 				setStatusMessage('Timeout waiting for results');
 				setStatusType('error');
 				setIsLoading(false);
@@ -124,6 +146,12 @@ export const useImportPolling = ({
 					}
 					clearInterval(interval);
 					pollIntervalRef.current = null;
+					if (timings) {
+						timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+						timings.poll_attempts = attempts;
+						delete timings._start;
+						logTimings(timings);
+					}
 					setStatusMessage(`Scraper error: ${errorDetail}`);
 					setStatusType('error');
 					setIsLoading(false);
@@ -139,6 +167,15 @@ export const useImportPolling = ({
 				if (data.status === 'error') {
 					clearInterval(interval);
 					pollIntervalRef.current = null;
+					if (timings) {
+						timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+						timings.poll_attempts = attempts;
+						if (data.timing && typeof data.timing === 'object') {
+							Object.assign(timings, data.timing);
+						}
+						delete timings._start;
+						logTimings(timings);
+					}
 					const errorParts = [data.error || 'Import failed'];
 					if (url) errorParts.push(`URL: ${url}`);
 					setStatusMessage(errorParts.join('. '));
@@ -150,6 +187,14 @@ export const useImportPolling = ({
 				if (data.status === 'success' && data.results) {
 					clearInterval(interval);
 					pollIntervalRef.current = null;
+
+					if (timings) {
+						timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+						timings.poll_attempts = attempts;
+						if (data.timing && typeof data.timing === 'object') {
+							Object.assign(timings, data.timing);
+						}
+					}
 
 					const scrapeData = data.results.scrape;
 					const elementCount = scrapeData?.elements?.length ?? 0;
@@ -199,7 +244,16 @@ export const useImportPolling = ({
 							].filter(Boolean);
 							statusMessage = parts.join(' ');
 						}
-						
+
+						if (timings) {
+							timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+							timings.poll_attempts = attempts;
+							if (data.timing && typeof data.timing === 'object') {
+								Object.assign(timings, data.timing);
+							}
+							delete timings._start;
+							logTimings(timings);
+						}
 						setStatusMessage(statusMessage);
 						setStatusType('error');
 						setIsLoading(false);
@@ -220,14 +274,22 @@ export const useImportPolling = ({
 						if (typeof cssVariables === 'string' && cssVariables.trim().length > 0) {
 							convertBody.css_variables = cssVariables;
 						}
+						const convertT0 = performance.now();
 						const convertResponse = await fetch(apiUrl + 'convert-html', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify(convertBody),
 						});
+						if (timings) {
+							timings.convert_html_ms = Math.round(performance.now() - convertT0);
+						}
 
 						if (!convertResponse.ok) {
 							const errorText = await convertResponse.text();
+							if (timings) {
+								delete timings._start;
+								logTimings(timings);
+							}
 							setStatusMessage(`Failed to convert: ${errorText}`);
 							setStatusType('error');
 							setIsLoading(false);
@@ -236,28 +298,39 @@ export const useImportPolling = ({
 
 						const convertData = await convertResponse.json();
 						const templateId = convertData.template_id;
+						if (timings && convertData.timing && typeof convertData.timing === 'object') {
+							Object.assign(timings, convertData.timing);
+						}
 
 						if (templateId) {
 							const elementorCommon = (window as any).elementorCommon;
 							const $e = (window as any).$e;
 
 							if (elementorCommon && elementorCommon.ajax && $e && $e.run) {
+								const getTemplateT0 = performance.now();
 								elementorCommon.ajax.addRequest('get_template_data', {
 									data: {
 										source: 'local',
 										edit_mode: true,
-										display: true,
+										display: false,
 										template_id: templateId,
 									},
 									success: (templateData: any) => {
+										if (timings) {
+											timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
+										}
+										const importT0 = performance.now();
 										$e.run('document/elements/import', {
 											model: new (window as any).Backbone.Model({ title: 'Imported' }),
 											data: templateData,
 											options: { withPageSettings: false },
 										});
-
-										// TODO: Reactivate the template removal after testing
-										// fetch(apiUrl + 'template/' + templateId, { method: 'DELETE' }).catch(() => {});
+										if (timings) {
+											timings.document_import_ms = Math.round(performance.now() - importT0);
+											timings.total_ms = Math.round(performance.now() - (timings._start ?? 0));
+											delete timings._start;
+											logTimings(timings);
+										}
 
 										setStatusMessage('Import completed successfully!');
 										setStatusType('success');
@@ -273,6 +346,11 @@ export const useImportPolling = ({
 										}, 2000);
 									},
 									error: () => {
+										if (timings) {
+											timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
+											delete timings._start;
+											logTimings(timings);
+										}
 										setStatusMessage('Failed to load template data');
 										setStatusType('error');
 										setIsLoading(false);
@@ -284,11 +362,19 @@ export const useImportPolling = ({
 								setIsLoading(false);
 							}
 						} else {
+							if (timings) {
+								delete timings._start;
+								logTimings(timings);
+							}
 							setStatusMessage('Template created but failed to retrieve ID');
 							setStatusType('error');
 							setIsLoading(false);
 						}
 					} catch (error) {
+						if (timings) {
+							delete timings._start;
+							logTimings(timings);
+						}
 						setStatusMessage('Failed to convert scraped content: ' + (error instanceof Error ? error.message : 'Unknown error'));
 						setStatusType('error');
 						setIsLoading(false);
@@ -297,6 +383,12 @@ export const useImportPolling = ({
 			} catch (error) {
 				clearInterval(interval);
 				pollIntervalRef.current = null;
+				if (timings) {
+					timings.polling_wait_ms = Math.round(performance.now() - pollingStart);
+					timings.poll_attempts = attempts;
+					delete timings._start;
+					logTimings(timings);
+				}
 				const errMsg = error instanceof Error ? error.message : String(error);
 				setStatusMessage(`Failed to fetch results: ${errMsg}`);
 				setStatusType('error');

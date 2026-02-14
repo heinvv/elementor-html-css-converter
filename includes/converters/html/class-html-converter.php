@@ -23,6 +23,7 @@ use ElementorHtmlCssConverter\Converters\Classes\Class_Registration_Service;
 use ElementorHtmlCssConverter\Converters\Classes\Converter_Registry;
 use ElementorHtmlCssConverter\Converters\Css\Breakpoint_Matcher;
 use ElementorHtmlCssConverter\Converters\Images\Image_Import_Service;
+use ElementorHtmlCssConverter\Converters\Import\Import_Timing_Collector;
 use Elementor\Modules\Variables\Storage\Repository as Variables_Repository;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -110,9 +111,15 @@ class Html_Converter {
 		$import_classes      = $options['import_classes'] ?? true;
 		$import_images       = $options['import_images'] ?? true;
 		$update_mode         = $options['update_mode'] ?? 'create_new';
+		$timing              = $options['timing_collector'] ?? null;
 
+		$t0 = $timing ? microtime( true ) : 0;
 		$css = $this->extract_css_from_html( $html );
+		if ( $timing ) {
+			$timing->record( 'extract_css_ms', $t0 );
+		}
 
+		$t0 = $timing ? microtime( true ) : 0;
 		if ( ! empty( trim( $css_variables ) ) ) {
 			$import_result      = $this->import_css_variables( $css_variables, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
@@ -123,6 +130,9 @@ class Html_Converter {
 			$import_result      = $this->import_css_variables( $css, $update_mode );
 			$imported_variables = array_merge( $imported_variables, $import_result['imported'] ?? [] );
 			$variable_renames   = array_merge( $variable_renames, $import_result['renames'] ?? [] );
+		}
+		if ( $timing ) {
+			$timing->record( 'import_variables_ms', $t0 );
 		}
 
 		if ( ! empty( $imported_variables ) ) {
@@ -140,15 +150,20 @@ class Html_Converter {
 		}
 
 		$variable_fallback = $this->build_variable_fallback_map( $css_variables, $css, $variable_renames );
+		$t0 = $timing ? microtime( true ) : 0;
 		$widget_data_array = $this->data_parser->parse_html_for_atomic_widgets( $html, [
 			'variable_fallback' => $variable_fallback,
 		] );
+		if ( $timing ) {
+			$timing->record( 'parse_html_ms', $t0 );
+		}
 
 		if ( empty( $widget_data_array ) ) {
 			return $this->build_error_result( 'No supported HTML elements found' );
 		}
 
 		if ( $import_classes && ! empty( $css ) ) {
+			$t0 = $timing ? microtime( true ) : 0;
 			$class_import_result = $this->import_css_classes( $css, $widget_data_array, $update_mode );
 			$imported_classes    = $class_import_result['classes'] ?? [];
 			$global_class_map    = $class_import_result['class_map'] ?? [];
@@ -156,10 +171,17 @@ class Html_Converter {
 			if ( ! empty( $class_import_result['warnings'] ) ) {
 				$warnings = array_merge( $warnings, $class_import_result['warnings'] );
 			}
+			if ( $timing ) {
+				$timing->record( 'import_classes_ms', $t0 );
+			}
 		}
 
 		$json_creator = new Atomic_Widget_JSON_Creator( $import_images );
+		$t0 = $timing ? microtime( true ) : 0;
 		$widgets = $json_creator->create_multiple_widgets( $widget_data_array );
+		if ( $timing ) {
+			$timing->record( 'create_widgets_ms', $t0 );
+		}
 
 		if ( empty( $widgets ) ) {
 			return $this->build_error_result( 'No widgets could be created from the HTML' );
@@ -170,22 +192,34 @@ class Html_Converter {
 			$warnings = array_merge( $warnings, $svg_warnings );
 		}
 
+		$t0 = $timing ? microtime( true ) : 0;
 		$widgets_with_styles = $this->integrate_styles( $widgets, $widget_data_array, $global_class_map );
+		if ( $timing ) {
+			$timing->record( 'integrate_styles_ms', $t0 );
+		}
 
 		$import_warnings = [];
 		if ( $import_images ) {
+			$t0 = $timing ? microtime( true ) : 0;
 			$image_import_service = new Image_Import_Service();
 			$import_result = $image_import_service->import_images_in_widgets( $widgets_with_styles );
 			$widgets_with_styles = $import_result['widgets'];
 			$imported_images = $import_result['imported'] ?? [];
 			$import_warnings = $import_result['warnings'] ?? [];
+			if ( $timing ) {
+				$timing->record( 'import_images_ms', $t0 );
+			}
 		} else {
 			$imported_images = [];
 		}
 
+		$t0 = $timing ? microtime( true ) : 0;
 		$wrapped_widgets = $this->wrap_non_container_widgets( $widgets_with_styles );
 
 		$wrapped_widgets = $this->assign_element_ids_recursive( $wrapped_widgets );
+		if ( $timing ) {
+			$timing->record( 'wrap_assign_ids_ms', $t0 );
+		}
 
 		$result = $this->build_success_result( $wrapped_widgets );
 

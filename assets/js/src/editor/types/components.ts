@@ -10,6 +10,7 @@ export type ScrapeDiagnostics = {
 	consoleMessages?: string[];
 	requestedUrl?: string;
 	selectors?: string[];
+	timing?: Record<string, number>;
 };
 
 export type ModalContentProps = {
