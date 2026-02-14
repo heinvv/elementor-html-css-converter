@@ -67,4 +67,18 @@ class Test_Atomic_Data_Parser extends TestCase {
 		$this->assertNotEmpty( $result );
 	}
 
+	public function test_parse_html_for_atomic_widgets__synthetic_paragraph_uses_span_tag(): void {
+		$html = '<div>text</div>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertArrayHasKey( 'children', $result[0] );
+		$this->assertCount( 1, $result[0]['children'] );
+		$synthetic_paragraph = $result[0]['children'][0];
+		$this->assertSame( 'e-paragraph', $synthetic_paragraph['widget_type'] );
+		$this->assertTrue( $synthetic_paragraph['synthetic'] ?? false );
+		$this->assertSame( 'span', $synthetic_paragraph['attributes']['original_tag'] ?? null );
+	}
+
 }

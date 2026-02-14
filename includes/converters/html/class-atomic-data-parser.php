@@ -739,7 +739,7 @@ class Atomic_Data_Parser {
 				'atomic_props'    => [],
 				'element_classes' => [],
 				'content'         => trim( $element['content'] ),
-				'attributes'      => [ 'original_tag' => 'p' ],
+				'attributes'      => [ 'original_tag' => 'span' ],
 				'children'        => [],
 				'synthetic'       => true,
 			];

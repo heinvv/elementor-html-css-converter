@@ -140,6 +140,7 @@ class Atomic_Widget_Settings_Preparer {
 
 			case 'e-paragraph':
 				$settings['paragraph'] = $this->create_html_v2_prop( $content );
+				$settings['tag'] = $this->create_atomic_prop( 'string', $this->extract_paragraph_tag( $attributes ) );
 				break;
 
 			case 'e-button':
@@ -329,6 +330,11 @@ class Atomic_Widget_Settings_Preparer {
 	 */
 	private function extract_heading_tag( array $attributes ): string {
 		return $attributes['original_tag'] ?? 'h1';
+	}
+
+	private function extract_paragraph_tag( array $attributes ): string {
+		$tag = $attributes['original_tag'] ?? 'p';
+		return in_array( $tag, [ 'p', 'span' ], true ) ? $tag : 'p';
 	}
 
 	/**
