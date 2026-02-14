@@ -52,6 +52,11 @@ class Rest_Api {
 	private const ROUTE_CONVERT_HTML = '/convert-html';
 
 	/**
+	 * REST API route for fetching import template data.
+	 */
+	private const ROUTE_TEMPLATE_DATA = '/import-template/(?P<id>\d+)';
+
+	/**
 	 * The converter registry.
 	 *
 	 * @var Converter_Registry
@@ -119,6 +124,7 @@ class Rest_Api {
 		$this->register_create_post_route();
 		$this->register_add_widget_route();
 		$this->register_convert_html_route();
+		$this->register_template_data_route();
 	}
 
 	/**
@@ -645,6 +651,62 @@ class Rest_Api {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Register the template data route for ehcc_import_template.
+	 *
+	 * @return void
+	 */
+	private function register_template_data_route(): void {
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::ROUTE_TEMPLATE_DATA,
+			[
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'handle_template_data_request' ],
+				'permission_callback' => [ $this, 'check_permissions' ],
+				'args'                => [
+					'id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Handle the template data request.
+	 *
+	 * @param \WP_REST_Request $request The REST request.
+	 * @return \WP_REST_Response The REST response.
+	 */
+	public function handle_template_data_request( \WP_REST_Request $request ): \WP_REST_Response {
+		$template_id = (int) $request->get_param( 'id' );
+		$data        = $this->document_service->get_import_template_data( $template_id );
+
+		if ( isset( $data['content'] ) && null === $data['content'] ) {
+			$reason  = $data['reason'] ?? 'unknown';
+			$message = 'Template not found';
+			if ( 'post_not_found' === $reason ) {
+				$message = 'Post does not exist';
+			} elseif ( 'wrong_post_type' === $reason ) {
+				$post_type = $data['post_type'] ?? '';
+				$message   = "Post type is {$post_type}, expected ehcc_import_template or elementor_library";
+			} elseif ( 'empty_elementor_data' === $reason ) {
+				$message = 'Template has no _elementor_data';
+			} elseif ( 'invalid_json' === $reason ) {
+				$message = 'Template _elementor_data is invalid JSON';
+			}
+			return new \WP_REST_Response(
+				[ 'success' => false, 'message' => $message, 'reason' => $reason ],
+				404
+			);
+		}
+
+		return rest_ensure_response( $data );
 	}
 
 	/**

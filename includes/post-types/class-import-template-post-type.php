@@ -26,14 +26,24 @@ class Import_Template_Post_Type {
 		register_post_type(
 			self::POST_TYPE,
 			[
-				'labels'             => [
-					'name' => 'EHCC Import Templates',
+				'labels'               => [
+					'name'          => 'EHCC Import Templates',
+					'singular_name'  => 'Import Template',
+					'all_items'      => 'All Import Templates',
+					'edit_item'      => 'Edit Import Template',
+					'view_item'      => 'View Import Template',
+					'add_new_item'   => 'Add New',
+					'search_items'   => 'Search Import Templates',
 				],
-				'public'             => false,
-				'publicly_queryable' => false,
-				'show_ui'            => false,
-				'show_in_rest'       => false,
-				'capability_type'    => 'post',
+				'public'               => false,
+				'publicly_queryable'   => false,
+				'show_ui'              => true,
+				'show_in_menu'         => 'edit.php?post_type=elementor_library',
+				'show_in_nav_menus'   => false,
+				'show_in_rest'         => false,
+				'capability_type'      => 'post',
+				'map_meta_cap'         => true,
+				'supports'             => [ 'title', 'custom-fields' ],
 			]
 		);
 	}

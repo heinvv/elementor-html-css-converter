@@ -303,61 +303,87 @@ export const useImportPolling = ({
 						}
 
 						if (templateId) {
-							const elementorCommon = (window as any).elementorCommon;
 							const $e = (window as any).$e;
-
-							if (elementorCommon && elementorCommon.ajax && $e && $e.run) {
-								const getTemplateT0 = performance.now();
-								elementorCommon.ajax.addRequest('get_template_data', {
-									data: {
-										source: 'local',
-										edit_mode: true,
-										display: false,
-										template_id: templateId,
-									},
-									success: (templateData: any) => {
-										if (timings) {
-											timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
-										}
-										const importT0 = performance.now();
-										$e.run('document/elements/import', {
-											model: new (window as any).Backbone.Model({ title: 'Imported' }),
-											data: templateData,
-											options: { withPageSettings: false },
-										});
-										if (timings) {
-											timings.document_import_ms = Math.round(performance.now() - importT0);
-											timings.total_ms = Math.round(performance.now() - (timings._start ?? 0));
-											delete timings._start;
-											logTimings(timings);
-										}
-
-										setStatusMessage('Import completed successfully!');
-										setStatusType('success');
-										setIsLoading(false);
-										setTimeout(() => {
-											onClose();
-											if ((window as any).elementor?.notifications) {
-												(window as any).elementor.notifications.showToast({
-													message: 'Website imported successfully.',
-													type: 'success',
-												});
-											}
-										}, 2000);
-									},
-									error: () => {
-										if (timings) {
-											timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
-											delete timings._start;
-											logTimings(timings);
-										}
-										setStatusMessage('Failed to load template data');
-										setStatusType('error');
-										setIsLoading(false);
-									},
-								});
-							} else {
+							if (!$e || !$e.run) {
 								setStatusMessage('Elementor editor not available');
+								setStatusType('error');
+								setIsLoading(false);
+								return;
+							}
+
+							const getTemplateT0 = performance.now();
+							const templateUrl = `${apiUrl.replace(/\/$/, '')}/import-template/${templateId}`;
+							const nonce = (window as any).ehccImport?.nonce;
+							const fetchOpts: RequestInit = {
+								credentials: 'same-origin',
+								headers: nonce ? { 'X-WP-Nonce': nonce } : {},
+							};
+							try {
+								const templateRes = await fetch(templateUrl, fetchOpts);
+								if (timings) {
+									timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
+								}
+
+								if (!templateRes.ok) {
+									const errBody = await templateRes.text();
+									let errMsg = `Failed to load template data (${templateRes.status})`;
+									try {
+										const parsed = JSON.parse(errBody);
+										if (parsed.message) errMsg += `: ${parsed.message}`;
+									} catch {
+										if (errBody) errMsg += `: ${errBody.slice(0, 100)}`;
+									}
+									setStatusMessage(errMsg);
+									setStatusType('error');
+									setIsLoading(false);
+									return;
+								}
+
+								const rawData = await templateRes.json();
+								const templateData = rawData?.data ?? rawData;
+								const content = templateData?.content;
+								const importData = {
+									content: Array.isArray(content) ? content : (content ? [content] : []),
+									page_settings: templateData?.page_settings ?? {},
+								};
+								if (!importData.content.length) {
+									setStatusMessage('Template has no content to import');
+									setStatusType('error');
+									setIsLoading(false);
+									return;
+								}
+								const importT0 = performance.now();
+								$e.run('document/elements/import', {
+									model: new (window as any).Backbone.Model({ title: 'Imported' }),
+									data: importData,
+									options: { withPageSettings: false },
+								});
+								if (timings) {
+									timings.document_import_ms = Math.round(performance.now() - importT0);
+									timings.total_ms = Math.round(performance.now() - (timings._start ?? 0));
+									delete timings._start;
+									logTimings(timings);
+								}
+
+								setStatusMessage('Import completed successfully!');
+								setStatusType('success');
+								setIsLoading(false);
+								setTimeout(() => {
+									onClose();
+									if ((window as any).elementor?.notifications) {
+										(window as any).elementor.notifications.showToast({
+											message: 'Website imported successfully.',
+											type: 'success',
+										});
+									}
+								}, 2000);
+							} catch (err) {
+								if (timings) {
+									timings.get_template_data_ms = Math.round(performance.now() - getTemplateT0);
+									delete timings._start;
+									logTimings(timings);
+								}
+								setStatusMessage('Failed to load template data');
 								setStatusType('error');
 								setIsLoading(false);
 							}

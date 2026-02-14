@@ -161,10 +161,6 @@ final class Plugin {
 	}
 
 	public function enqueue_base_styles_override(): void {
-		if ( ! $this->should_load_base_styles_override() ) {
-			return;
-		}
-
 		wp_enqueue_script(
 			'ehcc-base-styles-override',
 			plugins_url( 'assets/js/editor/base-styles-override.js', EHCC_FILE ),
@@ -181,50 +177,6 @@ final class Plugin {
 			[],
 			EHCC_VERSION
 		);
-	}
-
-	private function should_load_base_styles_override(): bool {
-		$post_id = get_the_ID();
-		if ( ! $post_id ) {
-			return false;
-		}
-
-		return $this->page_has_css_converter_widgets( $post_id );
-	}
-
-	private function page_has_css_converter_widgets( int $post_id ): bool {
-		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
-			return false;
-		}
-
-		$document = \Elementor\Plugin::$instance->documents->get( $post_id );
-		if ( ! $document ) {
-			return false;
-		}
-
-		$elements_data = $document->get_elements_data();
-		return $this->traverse_elements_for_css_converter_widgets( $elements_data );
-	}
-
-	private function traverse_elements_for_css_converter_widgets( array $elements_data ): bool {
-		foreach ( $elements_data as $element_data ) {
-			if ( $this->element_has_css_converter_flag( $element_data ) ) {
-				return true;
-			}
-
-			if ( isset( $element_data['elements'] ) && is_array( $element_data['elements'] ) ) {
-				if ( $this->traverse_elements_for_css_converter_widgets( $element_data['elements'] ) ) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	private function element_has_css_converter_flag( array $element_data ): bool {
-		return isset( $element_data['editor_settings']['css_converter_widget'] )
-			&& $element_data['editor_settings']['css_converter_widget'];
 	}
 
 	private array $ob_element_ids = [];

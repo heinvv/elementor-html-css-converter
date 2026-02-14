@@ -9,7 +9,8 @@
 			const isConverterWidget =
 				true === editorSettings.disable_base_styles ||
 				true === editorSettings.css_converter_widget ||
-				'0.0' === model?.get?.('version');
+				'0.0' === model?.get?.('version') ||
+				hasConverterClassPattern(model);
 
 			if (isConverterWidget) {
 				return {};
@@ -18,10 +19,33 @@
 			return originalGetAtomicWidgetBaseStyles.call(this, model);
 		};
 
+		function hasConverterClassPattern(model) {
+			const settings = model?.get?.('settings');
+			if (!settings || !Array.isArray(settings.classes)) {
+				return false;
+			}
+			const converterClassPattern = /^e-[a-f0-9]{7,8}-[a-f0-9]{7}$/;
+			return settings.classes.some(function(cls) {
+				return typeof cls === 'string' && converterClassPattern.test(cls);
+			});
+		}
+
 		elementor.on('document:loaded', function() {
 			clearHtmlCacheForConverterWidgets();
 			removeBaseClassesFromDOM();
 		});
+
+		const $e = window.$e;
+		if ($e && $e.commands && $e.commands.on) {
+			$e.commands.on('run:after', function(component, command) {
+				if (command === 'document/elements/import') {
+					setTimeout(function() {
+						clearHtmlCacheForConverterWidgets();
+						removeBaseClassesFromDOM();
+					}, 300);
+				}
+			});
+		}
 
 		function clearHtmlCacheForConverterWidgets() {
 			try {
@@ -82,7 +106,8 @@
 			const isConverterWidget =
 				true === editorSettings.disable_base_styles ||
 				true === editorSettings.css_converter_widget ||
-				'0.0' === version;
+				'0.0' === version ||
+				hasConverterClassPattern(model);
 
 			if (!isConverterWidget) {
 				return { processed: false, pending: false };

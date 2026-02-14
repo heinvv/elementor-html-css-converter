@@ -464,6 +464,56 @@ class Elementor_Document_Service {
 	}
 
 	/**
+	 * Get template data for import.
+	 *
+	 * Reads _elementor_data from ehcc_import_template (or elementor_library) post
+	 * and returns format expected by document/elements/import.
+	 *
+	 * @param int $template_id Post ID of the template.
+	 * @return array{content: array}|array{content: null, reason: string} Template data, or array with reason on failure.
+	 */
+	public function get_import_template_data( int $template_id ) {
+		$post = get_post( $template_id );
+
+		if ( ! $post ) {
+			return [ 'content' => null, 'reason' => 'post_not_found' ];
+		}
+
+		$allowed_types = [ self::IMPORT_TEMPLATE_CPT, 'elementor_library' ];
+		if ( ! in_array( $post->post_type, $allowed_types, true ) ) {
+			return [ 'content' => null, 'reason' => 'wrong_post_type', 'post_type' => $post->post_type ];
+		}
+
+		$json = get_post_meta( $template_id, '_elementor_data', true );
+		if ( empty( $json ) ) {
+			return [ 'content' => null, 'reason' => 'empty_elementor_data' ];
+		}
+
+		$content = json_decode( $json, true, 8192 );
+		if ( ! is_array( $content ) ) {
+			$alt_content = json_decode( wp_unslash( $json ), true, 8192 );
+			if ( is_array( $alt_content ) ) {
+				$content = $alt_content;
+			}
+		}
+		if ( ! is_array( $content ) ) {
+			return [ 'content' => null, 'reason' => 'invalid_json' ];
+		}
+
+		if ( $this->is_elementor_available() && method_exists( \Elementor\Plugin::$instance->db, 'iterate_data' ) ) {
+			$content = \Elementor\Plugin::$instance->db->iterate_data( $content, function ( $element ) {
+				$element['id'] = \Elementor\Utils::generate_random_string();
+				return apply_filters( 'elementor/document/element/replace_id', $element );
+			} );
+		}
+
+		return [
+			'content'       => $content,
+			'page_settings' => [],
+		];
+	}
+
+	/**
 	 * Generate a unique element ID.
 	 *
 	 * @return string The generated ID.

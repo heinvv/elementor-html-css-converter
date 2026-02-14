@@ -133,17 +133,17 @@ class Atomic_Widget_Settings_Preparer {
 	private function add_content_settings( array $settings, string $widget_type, string $content, array $attributes ): array {
 		switch ( $widget_type ) {
 			case 'e-heading':
-				$settings['title'] = $this->create_atomic_prop( 'html', $content );
+				$settings['title'] = $this->create_html_v2_prop( $content );
 				$settings['tag']   = $this->create_atomic_prop( 'string', $this->extract_heading_tag( $attributes ) );
 				$settings['level'] = $this->extract_heading_level( $attributes );
 				break;
 
 			case 'e-paragraph':
-				$settings['paragraph'] = $this->create_atomic_prop( 'html', $content );
+				$settings['paragraph'] = $this->create_html_v2_prop( $content );
 				break;
 
 			case 'e-button':
-				$settings['text'] = $this->create_atomic_prop( 'string', $content );
+				$settings['text'] = $this->create_html_v2_prop( $content );
 				if ( isset( $attributes['href'] ) ) {
 					$settings['link'] = $this->create_link_prop( $attributes['href'], $attributes );
 				}
@@ -225,6 +225,24 @@ class Atomic_Widget_Settings_Preparer {
 		return [
 			'$$type' => $type,
 			'value'  => $value,
+		];
+	}
+
+	/**
+	 * Create an html-v2 prop structure for Html_V2_Prop_Type.
+	 *
+	 * Elementor expects { content: string, children: [] } for e-paragraph, e-heading, e-button.
+	 *
+	 * @param string $content Text or HTML content.
+	 * @return array Atomic prop structure.
+	 */
+	private function create_html_v2_prop( string $content ): array {
+		return [
+			'$$type' => 'html-v2',
+			'value'  => [
+				'content'  => $content,
+				'children' => [],
+			],
 		];
 	}
 
