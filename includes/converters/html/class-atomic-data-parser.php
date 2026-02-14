@@ -81,6 +81,7 @@ class Atomic_Data_Parser {
 	 * @var array
 	 */
 	private array $text_wrapping_tags = [
+		'a',
 		'div',
 		'span',
 		'section',
@@ -257,7 +258,7 @@ class Atomic_Data_Parser {
 		
 		if ( 'a' === $tag_name ) {
 			$anchor_html = $element->ownerDocument->saveXML( $element );
-			
+
 			$svg_content = null;
 			foreach ( $svg_map as $hash => $content ) {
 				if ( strpos( $hash, 'standalone_' ) === 0 ) {
@@ -269,11 +270,12 @@ class Atomic_Data_Parser {
 					break;
 				}
 			}
-			
-			if ( $svg_content ) {
+
+			$anchor_has_text = ! empty( trim( $this->extract_text_content( $element ) ) );
+			if ( $svg_content && ! $anchor_has_text ) {
 				return $this->extract_svg_from_link_with_content( $element, $svg_content );
 			}
-			
+
 			$svg_child = null;
 			$element_children = [];
 			foreach ( $element->childNodes as $child ) {
@@ -285,7 +287,7 @@ class Atomic_Data_Parser {
 					}
 				}
 			}
-			if ( $svg_child && count( $element_children ) === 1 ) {
+			if ( $svg_child && count( $element_children ) === 1 && ! $anchor_has_text ) {
 				return $this->extract_svg_from_link( $element, $svg_child );
 			}
 		}

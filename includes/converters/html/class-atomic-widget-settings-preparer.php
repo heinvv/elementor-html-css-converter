@@ -353,7 +353,9 @@ class Atomic_Widget_Settings_Preparer {
 		$filtered            = [];
 		$excluded_attributes = [ 'style', 'class', 'id', 'href', 'src', 'alt', 'original_tag', 'svg_content', 'is_link_container' ];
 
-		if ( 'e-svg' !== $widget_type ) {
+		if ( 'e-svg' === $widget_type ) {
+			$excluded_attributes = array_merge( $excluded_attributes, [ 'width', 'height', 'fill', 'viewbox', 'viewBox', 'xmlns' ] );
+		} else {
 			$excluded_attributes[] = 'width';
 			$excluded_attributes[] = 'height';
 		}

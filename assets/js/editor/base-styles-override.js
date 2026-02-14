@@ -55,7 +55,6 @@
 				}
 
 				const elements = previewView.collection.models;
-
 				let pendingRenders = 0;
 
 				elements.forEach(function(element) {
@@ -66,9 +65,7 @@
 				if (pendingRenders > 0) {
 					waitForAllRendersComplete(pendingRenders);
 				}
-			} catch (error) {
-				// Silently fail
-			}
+			} catch (error) {}
 		}
 
 		function processElementRecursively(model) {
@@ -217,3 +214,4 @@
 		}
 	});
 }());
+
