@@ -35,5 +35,15 @@ if ( ! function_exists( 'str_ends_with' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_kses' ) ) {
+	function wp_kses( $string, $allowed_html ) {
+		$allowed = '';
+		foreach ( array_keys( $allowed_html ) as $tag ) {
+			$allowed .= '<' . $tag . '>';
+		}
+		return strip_tags( $string, $allowed );
+	}
+}
+
 require_once $plugin_root . '/includes/autoloader.php';
 ElementorHtmlCssConverter\Autoloader::register();

@@ -29,7 +29,7 @@ class Test_Atomic_Data_Parser extends TestCase {
 		$this->assertArrayHasKey( 'tag', $result[0] );
 		$this->assertArrayHasKey( 'widget_type', $result[0] );
 		$this->assertArrayHasKey( 'breakpoint_props', $result[0] );
-		$this->assertSame( 'div', $result[0]['tag'] );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
 		$this->assertSame( 'hero', $result[0]['attributes']['id'] ?? null );
 	}
 
@@ -78,18 +78,112 @@ class Test_Atomic_Data_Parser extends TestCase {
 		$this->assertArrayHasKey( 'desktop', $result[0]['pseudo_state_props']['hover'] );
 	}
 
-	public function test_parse_html_for_atomic_widgets__synthetic_paragraph_uses_span_tag(): void {
+	public function test_parse_html_for_atomic_widgets__div_with_text_promotes_to_paragraph(): void {
 		$html = '<div>text</div>';
 		$parser = $this->create_parser();
 		$result = $parser->parse_html_for_atomic_widgets( $html );
 
 		$this->assertNotEmpty( $result );
-		$this->assertArrayHasKey( 'children', $result[0] );
-		$this->assertCount( 1, $result[0]['children'] );
-		$synthetic_paragraph = $result[0]['children'][0];
-		$this->assertSame( 'e-paragraph', $synthetic_paragraph['widget_type'] );
-		$this->assertTrue( $synthetic_paragraph['synthetic'] ?? false );
-		$this->assertSame( 'span', $synthetic_paragraph['attributes']['original_tag'] ?? null );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertSame( 'text', $result[0]['content'] );
+		$this->assertSame( 'div', $result[0]['attributes']['original_tag'] ?? null );
+	}
+
+	public function test_parse_html_for_atomic_widgets__e_paragraph_preserves_inline_html(): void {
+		$html = '<style>#p1 { color: red; }</style><p id="p1"><s>Strikethrough</s><br><strong>second line</strong><br><em>italic</em><br><u>underline</u><br><sup>superscript</sup><br><sub>subscript</sub><br><a target="_blank" href="https://google.com">link</a></p>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$content = $result[0]['content'];
+		$this->assertStringContainsString( '<s>Strikethrough</s>', $content );
+		$this->assertStringContainsString( '<strong>second line</strong>', $content );
+		$this->assertStringContainsString( '<em>italic</em>', $content );
+		$this->assertStringContainsString( '<u>underline</u>', $content );
+		$this->assertStringContainsString( '<sup>superscript</sup>', $content );
+		$this->assertStringContainsString( '<sub>subscript</sub>', $content );
+		$this->assertStringContainsString( '<a ', $content );
+		$this->assertStringContainsString( 'href="https://google.com"', $content );
+		$this->assertStringContainsString( '>link</a>', $content );
+	}
+
+	public function test_parse_html_for_atomic_widgets__e_heading_preserves_inline_html(): void {
+		$html = '<h2 id="h1"><strong>Bold</strong> and <em>italic</em> text</h2>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-heading', $result[0]['widget_type'] );
+		$content = $result[0]['content'];
+		$this->assertStringContainsString( '<strong>Bold</strong>', $content );
+		$this->assertStringContainsString( '<em>italic</em>', $content );
+	}
+
+	public function test_parse_html_for_atomic_widgets__e_button_preserves_inline_html(): void {
+		$html = '<button id="btn">Click <strong>here</strong></button>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-button', $result[0]['widget_type'] );
+		$content = $result[0]['content'];
+		$this->assertStringContainsString( '<strong>here</strong>', $content );
+	}
+
+	public function test_parse_html_for_atomic_widgets__plain_text_without_html_still_works(): void {
+		$html = '<p id="p1">Plain text only</p>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertSame( 'Plain text only', $result[0]['content'] );
+	}
+
+	public function test_parse_html_for_atomic_widgets__span_promotes_to_e_paragraph(): void {
+		$html = '<span id="s1"><b>text</b></span>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertStringContainsString( '<strong>text</strong>', $result[0]['content'] );
+		$this->assertStringNotContainsString( '<b>', $result[0]['content'] );
+	}
+
+	public function test_parse_html_for_atomic_widgets__div_promotes_to_e_paragraph(): void {
+		$html = '<div id="d1"><strong>text</strong></div>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertStringContainsString( '<strong>text</strong>', $result[0]['content'] );
+	}
+
+	public function test_parse_html_for_atomic_widgets__normalizes_b_to_strong(): void {
+		$html = '<p id="p1"><b>text</b></p>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertStringContainsString( '<strong>text</strong>', $result[0]['content'] );
+		$this->assertStringNotContainsString( '<b>', $result[0]['content'] );
+	}
+
+	public function test_parse_html_for_atomic_widgets__strips_script_tags(): void {
+		$html = '<p id="p1">Safe <script>alert(1)</script> text</p>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$content = $result[0]['content'];
+		$this->assertStringNotContainsString( '<script>', $content );
+		$this->assertStringNotContainsString( '</script>', $content );
+		$this->assertStringContainsString( 'Safe', $content );
+		$this->assertStringContainsString( 'text', $content );
 	}
 
 }

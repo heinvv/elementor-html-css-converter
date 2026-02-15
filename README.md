@@ -77,6 +77,34 @@ When `WP_DEBUG` is true, this is enabled by default. Logs appear in PHP `error_l
 }
 ```
 
+### Inline HTML in Paragraphs, Headings, Buttons
+
+Inline formatting (`<strong>`, `<em>`, `<s>`, `<u>`, `<sup>`, `<sub>`, `<a>`, etc.) is preserved in `e-paragraph`, `e-heading`, and `e-button`:
+
+```json
+{
+  "html": "<style>\n#content {\n  color: #333;\n  font-size: 16px;\n}\n</style>\n<p id=\"content\"><s>Strikethrough</s><br><strong>second line</strong><br><em>italic</em><br><u>underline</u><br><sup>superscript</sup><br><sub>subscript</sub><br><a target=\"_blank\" href=\"https://google.com\">link</a></p>"
+}
+```
+
+When `span` or `div` contain only inline content, they map directly to `e-paragraph` (no wrapper):
+
+```json
+{
+  "html": "<span id=\"label\"><b>text</b></span>"
+}
+```
+
+Output: single e-paragraph with content normalized to `<strong>text</strong>`.
+
+```json
+{
+  "html": "<div id=\"box\"><strong>text</strong></div>"
+}
+```
+
+Output: single e-paragraph.
+
 ### Mixed ID and Class Selectors
 
 ```json
@@ -913,14 +941,16 @@ curl -X POST "http://elementor.local/wp-json/html-css-converter/v1/import-classe
 
 ## Supported HTML Tags
 
-- `div` -> `e-div-block`
+- `div` -> `e-div-block` (with block children) or `e-paragraph` (inline-only content)
 - `h1`-`h6` -> `e-heading`
 - `p` -> `e-paragraph`
-- `a` -> `e-link`
+- `a` -> `e-button` (simple links) or `e-div-block` (complex content)
 - `button` -> `e-button`
 - `img` -> `e-image`
-- `span` -> `e-span`
+- `span` -> `e-paragraph` (inline-only) or `e-div-block` (with block children)
 - `ul`, `ol`, `li` -> `e-div-block` (layout lists only; see [Known Limitations](#known-limitations))
+
+Inline formatting is preserved in `e-paragraph`, `e-heading`, `e-button`. `<b>` and `<i>` are normalized to `<strong>` and `<em>`. Allowed tags: `<strong>`, `<em>`, `<s>`, `<u>`, `<sup>`, `<sub>`, `<a>`, `<br>`, etc.
 
 ---
 

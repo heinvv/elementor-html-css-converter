@@ -238,12 +238,51 @@ class Atomic_Widget_Settings_Preparer {
 	 * @return array Atomic prop structure.
 	 */
 	private function create_html_v2_prop( string $content ): array {
+		$allowed_tags = $this->get_html_v2_allowed_tags();
+		$sanitized    = \wp_kses( $content, $allowed_tags );
+		$normalized   = $this->normalize_deprecated_inline_tags( $sanitized );
+
 		return [
 			'$$type' => 'html-v2',
 			'value'  => [
-				'content'  => $content,
+				'content'  => $normalized,
 				'children' => [],
 			],
+		];
+	}
+
+	private function normalize_deprecated_inline_tags( string $html ): string {
+		$html = preg_replace( '/<\/b\b>/i', '</strong>', $html );
+		$html = preg_replace( '/<b(\s|>)/i', '<strong$1', $html );
+		$html = preg_replace( '/<\/i\b>/i', '</em>', $html );
+		$html = preg_replace( '/<i(\s|>)/i', '<em$1', $html );
+
+		return $html;
+	}
+
+	/**
+	 * Get allowed tags for html-v2 content sanitization.
+	 *
+	 * @return array<string, array> Tag name to allowed attributes map.
+	 */
+	private function get_html_v2_allowed_tags(): array {
+		if ( class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type' ) ) {
+			return \Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type::get_base_allowed_tags();
+		}
+
+		return [
+			'b'      => [],
+			'i'      => [],
+			'em'     => [],
+			'u'      => [],
+			'a'      => [ 'href' => true, 'target' => true ],
+			'del'    => [],
+			'span'   => [],
+			'br'     => [],
+			'strong' => [],
+			'sup'    => [],
+			'sub'    => [],
+			's'      => [],
 		];
 	}
 
@@ -413,4 +452,3 @@ class Atomic_Widget_Settings_Preparer {
 		return Attributes_Prop_Type::generate( $key_value_items );
 	}
 }
-

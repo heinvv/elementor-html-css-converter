@@ -61,6 +61,8 @@ class Atomic_Data_Parser {
 	private const REGEX_SVG_EVENT_HANDLERS = '/\s+on\w+\s*=\s*["\'][^"\']*["\']/i';
 	private const REGEX_SVG_JAVASCRIPT_HREF = '/(xlink:href|href)\s*=\s*["\']javascript:[^"\']*["\']/i';
 
+	private const WIDGET_TYPES_WITH_HTML_V2 = [ 'e-paragraph', 'e-heading', 'e-button' ];
+
 	/**
 	 * Parsed ID rules with breakpoints for current document.
 	 *
@@ -346,10 +348,8 @@ class Atomic_Data_Parser {
 		}
 
 		$element_classes = $this->extract_class_names( $element );
+		$attributes      = $this->extract_attributes( $element );
 
-		$content    = $this->extract_text_content( $element );
-		$attributes = $this->extract_attributes( $element );
-		
 		if ( 'svg' === $tag_name ) {
 			$element_html = $element->ownerDocument->saveXML( $element );
 			$element_hash = md5( $element_html );
@@ -359,9 +359,8 @@ class Atomic_Data_Parser {
 				$attributes['svg_content'] = $this->extract_svg_content( $element );
 			}
 		}
-		
-		$children   = $this->extract_children( $element, $svg_map );
 
+		$children = $this->extract_children( $element, $svg_map );
 		$attributes['original_tag'] = $tag_name;
 
 		$final_widget_type = $widget_config['type'];
@@ -369,6 +368,8 @@ class Atomic_Data_Parser {
 			$final_widget_type = 'e-div-block';
 			$attributes['is_link_container'] = true;
 		}
+
+		$content = $this->pick_content_extraction( $element, $tag_name, $final_widget_type );
 
 		return [
 			'tag'                => $tag_name,
@@ -637,6 +638,107 @@ class Atomic_Data_Parser {
 	}
 
 	/**
+	 * Extract inner HTML content preserving inline formatting tags.
+	 *
+	 * Used for e-paragraph, e-heading, e-button which expect html-v2 format.
+	 *
+	 * @param \DOMElement $element DOM element.
+	 * @return string Sanitized inner HTML.
+	 */
+	private function extract_inline_html_content( \DOMElement $element ): string {
+		$inner_html = '';
+		foreach ( $element->childNodes as $child ) {
+			$inner_html .= $element->ownerDocument->saveHTML( $child );
+		}
+
+		$allowed_tags = $this->get_html_v2_allowed_tags();
+		$sanitized    = \wp_kses( $inner_html, $allowed_tags );
+
+		return $this->normalize_deprecated_inline_tags( $sanitized );
+	}
+
+	/**
+	 * Extract direct inline HTML from containers, excluding block child widgets.
+	 *
+	 * Used when a div/span has inline content that will become a synthetic paragraph.
+	 *
+	 * @param \DOMElement $element DOM element.
+	 * @return string Sanitized direct inline HTML.
+	 */
+	private function extract_direct_inline_html_content( \DOMElement $element ): string {
+		$inner_html = '';
+		foreach ( $element->childNodes as $child ) {
+			if ( XML_ELEMENT_NODE === $child->nodeType ) {
+				$child_tag = strtolower( $child->tagName );
+				if ( $this->widget_mapper->get_widget_config( $child_tag ) !== null ) {
+					continue;
+				}
+			}
+			$inner_html .= $element->ownerDocument->saveHTML( $child );
+		}
+
+		$allowed_tags = $this->get_html_v2_allowed_tags();
+		$sanitized    = \wp_kses( $inner_html, $allowed_tags );
+
+		return $this->normalize_deprecated_inline_tags( $sanitized );
+	}
+
+	private function normalize_deprecated_inline_tags( string $html ): string {
+		$html = preg_replace( '/<\/b\b>/i', '</strong>', $html );
+		$html = preg_replace( '/<b(\s|>)/i', '<strong$1', $html );
+		$html = preg_replace( '/<\/i\b>/i', '</em>', $html );
+		$html = preg_replace( '/<i(\s|>)/i', '<em$1', $html );
+
+		return $html;
+	}
+
+	/**
+	 * Choose content extraction method based on element type.
+	 *
+	 * @param \DOMElement $element           DOM element.
+	 * @param string      $tag_name          HTML tag name.
+	 * @param string      $final_widget_type  Resolved widget type.
+	 * @return string Extracted content.
+	 */
+	private function pick_content_extraction( \DOMElement $element, string $tag_name, string $final_widget_type ): string {
+		if ( in_array( $final_widget_type, self::WIDGET_TYPES_WITH_HTML_V2, true ) ) {
+			return $this->extract_inline_html_content( $element );
+		}
+
+		if ( in_array( $tag_name, $this->text_wrapping_tags, true ) ) {
+			return $this->extract_direct_inline_html_content( $element );
+		}
+
+		return $this->extract_text_content( $element );
+	}
+
+	/**
+	 * Get allowed tags for html-v2 content.
+	 *
+	 * @return array<string, array> Tag name to allowed attributes map.
+	 */
+	private function get_html_v2_allowed_tags(): array {
+		if ( class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type' ) ) {
+			return \Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type::get_base_allowed_tags();
+		}
+
+		return [
+			'b'      => [],
+			'i'      => [],
+			'em'     => [],
+			'u'      => [],
+			'a'      => [ 'href' => true, 'target' => true ],
+			'del'    => [],
+			'span'   => [],
+			'br'     => [],
+			'strong' => [],
+			'sup'    => [],
+			'sub'    => [],
+			's'      => [],
+		];
+	}
+
+	/**
 	 * Check if tag is an inline element.
 	 *
 	 * @param string $tag_name Tag name.
@@ -778,20 +880,23 @@ class Atomic_Data_Parser {
 
 		if ( $has_direct_text ) {
 			$paragraph_element = [
-				'tag'             => 'p',
-				'widget_type'     => 'e-paragraph',
-				'widget_config'   => [ 'type' => 'e-paragraph' ],
-				'atomic_props'    => [],
-				'element_classes' => [],
-				'content'         => trim( $element['content'] ),
-				'attributes'      => [ 'original_tag' => 'span' ],
-				'children'        => [],
-				'synthetic'       => true,
+				'tag'                => 'p',
+				'widget_type'        => 'e-paragraph',
+				'widget_config'      => [ 'type' => 'e-paragraph' ],
+				'breakpoint_props'   => $element['breakpoint_props'] ?? [],
+				'pseudo_state_props' => $element['pseudo_state_props'] ?? [],
+				'element_classes'    => $element['element_classes'] ?? [],
+				'content'            => trim( $element['content'] ),
+				'attributes'         => array_merge( $element['attributes'] ?? [], [ 'original_tag' => $element['tag'] ] ),
+				'children'           => [],
+				'synthetic'          => true,
 			];
 
 			if ( $has_children ) {
 				$processed_children  = $this->preprocess_elements_for_text_wrapping( $element['children'] );
 				$element['children'] = array_merge( [ $paragraph_element ], $processed_children );
+			} elseif ( in_array( $element['tag'], [ 'span', 'div' ], true ) ) {
+				return $paragraph_element;
 			} else {
 				$element['children'] = [ $paragraph_element ];
 			}
@@ -806,16 +911,29 @@ class Atomic_Data_Parser {
 		return $element;
 	}
 
+	private function strip_all_tags( string $html ): string {
+		return function_exists( '\wp_strip_all_tags' )
+			? \wp_strip_all_tags( $html )
+			: \strip_tags( $html );
+	}
+
 	private function is_content_solely_from_single_child( array $element ): bool {
 		if ( count( $element['children'] ) !== 1 ) {
 			return false;
 		}
 
-		$child         = $element['children'][0];
+		$child          = $element['children'][0];
 		$parent_content = trim( $element['content'] ?? '' );
 		$child_content  = trim( $child['content'] ?? '' );
 
-		return $parent_content !== '' && $parent_content === $child_content;
+		if ( $parent_content === '' ) {
+			return false;
+		}
+
+		$parent_text = $this->strip_all_tags( $parent_content );
+		$child_text  = $this->strip_all_tags( $child_content );
+
+		return $parent_text === $child_text;
 	}
 
 	/**
@@ -836,4 +954,3 @@ class Atomic_Data_Parser {
 		return $this->id_style_extractor;
 	}
 }
-
