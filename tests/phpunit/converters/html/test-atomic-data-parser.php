@@ -67,6 +67,17 @@ class Test_Atomic_Data_Parser extends TestCase {
 		$this->assertNotEmpty( $result );
 	}
 
+	public function test_parse_html_for_atomic_widgets__extracts_pseudo_state_props_from_hover(): void {
+		$html   = '<style>#btn { color: red; } #btn:hover { color: blue; }</style><button id="btn">Click</button>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertArrayHasKey( 'pseudo_state_props', $result[0] );
+		$this->assertArrayHasKey( 'hover', $result[0]['pseudo_state_props'] );
+		$this->assertArrayHasKey( 'desktop', $result[0]['pseudo_state_props']['hover'] );
+	}
+
 	public function test_parse_html_for_atomic_widgets__synthetic_paragraph_uses_span_tag(): void {
 		$html = '<div>text</div>';
 		$parser = $this->create_parser();

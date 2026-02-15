@@ -145,6 +145,26 @@ Background images from CSS are also automatically imported and linked to the wid
 }
 ```
 
+### Pseudo-States (:hover, :focus)
+
+ID selectors with `:hover` and `:focus` are parsed and converted to Elementor style variants with `meta.state`.
+
+```json
+{
+  "html": "<style>#btn { padding: 10px 20px; background-color: #cccccc; color: #333333; } #btn:hover { background-color: #999999; color: #ffffff; } #btn:focus { outline: 2px solid #0066cc; }</style><button id=\"btn\">Submit</button>"
+}
+```
+
+Test with curl:
+
+```bash
+curl -X POST "http://your-site.local/wp-json/html-css-converter/v1/convert-html" \
+  -H "Content-Type: application/json" \
+  -d '{"html":"<style>#btn { padding: 10px 20px; background-color: #cccccc; color: #333333; } #btn:hover { background-color: #999999; color: #ffffff; } #btn:focus { outline: 2px solid #0066cc; }</style><button id=\"btn\">Submit</button>"}'
+```
+
+Expected: The button widget has style variants with `meta.state: "hover"` and `meta.state: "focus"` in addition to the default desktop variant.
+
 ### Grid layout with templates
 
 `display: grid` and `gap` are supported as atomic props. Grid template properties (`grid-template-columns`, `grid-template-rows`, `grid-template-areas`, etc.) have no converter and go to `custom_css`. Use these payloads to verify the split.

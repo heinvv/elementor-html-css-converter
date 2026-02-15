@@ -197,6 +197,46 @@ class Style_Definition_Builder {
 	}
 
 	/**
+	 * Build style definition with breakpoints and pseudo-states (:hover, :focus).
+	 *
+	 * @param array  $breakpoint_props   Breakpoint-aware atomic properties.
+	 * @param string $class_id           Class ID to use as style ID.
+	 * @param array  $pseudo_state_props Pseudo-state props. Format: ['hover' => ['desktop' => [...], 'tablet' => [...]], 'focus' => [...]]
+	 * @return array Style definition with variants for breakpoints and states.
+	 */
+	public function build_with_breakpoints_and_states(
+		array $breakpoint_props,
+		string $class_id,
+		array $pseudo_state_props = []
+	): array {
+		$variants = $this->build_with_breakpoints( $breakpoint_props, $class_id )['variants'];
+
+		$breakpoint_order = [ 'desktop', 'tablet', 'mobile', 'mobile_extra', 'tablet_extra', 'laptop', 'widescreen' ];
+
+		foreach ( $pseudo_state_props as $state => $state_breakpoints ) {
+			foreach ( $breakpoint_order as $breakpoint ) {
+				if ( ! isset( $state_breakpoints[ $breakpoint ] ) ) {
+					continue;
+				}
+				$state_data   = $state_breakpoints[ $breakpoint ];
+				$atomic_props = $state_data['atomic_props'] ?? ( is_array( $state_data ) && ! isset( $state_data['atomic_props'] ) ? $state_data : [] );
+				$custom_css   = $state_data['custom_css'] ?? null;
+
+				if ( ! empty( $atomic_props ) || ! empty( $custom_css ) ) {
+					$variants[] = $this->create_variant( $atomic_props, $state, $breakpoint, $custom_css );
+				}
+			}
+		}
+
+		return [
+			'id'       => $class_id,
+			'type'     => self::STYLE_TYPE,
+			'label'    => self::DEFAULT_LABEL,
+			'variants' => $variants,
+		];
+	}
+
+	/**
 	 * Get the label, using default if empty.
 	 *
 	 * @param string $label The provided label.

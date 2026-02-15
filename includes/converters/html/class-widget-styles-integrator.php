@@ -45,29 +45,30 @@ class Widget_Styles_Integrator {
 	}
 
 	/**
-	 * Integrate styles with breakpoints into a widget.
+	 * Integrate styles with breakpoints and pseudo-states into a widget.
 	 *
-	 * @param array $widget          Widget JSON structure.
-	 * @param array $breakpoint_props Breakpoint-aware atomic properties.
+	 * @param array $widget             Widget JSON structure.
+	 * @param array $breakpoint_props   Breakpoint-aware atomic properties.
+	 * @param array $pseudo_state_props Optional. Pseudo-state props (hover, focus). Format: ['hover' => ['desktop' => [...]], 'focus' => [...]]
 	 * @return array Widget with integrated styles.
 	 */
-	public function integrate_styles_into_widget( array $widget, array $breakpoint_props ): array {
+	public function integrate_styles_into_widget( array $widget, array $breakpoint_props, array $pseudo_state_props = [] ): array {
 		$widget_type = $widget['widgetType'] ?? $widget['elType'] ?? '';
 
 		if ( empty( $breakpoint_props ) ) {
 			return $widget;
 		}
 
-		$class_id    = $this->class_generator->generate_class_id( $widget_type );
+		$class_id = $this->class_generator->generate_class_id( $widget_type );
 
-		$styles = $this->create_styles_structure_with_breakpoints( $class_id, $breakpoint_props );
+		$styles = $this->create_styles_structure_with_breakpoints( $class_id, $breakpoint_props, $pseudo_state_props );
 
 		if ( ! empty( $styles ) ) {
 			$widget['styles'] = $styles;
 			$widget           = $this->add_class_reference_to_widget( $widget, $class_id );
 		}
 
-		$widget = $this->apply_custom_css_to_widget_settings( $widget, $breakpoint_props );
+		$widget = $this->apply_custom_css_to_widget_settings( $widget, $breakpoint_props, $pseudo_state_props );
 
 		return $widget;
 	}
@@ -75,16 +76,22 @@ class Widget_Styles_Integrator {
 	/**
 	 * Integrate styles into multiple widgets.
 	 *
-	 * @param array $widgets                Array of widgets.
+	 * @param array $widgets                  Array of widgets.
 	 * @param array $widgets_breakpoint_props Array of breakpoint props per widget.
+	 * @param array $widgets_pseudo_state_props Array of pseudo state props per widget.
 	 * @return array Widgets with integrated styles.
 	 */
-	public function integrate_styles_into_multiple_widgets( array $widgets, array $widgets_breakpoint_props ): array {
+	public function integrate_styles_into_multiple_widgets(
+		array $widgets,
+		array $widgets_breakpoint_props,
+		array $widgets_pseudo_state_props = []
+	): array {
 		$processed_widgets = [];
 
 		foreach ( $widgets as $index => $widget ) {
 			$breakpoint_props   = $widgets_breakpoint_props[ $index ] ?? [];
-			$processed_widgets[] = $this->integrate_styles_into_widget( $widget, $breakpoint_props );
+			$pseudo_state_props = $widgets_pseudo_state_props[ $index ] ?? [];
+			$processed_widgets[] = $this->integrate_styles_into_widget( $widget, $breakpoint_props, $pseudo_state_props );
 		}
 
 		return $processed_widgets;
@@ -115,19 +122,25 @@ class Widget_Styles_Integrator {
 	}
 
 	/**
-	 * Create styles structure with breakpoints for a widget.
+	 * Create styles structure with breakpoints and pseudo-states for a widget.
 	 *
-	 * @param string $class_id         Class ID.
-	 * @param array  $breakpoint_props Breakpoint-aware atomic properties.
-	 *                                  Format: ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]
+	 * @param string $class_id             Class ID.
+	 * @param array  $breakpoint_props    Breakpoint-aware atomic properties.
+	 * @param array  $pseudo_state_props   Pseudo-state props (hover, focus).
 	 * @return array Styles structure.
 	 */
-	private function create_styles_structure_with_breakpoints( string $class_id, array $breakpoint_props ): array {
+	private function create_styles_structure_with_breakpoints(
+		string $class_id,
+		array $breakpoint_props,
+		array $pseudo_state_props = []
+	): array {
 		if ( empty( $breakpoint_props ) ) {
 			return [];
 		}
 
-		$style_definition = $this->style_builder->build_with_breakpoints( $breakpoint_props, $class_id );
+		$style_definition = ! empty( $pseudo_state_props )
+			? $this->style_builder->build_with_breakpoints_and_states( $breakpoint_props, $class_id, $pseudo_state_props )
+			: $this->style_builder->build_with_breakpoints( $breakpoint_props, $class_id );
 
 		if ( empty( $style_definition ) ) {
 			return [];
@@ -175,20 +188,41 @@ class Widget_Styles_Integrator {
 	}
 
 	/**
-	 * Apply custom CSS from breakpoint_props to widget settings.
+	 * Extract pseudo state props from widget data.
 	 *
-	 * Merges custom_css from all breakpoints into widget settings.
+	 * @param array $widget_data Widget data array.
+	 * @return array Pseudo state props.
+	 */
+	public function extract_pseudo_state_props_from_widget_data( array $widget_data ): array {
+		return $widget_data['pseudo_state_props'] ?? [];
+	}
+
+	/**
+	 * Apply custom CSS from breakpoint_props and pseudo_state_props to widget settings.
 	 *
-	 * @param array $widget          Widget structure.
-	 * @param array $breakpoint_props Breakpoint-aware properties with custom_css.
+	 * @param array $widget             Widget structure.
+	 * @param array $breakpoint_props  Breakpoint-aware properties with custom_css.
+	 * @param array $pseudo_state_props Pseudo-state props with custom_css.
 	 * @return array Widget with custom_css applied to settings.
 	 */
-	private function apply_custom_css_to_widget_settings( array $widget, array $breakpoint_props ): array {
+	private function apply_custom_css_to_widget_settings(
+		array $widget,
+		array $breakpoint_props,
+		array $pseudo_state_props = []
+	): array {
 		$all_custom_css = [];
 
 		foreach ( $breakpoint_props as $breakpoint => $breakpoint_data ) {
 			if ( is_array( $breakpoint_data ) && isset( $breakpoint_data['custom_css'] ) && ! empty( $breakpoint_data['custom_css'] ) ) {
 				$all_custom_css[] = $breakpoint_data['custom_css'];
+			}
+		}
+
+		foreach ( $pseudo_state_props as $state => $state_breakpoints ) {
+			foreach ( $state_breakpoints as $breakpoint_data ) {
+				if ( is_array( $breakpoint_data ) && isset( $breakpoint_data['custom_css'] ) && ! empty( $breakpoint_data['custom_css'] ) ) {
+					$all_custom_css[] = $breakpoint_data['custom_css'];
+				}
 			}
 		}
 

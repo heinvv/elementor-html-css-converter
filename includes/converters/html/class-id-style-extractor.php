@@ -26,6 +26,7 @@ class Id_Style_Extractor {
 
 	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
 	private const REGEX_ID_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
+	private const REGEX_ID_PSEUDO_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*):(hover|focus)\s*\{([^}]*)\}/s';
 	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
 
 	/**
@@ -81,6 +82,48 @@ class Id_Style_Extractor {
 		}
 
 		return $id_rules;
+	}
+
+	/**
+	 * Parse ID pseudo-state rules from CSS block (#id:hover, #id:focus).
+	 *
+	 * @param string $css_block CSS block content.
+	 * @return array Map of element IDs to state-specific CSS declarations. Format: ['id' => ['hover' => [...], 'focus' => [...]]]
+	 */
+	private function parse_id_pseudo_rules_from_block( string $css_block ): array {
+		$pseudo_rules = [];
+
+		if ( empty( trim( $css_block ) ) ) {
+			return $pseudo_rules;
+		}
+
+		$css_block = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css_block );
+
+		if ( preg_match_all( self::REGEX_ID_PSEUDO_SELECTOR_PATTERN, $css_block, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$id           = $match[1];
+				$state        = $match[2];
+				$declarations = $match[3];
+
+				$parsed_declarations = $this->parse_declarations( $declarations );
+
+				if ( ! empty( $parsed_declarations ) ) {
+					if ( ! isset( $pseudo_rules[ $id ] ) ) {
+						$pseudo_rules[ $id ] = [];
+					}
+					if ( isset( $pseudo_rules[ $id ][ $state ] ) ) {
+						$pseudo_rules[ $id ][ $state ] = array_merge(
+							$pseudo_rules[ $id ][ $state ],
+							$parsed_declarations
+						);
+					} else {
+						$pseudo_rules[ $id ][ $state ] = $parsed_declarations;
+					}
+				}
+			}
+		}
+
+		return $pseudo_rules;
 	}
 
 	/**
@@ -199,27 +242,30 @@ class Id_Style_Extractor {
 	}
 
 	/**
-	 * Parse ID rules with breakpoint support.
+	 * Parse ID rules with breakpoint and pseudo-state support.
 	 *
-	 * Extracts ID rules per breakpoint from CSS with media queries.
+	 * Extracts ID rules per breakpoint and pseudo-state (:hover, :focus) from CSS.
 	 *
-	 * @param string            $css    Raw CSS content.
+	 * @param string             $css    Raw CSS content.
 	 * @param Breakpoint_Matcher $matcher Breakpoint matcher instance.
-	 * @return array Map of element IDs to breakpoint-specific CSS declarations.
-	 *               Format: ['id' => ['desktop' => [...], 'tablet' => [...], 'mobile' => [...]]]
+	 * @return array{breakpoint_rules: array, pseudo_rules: array}
 	 */
 	public function parse_id_rules( string $css, Breakpoint_Matcher $matcher ): array {
 		$breakpoint_rules = [];
+		$pseudo_rules     = [];
 
 		if ( empty( trim( $css ) ) ) {
-			return $breakpoint_rules;
+			return [
+				'breakpoint_rules' => $breakpoint_rules,
+				'pseudo_rules'     => $pseudo_rules,
+			];
 		}
 
 		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
 
-		$media_parser = new Media_Query_Parser();
+		$media_parser  = new Media_Query_Parser();
 		$media_queries = $media_parser->parse_media_queries( $css );
-		$desktop_css = $media_parser->extract_desktop_css( $css );
+		$desktop_css   = $media_parser->extract_desktop_css( $css );
 
 		$desktop_rules = $this->parse_id_rules_from_block( $desktop_css );
 
@@ -228,6 +274,20 @@ class Id_Style_Extractor {
 				$breakpoint_rules[ $id ] = [];
 			}
 			$breakpoint_rules[ $id ]['desktop'] = $styles;
+		}
+
+		$desktop_pseudo = $this->parse_id_pseudo_rules_from_block( $desktop_css );
+
+		foreach ( $desktop_pseudo as $id => $state_styles ) {
+			foreach ( $state_styles as $state => $styles ) {
+				if ( ! isset( $pseudo_rules[ $id ] ) ) {
+					$pseudo_rules[ $id ] = [];
+				}
+				if ( ! isset( $pseudo_rules[ $id ][ $state ] ) ) {
+					$pseudo_rules[ $id ][ $state ] = [];
+				}
+				$pseudo_rules[ $id ][ $state ]['desktop'] = $styles;
+			}
 		}
 
 		foreach ( $media_queries as $media_query ) {
@@ -261,9 +321,32 @@ class Id_Style_Extractor {
 					$styles
 				);
 			}
+
+			$responsive_pseudo = $this->parse_id_pseudo_rules_from_block( $css_block );
+
+			foreach ( $responsive_pseudo as $id => $state_styles ) {
+				foreach ( $state_styles as $state => $styles ) {
+					if ( ! isset( $pseudo_rules[ $id ] ) ) {
+						$pseudo_rules[ $id ] = [];
+					}
+					if ( ! isset( $pseudo_rules[ $id ][ $state ] ) ) {
+						$pseudo_rules[ $id ][ $state ] = [];
+					}
+					if ( ! isset( $pseudo_rules[ $id ][ $state ][ $elementor_breakpoint ] ) ) {
+						$pseudo_rules[ $id ][ $state ][ $elementor_breakpoint ] = [];
+					}
+					$pseudo_rules[ $id ][ $state ][ $elementor_breakpoint ] = array_merge(
+						$pseudo_rules[ $id ][ $state ][ $elementor_breakpoint ],
+						$styles
+					);
+				}
+			}
 		}
 
-		return $breakpoint_rules;
+		return [
+			'breakpoint_rules' => $breakpoint_rules,
+			'pseudo_rules'     => $pseudo_rules,
+		];
 	}
 }
 

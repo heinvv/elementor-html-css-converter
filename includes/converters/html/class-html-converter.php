@@ -294,8 +294,9 @@ class Html_Converter {
 	 * @return array Widget with integrated styles.
 	 */
 	private function integrate_styles_recursive( array $widget, array $widget_data, array $global_class_map = [] ): array {
-		$breakpoint_props = $widget_data['breakpoint_props'] ?? [];
-		$element_classes  = $widget_data['element_classes'] ?? [];
+		$breakpoint_props   = $widget_data['breakpoint_props'] ?? [];
+		$pseudo_state_props = $widget_data['pseudo_state_props'] ?? [];
+		$element_classes    = $widget_data['element_classes'] ?? [];
 
 		$global_class_ids = [];
 		foreach ( $element_classes as $class_name ) {
@@ -317,7 +318,7 @@ class Html_Converter {
 		}
 
 		if ( ! empty( $breakpoint_props ) ) {
-			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $breakpoint_props );
+			$widget = $this->styles_integrator->integrate_styles_into_widget( $widget, $breakpoint_props, $pseudo_state_props );
 		}
 
 		if ( ! empty( $widget['elements'] ) && ! empty( $widget_data['children'] ) ) {

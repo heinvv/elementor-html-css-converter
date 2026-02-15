@@ -69,6 +69,13 @@ class Atomic_Data_Parser {
 	private array $id_rules_with_breakpoints = [];
 
 	/**
+	 * Parsed ID pseudo-state rules (:hover, :focus) with breakpoints.
+	 *
+	 * @var array
+	 */
+	private array $id_pseudo_rules = [];
+
+	/**
 	 * Variable fallback map for substituting unresolved var() references.
 	 *
 	 * @var array<string, string>
@@ -132,7 +139,9 @@ class Atomic_Data_Parser {
 
 		$css = $this->id_style_extractor->extract_style_tags( $dom );
 
-		$this->id_rules_with_breakpoints = $this->id_style_extractor->parse_id_rules( $css, $this->breakpoint_matcher );
+		$parsed = $this->id_style_extractor->parse_id_rules( $css, $this->breakpoint_matcher );
+		$this->id_rules_with_breakpoints = $parsed['breakpoint_rules'];
+		$this->id_pseudo_rules           = $parsed['pseudo_rules'];
 
 		$dom_elements = $this->parse_dom_structure_from_dom( $dom, $svg_map );
 		if ( empty( $dom_elements ) ) {
@@ -318,6 +327,17 @@ class Atomic_Data_Parser {
 			}
 		}
 
+		$pseudo_state_props = [];
+		if ( ! empty( $element_id ) && isset( $this->id_pseudo_rules[ $element_id ] ) ) {
+			foreach ( $this->id_pseudo_rules[ $element_id ] as $state => $state_breakpoints ) {
+				foreach ( $state_breakpoints as $breakpoint => $styles ) {
+					if ( ! empty( $styles ) ) {
+						$pseudo_state_props[ $state ][ $breakpoint ] = $this->convert_styles_to_atomic_props( $styles );
+					}
+				}
+			}
+		}
+
 		if ( empty( $breakpoint_props ) ) {
 			$breakpoint_props['desktop'] = [
 				'atomic_props' => [],
@@ -351,14 +371,15 @@ class Atomic_Data_Parser {
 		}
 
 		return [
-			'tag'              => $tag_name,
-			'widget_type'      => $final_widget_type,
-			'widget_config'    => $widget_config,
-			'breakpoint_props' => $breakpoint_props,
-			'element_classes'  => $element_classes,
-			'content'          => $content,
-			'attributes'       => $attributes,
-			'children'         => $children,
+			'tag'                => $tag_name,
+			'widget_type'        => $final_widget_type,
+			'widget_config'      => $widget_config,
+			'breakpoint_props'   => $breakpoint_props,
+			'pseudo_state_props' => $pseudo_state_props,
+			'element_classes'    => $element_classes,
+			'content'            => $content,
+			'attributes'         => $attributes,
+			'children'           => $children,
 		];
 	}
 
@@ -397,7 +418,7 @@ class Atomic_Data_Parser {
 	 */
 	private function extract_svg_from_link_with_content( \DOMElement $link_element, string $svg_content ): array {
 		$link_attributes = $this->extract_attributes( $link_element );
-		
+
 		$element_id = $link_element->getAttribute( 'id' );
 
 		$breakpoint_props = [];
@@ -407,6 +428,17 @@ class Atomic_Data_Parser {
 			foreach ( $breakpoint_styles as $breakpoint => $styles ) {
 				if ( ! empty( $styles ) ) {
 					$breakpoint_props[ $breakpoint ] = $this->convert_styles_to_atomic_props( $styles );
+				}
+			}
+		}
+
+		$pseudo_state_props = [];
+		if ( ! empty( $element_id ) && isset( $this->id_pseudo_rules[ $element_id ] ) ) {
+			foreach ( $this->id_pseudo_rules[ $element_id ] as $state => $state_breakpoints ) {
+				foreach ( $state_breakpoints as $breakpoint => $styles ) {
+					if ( ! empty( $styles ) ) {
+						$pseudo_state_props[ $state ][ $breakpoint ] = $this->convert_styles_to_atomic_props( $styles );
+					}
 				}
 			}
 		}
@@ -443,14 +475,15 @@ class Atomic_Data_Parser {
 		$svg_attributes['original_tag'] = 'svg';
 
 		return [
-			'tag'              => 'svg',
-			'widget_type'      => 'e-svg',
-			'widget_config'    => [ 'type' => 'e-svg' ],
-			'breakpoint_props' => $breakpoint_props,
-			'element_classes'  => $element_classes,
-			'content'          => '',
-			'attributes'       => $svg_attributes,
-			'children'         => [],
+			'tag'                => 'svg',
+			'widget_type'        => 'e-svg',
+			'widget_config'      => [ 'type' => 'e-svg' ],
+			'breakpoint_props'   => $breakpoint_props,
+			'pseudo_state_props' => $pseudo_state_props,
+			'element_classes'    => $element_classes,
+			'content'            => '',
+			'attributes'         => $svg_attributes,
+			'children'           => [],
 		];
 	}
 
@@ -481,6 +514,17 @@ class Atomic_Data_Parser {
 			}
 		}
 
+		$pseudo_state_props = [];
+		if ( ! empty( $element_id ) && isset( $this->id_pseudo_rules[ $element_id ] ) ) {
+			foreach ( $this->id_pseudo_rules[ $element_id ] as $state => $state_breakpoints ) {
+				foreach ( $state_breakpoints as $breakpoint => $styles ) {
+					if ( ! empty( $styles ) ) {
+						$pseudo_state_props[ $state ][ $breakpoint ] = $this->convert_styles_to_atomic_props( $styles );
+					}
+				}
+			}
+		}
+
 		if ( empty( $breakpoint_props ) ) {
 			$breakpoint_props['desktop'] = [
 				'atomic_props' => [],
@@ -506,14 +550,15 @@ class Atomic_Data_Parser {
 		$svg_attributes['original_tag'] = $svg_tag_name;
 
 		return [
-			'tag'              => $svg_tag_name,
-			'widget_type'      => 'e-svg',
-			'widget_config'    => [ 'type' => 'e-svg' ],
-			'breakpoint_props' => $breakpoint_props,
-			'element_classes'  => array_values( $element_classes ),
-			'content'          => '',
-			'attributes'       => $svg_attributes,
-			'children'         => [],
+			'tag'                => $svg_tag_name,
+			'widget_type'        => 'e-svg',
+			'widget_config'      => [ 'type' => 'e-svg' ],
+			'breakpoint_props'   => $breakpoint_props,
+			'pseudo_state_props' => $pseudo_state_props,
+			'element_classes'    => array_values( $element_classes ),
+			'content'            => '',
+			'attributes'         => $svg_attributes,
+			'children'           => [],
 		];
 	}
 

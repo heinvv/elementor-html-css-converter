@@ -85,4 +85,47 @@ class Test_Widget_Styles_Integrator extends TestCase {
 		$this->assertArrayHasKey( 'desktop', $result );
 	}
 
+	public function test_extract_pseudo_state_props_from_widget_data(): void {
+		$widget_data = [
+			'pseudo_state_props' => [
+				'hover' => [
+					'desktop' => [ 'atomic_props' => [ 'color' => [] ], 'custom_css' => null ],
+				],
+			],
+		];
+		$result = $this->integrator->extract_pseudo_state_props_from_widget_data( $widget_data );
+
+		$this->assertArrayHasKey( 'hover', $result );
+		$this->assertArrayHasKey( 'desktop', $result['hover'] );
+	}
+
+	public function test_integrate_styles_into_widget__with_pseudo_state_props_creates_state_variants(): void {
+		$widget = [ 'widgetType' => 'e-button' ];
+		$breakpoint_props = [
+			'desktop' => [
+				'atomic_props' => [ 'color' => [ 'value' => [ 'color' => '#333' ] ] ],
+				'custom_css'   => null,
+			],
+		];
+		$pseudo_state_props = [
+			'hover' => [
+				'desktop' => [
+					'atomic_props' => [ 'color' => [ 'value' => [ 'color' => '#0073aa' ] ] ],
+					'custom_css'   => null,
+				],
+			],
+		];
+		$result = $this->integrator->integrate_styles_into_widget( $widget, $breakpoint_props, $pseudo_state_props );
+
+		$this->assertArrayHasKey( 'styles', $result );
+		$style_definitions = $result['styles'];
+		$this->assertNotEmpty( $style_definitions );
+		$first_style = reset( $style_definitions );
+		$variants = $first_style['variants'] ?? [];
+		$state_variants = array_filter( $variants, fn( $v ) => isset( $v['meta']['state'] ) && null !== $v['meta']['state'] );
+		$this->assertNotEmpty( $state_variants );
+		$hover_variant = array_filter( $state_variants, fn( $v ) => 'hover' === ( $v['meta']['state'] ?? null ) );
+		$this->assertNotEmpty( $hover_variant );
+	}
+
 }
