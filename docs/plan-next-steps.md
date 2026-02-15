@@ -1,9 +1,5 @@
 # Development Roadmap
 
-## Status Legend
-- [x] Done
-- [ ] Outstanding
-
 ## Tasks
 
 - [x] Generate v4 styling based on css for color prop-type.
@@ -15,20 +11,21 @@
 - [x] Study images support.
 - [x] Study svg support.
 - [x] Handle Elementor v4 base styles.
-- [ ] Suppport pseudo classes as :hover() and :focus()
-- [ ] Support v4 inline editor > strong / bold / italic etc.
+- [x] Suppport pseudo classes as :hover() and :focus()
+- [x] Support v4 inline editor > strong / bold / italic etc.
 - [x] Support for Google font-family styles.
 - [x] Study responsive support.
 - [ ] Handle class priority.
 - [ ] Handle reset styles.
 - [ ] Support core and pro features.
-- [ ] Port phpunit tests and playwright tests from the PR.
+- [x] Port phpunit tests and playwright tests from the PR.
 - [ ] Support Wordpress Abilities API.
 - [ ] Support compositions.
 - [ ] Support v3 > v4 conversions.
 - [ ] Support for non-Google font-family styles.
 - [ ] Implement non max-width responsive support.
 - [ ] Study video support.
+- [ ] Support for group hover.
 
 ## Playwright Scraper
 - [x] Create Playwright environment that can scrape a page and send to Elementor converter api.
