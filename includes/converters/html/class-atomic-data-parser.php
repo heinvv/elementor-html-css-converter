@@ -879,15 +879,23 @@ class Atomic_Data_Parser {
 		}
 
 		if ( $has_direct_text ) {
+			$is_child_paragraph = $has_children || ! in_array( $element['tag'], [ 'span', 'div' ], true );
+			$paragraph_breakpoint_props = $is_child_paragraph
+				? [ 'desktop' => [ 'atomic_props' => [], 'custom_css' => null ] ]
+				: ( $element['breakpoint_props'] ?? [] );
+			$paragraph_pseudo_props = $is_child_paragraph ? [] : ( $element['pseudo_state_props'] ?? [] );
+
 			$paragraph_element = [
 				'tag'                => 'p',
 				'widget_type'        => 'e-paragraph',
 				'widget_config'      => [ 'type' => 'e-paragraph' ],
-				'breakpoint_props'   => $element['breakpoint_props'] ?? [],
-				'pseudo_state_props' => $element['pseudo_state_props'] ?? [],
+				'breakpoint_props'   => $paragraph_breakpoint_props,
+				'pseudo_state_props' => $paragraph_pseudo_props,
 				'element_classes'    => $element['element_classes'] ?? [],
 				'content'            => trim( $element['content'] ),
-				'attributes'         => array_merge( $element['attributes'] ?? [], [ 'original_tag' => $element['tag'] ] ),
+				'attributes'         => array_merge( $element['attributes'] ?? [], [
+					'original_tag' => $is_child_paragraph ? 'span' : $element['tag'],
+				] ),
 				'children'           => [],
 				'synthetic'          => true,
 			];

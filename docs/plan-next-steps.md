@@ -33,7 +33,8 @@
 - [x] Support variables.
 - [ ] Support classes.
 - [x] Support responsiveness.
-    - [x] Add GCP deployment
+- [x] Add GCP deployment
+- [ ] Cache scraped pages.
 
 ## Bugs: 
 -- [x] Rem

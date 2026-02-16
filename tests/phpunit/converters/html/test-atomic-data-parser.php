@@ -186,4 +186,41 @@ class Test_Atomic_Data_Parser extends TestCase {
 		$this->assertStringContainsString( 'text', $content );
 	}
 
+	public function test_parse_html_for_atomic_widgets__div_with_direct_text_and_children_synthetic_paragraph_has_span_tag_and_empty_props(): void {
+		$html = '<style>#parent { display: flex; font-size: 0.875rem; }</style><div id="parent">2 december 2025<span id="child">Persberichten</span></div>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertNotEmpty( $result[0]['children'] ?? [] );
+		$synthetic_paragraph = $result[0]['children'][0];
+		$this->assertSame( 'e-paragraph', $synthetic_paragraph['widget_type'] );
+		$this->assertSame( '2 december 2025', $synthetic_paragraph['content'] );
+		$this->assertSame( 'span', $synthetic_paragraph['attributes']['original_tag'] ?? null );
+		$this->assertEmpty( $synthetic_paragraph['breakpoint_props']['desktop']['atomic_props'] ?? null );
+	}
+
+	public function test_parse_html_for_atomic_widgets__span_with_only_text_keeps_breakpoint_props_and_has_span_tag(): void {
+		$html   = '<style>#s1 { padding: 10px; }</style><span id="s1"><b>text</b></span>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$this->assertSame( 'e-paragraph', $result[0]['widget_type'] );
+		$this->assertSame( 'span', $result[0]['attributes']['original_tag'] ?? null );
+		$this->assertArrayHasKey( 'breakpoint_props', $result[0] );
+	}
+
+	public function test_parse_html_for_atomic_widgets__div_with_direct_text_and_children_no_style_duplication(): void {
+		$html   = '<style>#row { padding: 20px; }</style><div id="row">Date text<div>Other</div></div>';
+		$parser = $this->create_parser();
+		$result = $parser->parse_html_for_atomic_widgets( $html );
+
+		$this->assertNotEmpty( $result );
+		$parent              = $result[0];
+		$this->assertNotEmpty( $parent['children'] ?? [] );
+		$synthetic_paragraph = $parent['children'][0];
+		$this->assertEmpty( $synthetic_paragraph['breakpoint_props']['desktop']['atomic_props'] ?? null );
+	}
+
 }
