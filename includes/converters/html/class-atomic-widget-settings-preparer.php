@@ -266,7 +266,8 @@ class Atomic_Widget_Settings_Preparer {
 	 * @return array<string, array> Tag name to allowed attributes map.
 	 */
 	private function get_html_v2_allowed_tags(): array {
-		if ( class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type' ) ) {
+		if ( class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type' )
+			&& method_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type', 'get_base_allowed_tags' ) ) {
 			return \Elementor\Modules\AtomicWidgets\PropTypes\Html_Prop_Type::get_base_allowed_tags();
 		}
 
