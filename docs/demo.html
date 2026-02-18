@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── CSS Variables ─────────────────────────────────── */
+    :root {
+      --color-ink:       #1a1714;
+      --color-paper:     #f5f0e8;
+      --color-accent:    #c84b31;
+      --color-muted:     #8a7f72;
+      --color-surface:   #edeae2;
+      --color-border:    #d4cfc6;
+
+      --font-display:    'Playfair Display', Georgia, serif;
+      --font-mono:       'DM Mono', 'Courier New', monospace;
+
+      --space-xs:        0.375rem;
+      --space-sm:        0.75rem;
+      --space-md:        1.25rem;
+      --space-lg:        2.5rem;
+      --space-xl:        5rem;
+
+      --radius-sm:       4px;
+      --radius-md:       10px;
+
+      --transition:      180ms ease;
+    }
+
+    
+    /* ════════════════════════════════════════════════════
+       CLASS 1 · .heading
+       ════════════════════════════════════════════════════ */
+    .heading {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--color-ink);
+      border-bottom: 2px solid var(--color-accent);
+      padding-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+
+    /* ════════════════════════════════════════════════════
+       CLASS 2 · .card
+       ════════════════════════════════════════════════════ */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: 4px 4px 0 var(--color-border);
+      transition: box-shadow var(--transition), transform var(--transition);
+    }
+    .card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--color-accent);
+    }
+
+    /* ════════════════════════════════════════════════════
+       CLASS 3 · .btn
+       ════════════════════════════════════════════════════ */
+    .btn {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-paper);
+      background: var(--color-ink);
+      border: 2px solid var(--color-ink);
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background var(--transition), color var(--transition);
+    }
+    .btn:hover {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    /* ════════════════════════════════════════════════════
+       CLASS 4 · .tag
+       ════════════════════════════════════════════════════ */
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: var(--color-muted);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      padding: var(--space-xs) var(--space-sm);
+      transition: border-color var(--transition), color var(--transition);
+    }
+    .tag:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* ════════════════════════════════════════════════════
+       CLASS 5 · .quote
+       ════════════════════════════════════════════════════ */
+    .quote {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 1.3rem;
+      color: var(--color-ink);
+      border-left: 4px solid var(--color-accent);
+      padding: var(--space-sm) var(--space-md);
+      margin: var(--space-lg) 0;
+      background: linear-gradient(to right, var(--color-surface), transparent);
+    }
+    .quote cite {
+      display: block;
+      margin-top: var(--space-xs);
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      color: var(--color-muted);
+    }
+
+    /* ── Demo layout ────────────────────────────────────── */
+    .demo-section {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .demo-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: var(--space-xs);
+      margin-top: var(--space-lg);
+    }
+    .tag-row { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+    .btn-row  { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="demo-section">
+
+    <p class="demo-label">01 · .heading</p>
+    <h1 class="heading">The Design System</h1>
+
+    <p class="demo-label">02 · .card</p>
+    <div class="card">
+      <p>A minimal card component. Hover to see the accent shadow shift. Works great for content blocks, media previews, or data summaries.</p>
+    </div>
+
+    <p class="demo-label">03 · .btn</p>
+    <div class="btn-row">
+      <button class="btn">Primary</button>
+      <button class="btn">Get Started</button>
+    </div>
+
+    <p class="demo-label">04 · .tag</p>
+    <div class="tag-row">
+      <span class="tag">typography</span>
+      <span class="tag">color</span>
+      <span class="tag">spacing</span>
+      <span class="tag">motion</span>
+    </div>
+
+    <p class="demo-label">05 · .quote</p>
+    <blockquote class="quote">
+      Good design is as little design as possible.
+      <cite>— Dieter Rams</cite>
+    </blockquote>
+
+  </div>
+</body>
+</html>

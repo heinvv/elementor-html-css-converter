@@ -634,7 +634,8 @@ class Html_Converter {
 		}
 
 		$conversion_service = new Class_Conversion_Service( $this->converter_registry );
-		$converted_classes  = $conversion_service->convert_to_atomic( $classes_to_import );
+		$conversion_result  = $conversion_service->convert_to_atomic( $classes_to_import );
+		$converted_classes  = $conversion_result['classes'] ?? [];
 
 		if ( empty( $converted_classes ) ) {
 			$result['warnings'][] = 'No classes could be converted to atomic format';

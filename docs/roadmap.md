@@ -16,6 +16,7 @@
 - [x] Support for Google font-family styles.
 - [x] Study responsive support.
 - [ ] Handle class priority.
+- [ ] Handle body styles such as background color.
 - [ ] Handle reset styles.
 - [ ] Support core and pro features.
 - [x] Port phpunit tests and playwright tests from the PR.
