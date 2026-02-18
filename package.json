@@ -10,10 +10,10 @@
 	},
 	"devDependencies": {
 		"@babel/core": "^7.23.0",
+		"@babel/plugin-transform-react-jsx": "^7.23.0",
 		"@babel/preset-env": "^7.23.0",
 		"@babel/preset-react": "^7.23.0",
 		"@babel/preset-typescript": "^7.23.0",
-		"@babel/plugin-transform-react-jsx": "^7.23.0",
 		"@wordpress/babel-plugin-import-jsx-pragma": "^4.0.0",
 		"babel-loader": "^9.1.3",
 		"css-loader": "^6.8.1",
@@ -24,6 +24,7 @@
 		"webpack-cli": "^5.1.4"
 	},
 	"dependencies": {
-		"prop-types": "^15.8.1"
+		"prop-types": "^15.8.1",
+		"zod": "^4.3.6"
 	}
 }

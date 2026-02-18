@@ -3,6 +3,7 @@ import { createVariablesModalManager } from './utils/variablesModalManager';
 import { initVariablesButtonInjector } from './utils/variablesButtonInjector';
 import { createClassesModalManager } from './utils/classesModalManager';
 import { initClassesButtonInjector } from './utils/classesButtonInjector';
+import { initMcp } from './mcp';
 
 let retryCount = 0;
 const MAX_RETRIES = 200;
@@ -52,6 +53,7 @@ function waitForReact() {
 		if (typeof window !== 'undefined') {
 			(window as any).ehccClassesImportExport = classesModalManager;
 		}
+		initMcp();
 	} catch {
 	}
 }
