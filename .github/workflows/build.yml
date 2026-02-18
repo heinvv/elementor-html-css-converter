@@ -44,29 +44,31 @@ jobs:
           PLUGIN_NAME="elementor-html-css-converter"
           VERSION="${{ steps.version.outputs.version }}"
           ZIP_NAME="${PLUGIN_NAME}-v${VERSION}-$(date +%Y%m%d-%H%M%S).zip"
-          
-          zip -r "$ZIP_NAME" . \
-            -x "*.git*" \
-            -x "node_modules/*" \
-            -x "*.log" \
-            -x ".DS_Store" \
-            -x "dist/*" \
-            -x "build/*" \
-            -x "*.map" \
-            -x "assets/js/src/*" \
-            -x "tsconfig.json" \
-            -x "webpack.editor.config.js" \
-            -x "package.json" \
-            -x "package-lock.json" \
-            -x ".gitignore" \
-            -x "README-BUILD.md" \
-            -x "CLAUDE.md" \
-            -x "docs/*" \
-            -x "test-*.json"
-          
+
+          cd ..
+          zip -r "$PLUGIN_NAME/$ZIP_NAME" "$PLUGIN_NAME" \
+            -x "*/.git/*" \
+            -x "*/.git" \
+            -x "*/node_modules/*" \
+            -x "*/*.log" \
+            -x "*/.DS_Store" \
+            -x "*/dist/*" \
+            -x "*/build/*" \
+            -x "*/*.map" \
+            -x "*/assets/js/src/*" \
+            -x "*/tsconfig.json" \
+            -x "*/webpack.editor.config.js" \
+            -x "*/package.json" \
+            -x "*/package-lock.json" \
+            -x "*/.gitignore" \
+            -x "*/README-BUILD.md" \
+            -x "*/CLAUDE.md" \
+            -x "*/docs/*" \
+            -x "*/test-*.json"
+
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
-          echo "Created: $ZIP_NAME"
-          ls -lh "$ZIP_NAME"
+          echo "Created: $PLUGIN_NAME/$ZIP_NAME"
+          ls -lh "$PLUGIN_NAME/$ZIP_NAME"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
