@@ -87,6 +87,16 @@ export type AssessmentResult = {
 	hasConflicts: boolean;
 };
 
+export type HtmlImportTabProps = {
+	htmlContent: string;
+	setHtmlContent: (value: string) => void;
+	isLoading: boolean;
+	statusMessage: string | null;
+	statusType: 'success' | 'error' | 'info' | null;
+	onClose: () => void;
+	onSubmit: (e?: any) => void;
+};
+
 export type ConflictAssessmentProps = {
 	assessment: AssessmentResult;
 	onConfirm: (

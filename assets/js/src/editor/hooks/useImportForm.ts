@@ -16,6 +16,8 @@ export const useImportForm = () => {
 	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 	const [statusType, setStatusType] = useState<'success' | 'error' | 'info' | null>(null);
 	const [diagnostics, setDiagnostics] = useState<ScrapeDiagnostics | null>(null);
+	const [htmlContent, setHtmlContent] = useState('');
+	const [activeTab, setActiveTab] = useState(0);
 
 	const resetForm = () => {
 		setUrl('');
@@ -25,6 +27,8 @@ export const useImportForm = () => {
 		setStatusType(null);
 		setDiagnostics(null);
 		setIsLoading(false);
+		setHtmlContent('');
+		setActiveTab(0);
 	};
 
 	return {
@@ -42,6 +46,10 @@ export const useImportForm = () => {
 		setStatusType,
 		diagnostics,
 		setDiagnostics,
+		htmlContent,
+		setHtmlContent,
+		activeTab,
+		setActiveTab,
 		resetForm,
 	};
 };
