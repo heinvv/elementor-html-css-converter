@@ -27,6 +27,8 @@ class Id_Style_Extractor {
 	private const REGEX_CSS_COMMENT_REMOVAL = '/\/\*.*?\*\//s';
 	private const REGEX_ID_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*)\s*\{([^}]*)\}/s';
 	private const REGEX_ID_PSEUDO_SELECTOR_PATTERN = '/#([a-zA-Z][a-zA-Z0-9_-]*):(hover|focus)\s*\{([^}]*)\}/s';
+	private const REGEX_BODY_SELECTOR_PATTERN = '/\bbody\s*\{([^}]*)\}/s';
+	private const REGEX_BODY_PSEUDO_SELECTOR_PATTERN = '/\bbody:(hover|focus)\s*\{([^}]*)\}/s';
 	private const REGEX_IMPORTANT_FLAG_REMOVAL = '/\s*!important\s*$/i';
 
 	/**
@@ -124,6 +126,158 @@ class Id_Style_Extractor {
 		}
 
 		return $pseudo_rules;
+	}
+
+	/**
+	 * Parse body selector rules from a CSS block.
+	 *
+	 * @param string $css_block CSS block content.
+	 * @return array Flat property-value pairs for the body selector.
+	 */
+	private function parse_body_rules_from_block( string $css_block ): array {
+		$body_rules = [];
+
+		if ( empty( trim( $css_block ) ) ) {
+			return $body_rules;
+		}
+
+		$css_block = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css_block );
+
+		if ( preg_match_all( self::REGEX_BODY_SELECTOR_PATTERN, $css_block, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$declarations        = $match[1];
+				$parsed_declarations = $this->parse_declarations( $declarations );
+
+				if ( ! empty( $parsed_declarations ) ) {
+					$body_rules = array_merge( $body_rules, $parsed_declarations );
+				}
+			}
+		}
+
+		return $body_rules;
+	}
+
+	/**
+	 * Parse body pseudo-state rules from a CSS block (body:hover, body:focus).
+	 *
+	 * @param string $css_block CSS block content.
+	 * @return array Map of state to CSS declarations. Format: ['hover' => [...], 'focus' => [...]]
+	 */
+	private function parse_body_pseudo_rules_from_block( string $css_block ): array {
+		$pseudo_rules = [];
+
+		if ( empty( trim( $css_block ) ) ) {
+			return $pseudo_rules;
+		}
+
+		$css_block = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css_block );
+
+		if ( preg_match_all( self::REGEX_BODY_PSEUDO_SELECTOR_PATTERN, $css_block, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$state        = $match[1];
+				$declarations = $match[2];
+
+				$parsed_declarations = $this->parse_declarations( $declarations );
+
+				if ( ! empty( $parsed_declarations ) ) {
+					if ( isset( $pseudo_rules[ $state ] ) ) {
+						$pseudo_rules[ $state ] = array_merge( $pseudo_rules[ $state ], $parsed_declarations );
+					} else {
+						$pseudo_rules[ $state ] = $parsed_declarations;
+					}
+				}
+			}
+		}
+
+		return $pseudo_rules;
+	}
+
+	/**
+	 * Parse body rules with breakpoint and pseudo-state support.
+	 *
+	 * Extracts body rules per breakpoint and pseudo-state (:hover, :focus) from CSS.
+	 *
+	 * @param string             $css     Raw CSS content.
+	 * @param Breakpoint_Matcher $matcher Breakpoint matcher instance.
+	 * @return array{breakpoint_rules: array, pseudo_rules: array}
+	 */
+	public function parse_body_rules( string $css, Breakpoint_Matcher $matcher ): array {
+		$breakpoint_rules = [];
+		$pseudo_rules     = [];
+
+		if ( empty( trim( $css ) ) ) {
+			return [
+				'breakpoint_rules' => $breakpoint_rules,
+				'pseudo_rules'     => $pseudo_rules,
+			];
+		}
+
+		$css = preg_replace( self::REGEX_CSS_COMMENT_REMOVAL, '', $css );
+
+		$media_parser  = new Media_Query_Parser();
+		$media_queries = $media_parser->parse_media_queries( $css );
+		$desktop_css   = $media_parser->extract_desktop_css( $css );
+
+		$desktop_rules = $this->parse_body_rules_from_block( $desktop_css );
+
+		if ( ! empty( $desktop_rules ) ) {
+			$breakpoint_rules['desktop'] = $desktop_rules;
+		}
+
+		$desktop_pseudo = $this->parse_body_pseudo_rules_from_block( $desktop_css );
+
+		foreach ( $desktop_pseudo as $state => $styles ) {
+			if ( ! isset( $pseudo_rules[ $state ] ) ) {
+				$pseudo_rules[ $state ] = [];
+			}
+			$pseudo_rules[ $state ]['desktop'] = $styles;
+		}
+
+		foreach ( $media_queries as $media_query ) {
+			$width     = $media_query['width'];
+			$direction = $media_query['direction'];
+			$css_block = $media_query['css'];
+
+			$elementor_breakpoint = $matcher->match_css_to_elementor_breakpoint( $width, $direction );
+
+			if ( null === $elementor_breakpoint ) {
+				continue;
+			}
+
+			$responsive_rules = $this->parse_body_rules_from_block( $css_block );
+
+			if ( ! empty( $responsive_rules ) ) {
+				if ( isset( $breakpoint_rules[ $elementor_breakpoint ] ) ) {
+					$breakpoint_rules[ $elementor_breakpoint ] = array_merge(
+						$breakpoint_rules[ $elementor_breakpoint ],
+						$responsive_rules
+					);
+				} else {
+					$breakpoint_rules[ $elementor_breakpoint ] = $responsive_rules;
+				}
+			}
+
+			$responsive_pseudo = $this->parse_body_pseudo_rules_from_block( $css_block );
+
+			foreach ( $responsive_pseudo as $state => $styles ) {
+				if ( ! isset( $pseudo_rules[ $state ] ) ) {
+					$pseudo_rules[ $state ] = [];
+				}
+				if ( isset( $pseudo_rules[ $state ][ $elementor_breakpoint ] ) ) {
+					$pseudo_rules[ $state ][ $elementor_breakpoint ] = array_merge(
+						$pseudo_rules[ $state ][ $elementor_breakpoint ],
+						$styles
+					);
+				} else {
+					$pseudo_rules[ $state ][ $elementor_breakpoint ] = $styles;
+				}
+			}
+		}
+
+		return [
+			'breakpoint_rules' => $breakpoint_rules,
+			'pseudo_rules'     => $pseudo_rules,
+		];
 	}
 
 	/**

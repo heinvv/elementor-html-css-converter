@@ -374,7 +374,7 @@ class Elementor_Document_Service {
 	 * @param array  $widgets Array of widget data to save.
 	 * @return int|false Template ID on success, false on failure.
 	 */
-	public function save_as_template( string $title, array $widgets ): int|false {
+	public function save_as_template( string $title, array $widgets ) {
 		if ( ! $this->is_elementor_available() ) {
 			return false;
 		}
@@ -423,7 +423,7 @@ class Elementor_Document_Service {
 	 * @param array  $widgets Array of widget data to save.
 	 * @return int|false Template ID on success, false on failure.
 	 */
-	public function save_as_import_template( string $title, array $widgets ): int|false {
+	public function save_as_import_template( string $title, array $widgets ) {
 		if ( ! $this->is_elementor_available() ) {
 			return false;
 		}
@@ -524,6 +524,35 @@ class Elementor_Document_Service {
 		}
 
 		return substr( md5( uniqid( '', true ) ), 0, 7 );
+	}
+
+	/**
+	 * Save page-level settings to an Elementor document.
+	 *
+	 * Merges $settings into whatever is already stored in `_elementor_page_settings`
+	 * so existing settings (layout, SEO, etc.) are preserved.
+	 * Uses direct post-meta write — the same bypass used by save_elements() — so
+	 * this works from REST API context without Elementor editor permissions.
+	 *
+	 * @param int   $post_id  The post ID.
+	 * @param array $settings Key-value map of page settings to save (e.g. ['custom_css' => '...']).
+	 * @return bool True on success.
+	 */
+	public function save_page_settings( int $post_id, array $settings ): bool {
+		if ( empty( $settings ) ) {
+			return true;
+		}
+
+		$existing = get_post_meta( $post_id, '_elementor_page_settings', true );
+		$existing = is_array( $existing ) ? $existing : [];
+		$merged   = array_merge( $existing, $settings );
+
+		update_post_meta( $post_id, '_elementor_page_settings', $merged );
+
+		// Clear any cached CSS so Elementor regenerates it with the new custom CSS.
+		delete_post_meta( $post_id, '_elementor_css' );
+
+		return true;
 	}
 
 	/**

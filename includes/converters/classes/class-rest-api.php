@@ -824,6 +824,12 @@ class Rest_Api {
 			$result['widget_ids']   = $insert_result['widget_ids'];
 		}
 
+		// Save body page settings (background, margin, padding) directly to
+		// _elementor_page_settings so Elementor renders them as page-level styles.
+		if ( ! empty( $result['body_page_settings'] ) ) {
+			$this->document_service->save_page_settings( $post_id, $result['body_page_settings'] );
+		}
+
 		$result['post_id']  = $post_id;
 		$result['edit_url'] = $this->document_service->get_edit_url( $post_id );
 

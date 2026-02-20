@@ -230,9 +230,10 @@ class Atomic_Widget_Settings_Preparer {
 	}
 
 	/**
-	 * Create an html-v2 prop structure for Html_V2_Prop_Type.
+	 * Create an html-v3 prop structure for Html_V3_Prop_Type.
 	 *
-	 * Elementor expects { content: string, children: [] } for e-paragraph, e-heading, e-button.
+	 * Elementor expects { content: { $$type: 'string', value: string }, children: [] }
+	 * for e-paragraph, e-heading, e-button.
 	 *
 	 * @param string $content Text or HTML content.
 	 * @return array Atomic prop structure.
@@ -243,9 +244,12 @@ class Atomic_Widget_Settings_Preparer {
 		$normalized   = $this->normalize_deprecated_inline_tags( $sanitized );
 
 		return [
-			'$$type' => 'html-v2',
+			'$$type' => 'html-v3',
 			'value'  => [
-				'content'  => $normalized,
+				'content'  => [
+					'$$type' => 'string',
+					'value'  => $normalized,
+				],
 				'children' => [],
 			],
 		];

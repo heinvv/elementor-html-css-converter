@@ -181,7 +181,7 @@ class Font_Family_Converter extends Property_Converter_Base {
 		return in_array( $normalized, self::GENERIC_FONT_FAMILIES, true );
 	}
 
-	private function is_registered_font( string $font_name ): bool|string {
+	private function is_registered_font( string $font_name ) {
 		$normalized = $this->normalize_font_name( $font_name );
 		return \Elementor\Fonts::get_font_type( $normalized );
 	}

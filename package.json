@@ -24,7 +24,6 @@
 		"webpack-cli": "^5.1.4"
 	},
 	"dependencies": {
-		"prop-types": "^15.8.1",
-		"zod": "^4.3.6"
+		"prop-types": "^15.8.1"
 	}
 }

@@ -78,6 +78,20 @@ class Atomic_Data_Parser {
 	private array $id_pseudo_rules = [];
 
 	/**
+	 * Parsed body breakpoint rules for current document.
+	 *
+	 * @var array
+	 */
+	private array $body_breakpoint_rules = [];
+
+	/**
+	 * Parsed body pseudo-state rules (:hover, :focus) with breakpoints.
+	 *
+	 * @var array
+	 */
+	private array $body_pseudo_rules = [];
+
+	/**
 	 * Variable fallback map for substituting unresolved var() references.
 	 *
 	 * @var array<string, string>
@@ -144,6 +158,10 @@ class Atomic_Data_Parser {
 		$parsed = $this->id_style_extractor->parse_id_rules( $css, $this->breakpoint_matcher );
 		$this->id_rules_with_breakpoints = $parsed['breakpoint_rules'];
 		$this->id_pseudo_rules           = $parsed['pseudo_rules'];
+
+		$body_parsed                   = $this->id_style_extractor->parse_body_rules( $css, $this->breakpoint_matcher );
+		$this->body_breakpoint_rules   = $body_parsed['breakpoint_rules'];
+		$this->body_pseudo_rules       = $body_parsed['pseudo_rules'];
 
 		$dom_elements = $this->parse_dom_structure_from_dom( $dom, $svg_map );
 		if ( empty( $dom_elements ) ) {
@@ -961,5 +979,20 @@ class Atomic_Data_Parser {
 	 */
 	public function get_id_style_extractor(): Id_Style_Extractor {
 		return $this->id_style_extractor;
+	}
+
+	/**
+	 * Get body styles extracted from the last parsed document.
+	 *
+	 * Returns raw CSS declarations organised by breakpoint and pseudo-state,
+	 * as parsed from body {} rules in <style> tags.
+	 *
+	 * @return array{breakpoint_rules: array, pseudo_rules: array}
+	 */
+	public function get_body_styles(): array {
+		return [
+			'breakpoint_rules' => $this->body_breakpoint_rules,
+			'pseudo_rules'     => $this->body_pseudo_rules,
+		];
 	}
 }

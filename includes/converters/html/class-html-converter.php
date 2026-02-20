@@ -70,17 +70,24 @@ class Html_Converter {
 	private Converter_Registry $converter_registry;
 
 	/**
+	 * Breakpoint matcher instance.
+	 *
+	 * @var Breakpoint_Matcher
+	 */
+	private Breakpoint_Matcher $breakpoint_matcher;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Converter_Registry      $converter_registry CSS converter registry.
 	 * @param Breakpoint_Matcher|null $breakpoint_matcher Optional breakpoint matcher instance.
 	 */
 	public function __construct( Converter_Registry $converter_registry, ?Breakpoint_Matcher $breakpoint_matcher = null ) {
-		$this->converter_registry = $converter_registry;
-		$matcher                   = $breakpoint_matcher ?? new Breakpoint_Matcher();
-		$this->data_parser        = new Atomic_Data_Parser( $converter_registry, $matcher );
-		$this->json_creator       = new Atomic_Widget_JSON_Creator( false );
-		$this->styles_integrator  = new Widget_Styles_Integrator();
+		$this->converter_registry  = $converter_registry;
+		$this->breakpoint_matcher  = $breakpoint_matcher ?? new Breakpoint_Matcher();
+		$this->data_parser         = new Atomic_Data_Parser( $converter_registry, $this->breakpoint_matcher );
+		$this->json_creator        = new Atomic_Widget_JSON_Creator( false );
+		$this->styles_integrator   = new Widget_Styles_Integrator();
 	}
 
 	/**
@@ -154,6 +161,7 @@ class Html_Converter {
 		$widget_data_array = $this->data_parser->parse_html_for_atomic_widgets( $html, [
 			'variable_fallback' => $variable_fallback,
 		] );
+		$raw_body_styles = $this->data_parser->get_body_styles();
 		if ( $timing ) {
 			$timing->record( 'parse_html_ms', $t0 );
 		}
@@ -222,6 +230,13 @@ class Html_Converter {
 		}
 
 		$result = $this->build_success_result( $wrapped_widgets );
+
+		$body_page_settings = $this->build_body_page_settings(
+			$raw_body_styles['breakpoint_rules']
+		);
+		if ( null !== $body_page_settings ) {
+			$result['body_page_settings'] = $body_page_settings;
+		}
 
 		if ( ! empty( $css_variables ) || $import_variables ) {
 			$result['imported_variables'] = $imported_variables;
@@ -429,6 +444,166 @@ class Html_Converter {
 			$result[] = $widget;
 		}
 		return $result;
+	}
+
+	/**
+	 * Convert desktop body CSS rules to Elementor page settings format.
+	 *
+	 * Only handles background/background-color, margin, and padding.
+	 * All other properties are silently dropped (matching PR #32856 behaviour).
+	 *
+	 * @param array $breakpoint_rules Map of breakpoint name => ['property' => 'value'].
+	 * @return array|null Null when no supported body rules exist; otherwise an
+	 *                    associative array ready for save_page_settings().
+	 */
+	private function build_body_page_settings( array $breakpoint_rules ): ?array {
+		$desktop = $breakpoint_rules['desktop'] ?? [];
+		if ( empty( $desktop ) ) {
+			return null;
+		}
+
+		$settings = [];
+
+		// Background: background-color takes priority, then background shorthand.
+		$bg_value = $desktop['background-color'] ?? ( $desktop['background'] ?? null );
+		if ( null !== $bg_value ) {
+			$settings['background_background'] = 'classic';
+			$settings['background_color']      = trim( $bg_value );
+		}
+
+		// Margin dimensions.
+		$margin = $this->build_dimensions_setting( $desktop, 'margin' );
+		if ( null !== $margin ) {
+			$settings['margin'] = $margin;
+		}
+
+		// Padding dimensions.
+		$padding = $this->build_dimensions_setting( $desktop, 'padding' );
+		if ( null !== $padding ) {
+			$settings['padding'] = $padding;
+		}
+
+		return empty( $settings ) ? null : $settings;
+	}
+
+	/**
+	 * Build an Elementor dimensions settings array from CSS declarations.
+	 *
+	 * Handles both shorthand (e.g. 'margin: 10px 20px') and individual side
+	 * properties (e.g. 'margin-top: 10px').
+	 *
+	 * @param array  $declarations Map of CSS property => value.
+	 * @param string $property     'margin' or 'padding'.
+	 * @return array|null Null when no matching declarations found; otherwise
+	 *                    Elementor dimensions array with top/right/bottom/left/unit/isLinked.
+	 */
+	private function build_dimensions_setting( array $declarations, string $property ): ?array {
+		$sides = [ 'top' => null, 'right' => null, 'bottom' => null, 'left' => null ];
+		$unit  = 'px';
+
+		// Start with shorthand if present.
+		if ( isset( $declarations[ $property ] ) ) {
+			$expanded = $this->parse_shorthand_dimensions( $declarations[ $property ] );
+			if ( null !== $expanded ) {
+				$sides = $expanded['sides'];
+				$unit  = $expanded['unit'];
+			}
+		}
+
+		// Individual side properties override shorthand.
+		$side_props = [
+			'top'    => "{$property}-top",
+			'right'  => "{$property}-right",
+			'bottom' => "{$property}-bottom",
+			'left'   => "{$property}-left",
+		];
+
+		foreach ( $side_props as $side => $prop ) {
+			if ( isset( $declarations[ $prop ] ) ) {
+				$parsed = $this->parse_dimension_value( $declarations[ $prop ] );
+				if ( null !== $parsed ) {
+					$sides[ $side ] = $parsed['value'];
+					$unit           = $parsed['unit'];
+				}
+			}
+		}
+
+		if ( array_filter( $sides, fn( $v ) => null !== $v ) === [] ) {
+			return null;
+		}
+
+		// Fill any missing sides with '0'.
+		foreach ( $sides as $side => $value ) {
+			if ( null === $value ) {
+				$sides[ $side ] = '0';
+			}
+		}
+
+		$is_linked = count( array_unique( array_values( $sides ) ) ) === 1;
+
+		return array_merge( $sides, [ 'unit' => $unit, 'isLinked' => $is_linked ] );
+	}
+
+	/**
+	 * Parse a CSS shorthand dimension value into per-side values and a unit.
+	 *
+	 * Handles 1–4 value shorthand following CSS box model rules.
+	 * Returns null for mixed units or unsupported values.
+	 *
+	 * @param string $value E.g. '10px 20px' or '1rem 2rem 3rem 4rem'.
+	 * @return array|null ['sides' => ['top',...], 'unit' => 'px'] or null.
+	 */
+	private function parse_shorthand_dimensions( string $value ): ?array {
+		$parts = preg_split( '/\s+/', trim( $value ) );
+		if ( empty( $parts ) || count( $parts ) > 4 ) {
+			return null;
+		}
+
+		$parsed_parts = [];
+		$unit         = null;
+
+		foreach ( $parts as $part ) {
+			$parsed = $this->parse_dimension_value( $part );
+			if ( null === $parsed ) {
+				return null;
+			}
+			if ( null !== $unit && $unit !== $parsed['unit'] ) {
+				return null; // Mixed units not supported.
+			}
+			$unit           = $parsed['unit'];
+			$parsed_parts[] = $parsed['value'];
+		}
+
+		$count = count( $parsed_parts );
+		$top   = $parsed_parts[0];
+		$right = $count >= 2 ? $parsed_parts[1] : $parsed_parts[0];
+		$btm   = $count >= 3 ? $parsed_parts[2] : $parsed_parts[0];
+		$left  = $count >= 4 ? $parsed_parts[3] : $right;
+
+		return [
+			'sides' => [ 'top' => $top, 'right' => $right, 'bottom' => $btm, 'left' => $left ],
+			'unit'  => $unit ?? 'px',
+		];
+	}
+
+	/**
+	 * Parse a single CSS dimension token into a numeric string and unit.
+	 *
+	 * @param string $value E.g. '10px', '1.5em', '0'.
+	 * @return array|null ['value' => '10', 'unit' => 'px'] or null for unsupported values.
+	 */
+	private function parse_dimension_value( string $value ): ?array {
+		$value = trim( $value );
+
+		if ( '0' === $value ) {
+			return [ 'value' => '0', 'unit' => 'px' ];
+		}
+
+		if ( preg_match( '/^(-?[\d.]+)(px|em|rem|%|vh|vw|vmin|vmax)$/', $value, $m ) ) {
+			return [ 'value' => $m[1], 'unit' => $m[2] ];
+		}
+
+		return null;
 	}
 
 	/**
